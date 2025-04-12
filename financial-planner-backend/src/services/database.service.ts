@@ -1,13 +1,13 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { config } from "../config/config";
-import { User } from "../types/user.types";
+import { UserType } from "../types/user.types";
 
 class Database {
 	private static instance: Database;
 	private supabase: SupabaseClient;
 
 	private constructor() {
-		this.supabase = createClient(config.supabase.url, config.supabase.key);
+		this.supabase = createClient(config.supabase.url, config.supabase.anon_key);
 	}
 
 	public static getInstance(): Database {
@@ -21,8 +21,8 @@ class Database {
 		return this.supabase;
 	}
 
-	// User methods
-	async findUserByEmail(email: string): Promise<User | null> {
+	//UserType methods
+	async findUserByEmail(email: string): Promise<UserType | null> {
 		const { data, error } = await this.supabase
 			.from("users")
 			.select("*")
@@ -33,10 +33,10 @@ class Database {
 			throw error;
 		}
 
-		return data as User | null;
+		return data as UserType | null;
 	}
 
-	async findUserByGoogleId(googleId: string): Promise<User | null> {
+	async findUserByGoogleId(googleId: string): Promise<UserType | null> {
 		const { data, error } = await this.supabase
 			.from("users")
 			.select("*")
@@ -47,10 +47,10 @@ class Database {
 			throw error;
 		}
 
-		return data as User | null;
+		return data as UserType | null;
 	}
 
-	async createUser(userData: Partial<User>): Promise<User> {
+	async createUser(userData: Partial<UserType>): Promise<UserType> {
 		const { data, error } = await this.supabase
 			.from("users")
 			.insert([userData])
@@ -61,10 +61,10 @@ class Database {
 			throw error;
 		}
 
-		return data as User;
+		return data as UserType;
 	}
 
-	async getUserById(id: string): Promise<User | null> {
+	async getUserById(id: string): Promise<UserType | null> {
 		const { data, error } = await this.supabase
 			.from("users")
 			.select("*")
@@ -75,7 +75,7 @@ class Database {
 			throw error;
 		}
 
-		return data as User | null;
+		return data as UserType | null;
 	}
 }
 

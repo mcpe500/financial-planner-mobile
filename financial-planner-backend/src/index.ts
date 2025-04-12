@@ -1,5 +1,7 @@
 import app from "./app";
 import { config } from "./config/config";
+import { createSshTunnel } from "./job/tunnel";
+
 
 // Start the server
 const server = app.listen(config.server.port, () => {
@@ -14,5 +16,9 @@ process.on("unhandledRejection", (err: Error) => {
 		process.exit(1);
 	});
 });
+
+if (config.server.nodeEnv === "development") {
+	createSshTunnel();
+}
 
 export default server;

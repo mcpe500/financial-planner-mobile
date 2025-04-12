@@ -10,7 +10,7 @@ export const config = {
 	},
 	supabase: {
 		url: process.env.SUPABASE_URL || "",
-		key: process.env.SUPABASE_KEY || "",
+		anon_key: process.env.SUPABASE_ANON_KEY || "",
 	},
 	google: {
 		clientId: process.env.GOOGLE_CLIENT_ID || "",
