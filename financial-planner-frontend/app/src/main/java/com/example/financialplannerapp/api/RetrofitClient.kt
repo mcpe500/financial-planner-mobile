@@ -1,5 +1,6 @@
 package com.example.financialplannerapp.api
 
+import com.example.financialplannerapp.config.Config
 import com.example.financialplannerapp.models.AuthService
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
@@ -10,7 +11,7 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
     // Use this IP for Android emulator to access localhost on your development machine
-    private const val BASE_URL = "http://203.175.11.145:9001/"
+    private const val BASE_URL = Config.API_BASE_URL
     // For physical device, use your computer's actual LAN IP address like:
     // private const val BASE_URL = "http://192.168.1.100:3000/"
 

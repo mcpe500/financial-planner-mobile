@@ -12,6 +12,9 @@ passport.use(
 			scope: ["profile", "email"],
 		},
 		async (accessToken, refreshToken, profile, done) => {
+            console.log("Google OAuth callback received");
+            console.log("Profile ID:", profile.id);
+            
 			try {
 				// Check if user exists
 				const existingUser = await database.findUserByGoogleId(profile.id);
