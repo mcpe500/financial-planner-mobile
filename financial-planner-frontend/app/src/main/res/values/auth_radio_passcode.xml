@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="passcode_radio" parent="Widget.AppCompat.CompoundButton.RadioButton">
+        <item name="buttonTint">@color/green</item>
+        <item name="marginHorizontal">0dp</item>
+
+    </style>
+</resources>

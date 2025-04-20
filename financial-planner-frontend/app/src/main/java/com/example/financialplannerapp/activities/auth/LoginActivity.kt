@@ -1,4 +1,4 @@
-package com.example.financialplannerapp
+package com.example.financialplannerapp.activities.auth
 
 import android.content.Intent
 import android.net.Uri
@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.financialplannerapp.activities.MainActivity
 import com.example.financialplannerapp.databinding.ActivityLoginBinding
 import com.example.financialplannerapp.utils.TokenManager
 import com.google.android.gms.common.SignInButton
@@ -32,6 +33,10 @@ class LoginActivity : AppCompatActivity() {
         binding.signInButton.setSize(SignInButton.SIZE_WIDE)
         binding.signInButton.setOnClickListener {
             signInWithGoogle()
+        }
+
+        binding.passcodeButton.setOnClickListener(){
+         navigateToPasscode()
         }
 
         // Handle deep link if the activity was started from a URL
@@ -66,8 +71,16 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
+
+
     private fun navigateToMain() {
         val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
+
+    private fun navigateToPasscode(){
+        val intent = Intent(this, PasscodeActivity::class.java)
         startActivity(intent)
         finish()
     }

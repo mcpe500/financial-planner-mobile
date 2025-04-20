@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="passcode_button" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/auth_passcode_button</item>
+        <item name="layout_constraintWidth_percent">0.25</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_margin">4dp</item>
+        <item name="layout_constraintDimensionRatio">1:1</item>
+
+        <item name="cornerRadius">20dp</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">30sp</item>
+        <item name="backgroundTint">@color/black</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+    </style>
+</resources>

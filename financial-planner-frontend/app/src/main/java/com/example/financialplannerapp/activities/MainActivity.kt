@@ -1,10 +1,11 @@
-package com.example.financialplannerapp
+package com.example.financialplannerapp.activities
 
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.example.financialplannerapp.activities.auth.LoginActivity
 import com.example.financialplannerapp.api.RetrofitClient
 import com.example.financialplannerapp.databinding.ActivityMainBinding
 import com.example.financialplannerapp.utils.TokenManager
