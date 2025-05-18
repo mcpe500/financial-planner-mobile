@@ -62,6 +62,9 @@ dependencies {
     // implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
     // kapt("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
 
+    // Grafik
+    implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
     // Google Sign In
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation(libs.androidx.navigation.fragment.ktx)
