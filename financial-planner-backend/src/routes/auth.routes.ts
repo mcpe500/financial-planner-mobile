@@ -16,5 +16,6 @@ router.get(
 
 // Get current user
 router.get("/me", authenticate, getCurrentUser);
+// delete-request
 
 export default router;
