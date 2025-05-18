@@ -55,7 +55,7 @@ dependencies {
     // Gson instead of Moshi (more stable with Kotlin)
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.google.code.gson:gson:2.10.1")
-    
+
     // If you still want to use Moshi, uncomment these lines and comment out the Gson dependencies
     // implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
     // implementation("com.squareup.moshi:moshi:1.15.0")
@@ -74,4 +74,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+
+// Glide for image loading
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }

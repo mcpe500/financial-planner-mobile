@@ -7,6 +7,9 @@ class TokenManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("FinancialPlannerPrefs", Context.MODE_PRIVATE)
     private val TOKEN_KEY = "auth_token"
     private val NO_ACCOUNT_MODE = "no_account_mode"
+    private val USER_ID_KEY = "user_id"
+    private val USER_EMAIL_KEY = "user_email"
+    private val USER_NAME_KEY = "user_name"
 
     fun saveToken(token: String) {
         prefs.edit().putString(TOKEN_KEY, token).apply()
@@ -31,6 +34,26 @@ class TokenManager(context: Context) {
     fun getAuthHeader(): String? {
         val token = getToken()
         return if (token != null) "Bearer $token" else null
+    }
+    
+    fun saveUserInfo(userId: String, email: String?, name: String?) {
+        prefs.edit()
+            .putString(USER_ID_KEY, userId)
+            .putString(USER_EMAIL_KEY, email)
+            .putString(USER_NAME_KEY, name)
+            .apply()
+    }
+    
+    fun getUserId(): String? {
+        return prefs.getString(USER_ID_KEY, null)
+    }
+    
+    fun getUserEmail(): String? {
+        return prefs.getString(USER_EMAIL_KEY, null)
+    }
+    
+    fun getUserName(): String? {
+        return prefs.getString(USER_NAME_KEY, null)
     }
 
     // Clear all preferences

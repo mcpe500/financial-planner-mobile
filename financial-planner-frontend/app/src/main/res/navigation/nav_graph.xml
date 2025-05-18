@@ -39,4 +39,20 @@
         android:name="com.example.financialplannerapp.fragments.main.DashboardFragment"
         android:label="Dashboard"
         tools:layout="@layout/fragment_dashboard" />
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.financialplannerapp.fragments.settings.SettingsFragment"
+        android:label="Pengaturan"
+        tools:layout="@layout/fragment_settings">
+        <action
+            android:id="@+id/action_settingsFragment_to_userProfileFragment"
+            app:destination="@id/userProfileFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/userProfileFragment"
+        android:name="com.example.financialplannerapp.fragments.settings.UserProfileFragment"
+        android:label="Profil Pengguna"
+        tools:layout="@layout/fragment_user_profile" />
 </navigation>
