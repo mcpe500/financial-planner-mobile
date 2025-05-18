@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.models
+package com.example.financialplannerapp.models.api
 
 import com.google.gson.annotations.SerializedName
 
