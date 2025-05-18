@@ -1,5 +1,6 @@
 package com.example.financialplannerapp.models
 
+import com.example.financialplannerapp.models.api.AuthResponse
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Header
