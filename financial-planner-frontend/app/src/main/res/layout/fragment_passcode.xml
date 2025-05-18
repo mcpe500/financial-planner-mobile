@@ -1,0 +1,61 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".fragments.auth.PasscodeFragment">
+
+    <!-- Example structure, adapt from your activity_passcode.xml -->
+    <TextView
+        android:id="@+id/textViewPasscodeTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter Passcode"
+        android:textSize="24sp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="32dp"/>
+
+    <LinearLayout
+        android:id="@+id/layoutPasscodeRadios"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/textViewPasscodeTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp">
+        <RadioButton android:id="@+id/radio1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="false"/>
+        <RadioButton android:id="@+id/radio2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="false"/>
+        <RadioButton android:id="@+id/radio3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="false"/>
+        <RadioButton android:id="@+id/radio4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="false"/>
+        <RadioButton android:id="@+id/radio5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="false"/>
+        <RadioButton android:id="@+id/radio6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="false"/>
+    </LinearLayout>
+
+    <GridLayout
+        android:id="@+id/gridLayoutButtons"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:columnCount="3"
+        app:layout_constraintTop_toBottomOf="@id/layoutPasscodeRadios"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp">
+
+        <Button android:id="@+id/button1" android:text="1" style="?android:attr/buttonBarButtonStyle"/>
+        <Button android:id="@+id/button2" android:text="2" style="?android:attr/buttonBarButtonStyle"/>
+        <Button android:id="@+id/button3" android:text="3" style="?android:attr/buttonBarButtonStyle"/>
+        <Button android:id="@+id/button4" android:text="4" style="?android:attr/buttonBarButtonStyle"/>
+        <Button android:id="@+id/button5" android:text="5" style="?android:attr/buttonBarButtonStyle"/>
+        <Button android:id="@+id/button6" android:text="6" style="?android:attr/buttonBarButtonStyle"/>
+        <Button android:id="@+id/button7" android:text="7" style="?android:attr/buttonBarButtonStyle"/>
+        <Button android:id="@+id/button8" android:text="8" style="?android:attr/buttonBarButtonStyle"/>
+        <Button android:id="@+id/button9" android:text="9" style="?android:attr/buttonBarButtonStyle"/>
+        <Button style="?android:attr/buttonBarButtonStyle" android:visibility="invisible"/> <!-- Placeholder -->
+        <Button android:id="@+id/button0" android:text="0" style="?android:attr/buttonBarButtonStyle"/>
+        <ImageButton android:id="@+id/backspace" android:src="@android:drawable/ic_input_delete" style="?android:attr/buttonBarButtonStyle"/>
+    </GridLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -4,27 +4,37 @@ import android.content.Context
 import android.content.SharedPreferences
 
 class TokenManager(context: Context) {
-    private val prefs: SharedPreferences = context.getSharedPreferences(
-        "FinancialPlannerPrefs", Context.MODE_PRIVATE
-    )
+    private val prefs: SharedPreferences = context.getSharedPreferences("FinancialPlannerPrefs", Context.MODE_PRIVATE)
+    private val TOKEN_KEY = "auth_token"
+    private val NO_ACCOUNT_MODE = "no_account_mode"
 
     fun saveToken(token: String) {
-        prefs.edit().putString(KEY_TOKEN, token).apply()
+        prefs.edit().putString(TOKEN_KEY, token).apply()
     }
 
     fun getToken(): String? {
-        return prefs.getString(KEY_TOKEN, null)
+        return prefs.getString(TOKEN_KEY, null)
     }
 
     fun clearToken() {
-        prefs.edit().remove(KEY_TOKEN).apply()
+        prefs.edit().remove(TOKEN_KEY).apply()
+    }
+
+    fun setNoAccountMode(enabled: Boolean) {
+        prefs.edit().putBoolean(NO_ACCOUNT_MODE, enabled).apply()
+    }
+
+    fun isNoAccountMode(): Boolean {
+        return prefs.getBoolean(NO_ACCOUNT_MODE, false)
     }
 
     fun getAuthHeader(): String? {
-        return getToken()?.let { "Bearer $it" }
+        val token = getToken()
+        return if (token != null) "Bearer $token" else null
     }
 
-    companion object {
-        private const val KEY_TOKEN = "jwt_token"
+    // Clear all preferences
+    fun clear() {
+        prefs.edit().clear().apply()
     }
 }

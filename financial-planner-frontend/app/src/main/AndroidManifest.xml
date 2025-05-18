@@ -13,18 +13,18 @@
         android:theme="@style/Theme.FInancialPlannerApp"
         tools:targetApi="31">
         <activity
-            android:name=".activities.auth.PasscodeActivity"
-            android:exported="false" />
-        <activity
-            android:name=".activities.auth.LoginActivity"
-            android:exported="false" />
-        <activity
             android:name=".activities.MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="finplanner" android:host="auth" />
             </intent-filter>
         </activity>
     </application>
