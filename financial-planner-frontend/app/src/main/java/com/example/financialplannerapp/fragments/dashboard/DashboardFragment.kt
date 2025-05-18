@@ -5,46 +5,47 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.example.financialplannerapp.activities.MainActivity
 import com.example.financialplannerapp.databinding.FragmentDashboardBinding
+import com.example.financialplannerapp.utils.AppDatabase
 import com.example.financialplannerapp.utils.TokenManager
+import com.example.financialplannerapp.viewmodels.DashboardViewModel
+import com.example.financialplannerapp.viewmodels.DashboardViewModelFactory
 
 class DashboardFragment : Fragment() {
+
     private var _binding: FragmentDashboardBinding? = null
     private val binding get() = _binding!!
-    private lateinit var tokenManager: TokenManager
+
+    private lateinit var viewModel: DashboardViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
-        tokenManager = TokenManager(requireContext())
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Show logout button in MainActivity
-        (activity as? MainActivity)?.showLogoutButton()
+        // Inisialisasi manual (tanpa Hilt)
+        val tokenManager = TokenManager(requireContext())
+        val userProfileDao = AppDatabase.getDatabase(requireContext()).userProfileDao()
+        val factory = DashboardViewModelFactory(tokenManager, userProfileDao)
+        viewModel = ViewModelProvider(this, factory)[DashboardViewModel::class.java]
+        viewModel.loadUserName()
+        binding.viewModel = viewModel
+        binding.lifecycleOwner = viewLifecycleOwner
 
-        // Set welcome message based on login state
-        if (tokenManager.isNoAccountMode()) {
-            binding.welcomeText.text = "Dashboard (Guest Mode)"
-        } else {
-            binding.welcomeText.text = "Welcome to Your Dashboard"
-            // You can fetch user data here if needed
+        // Load nama user
+
+        // Observe dan tampilkan di UI
+        viewModel.userName.observe(viewLifecycleOwner) { name ->
+            binding.welcomeText.text = "Hi, $name"
         }
-
-        // Initialize dashboard UI components
-        setupDashboardUI()
-    }
-
-    private fun setupDashboardUI() {
-        // Set up any dashboard-specific UI components here
-        // For example:
-        // binding.addTransactionButton.setOnClickListener { /* Navigate to add transaction screen */ }
     }
 
     override fun onDestroyView() {
