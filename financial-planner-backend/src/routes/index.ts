@@ -1,20 +1,21 @@
-import { Router } from "express";
-import { Request, Response } from "express";
+import { Router, Request, Response } from "express";
 import authRoutes from "./auth.routes";
+import deleteRequestApiRoutes from "./auth/delete.request.routes";
 
-const router = Router();
+const apiRouter = Router();
 
 // Health check endpoint
-router.get("/health", (req: Request, res: Response) => {
+apiRouter.get("/health", (_req: Request, res: Response) => {
 	res.status(200).json({ status: "ok", message: "Server is running" });
 });
 
 // Base routes
-router.get("/", (req: Request, res: Response) => {
+apiRouter.get("/", (_req: Request, res: Response) => {
 	res.json({ message: "Welcome to Financial Planner API" });
 });
 
 // API routes
-router.use("/api/auth", authRoutes);
+apiRouter.use("/api/auth", authRoutes);
+// apiRouter.use("/api/auth/delete-request", deleteRequestApiRoutes);
 
-export default router;
+export default apiRouter;
