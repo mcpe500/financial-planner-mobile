@@ -104,6 +104,80 @@
 
             </androidx.cardview.widget.CardView>
 
+            <androidx.cardview.widget.CardView
+                android:id="@+id/securitySettingsCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:id="@+id/securityIcon"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@android:drawable/ic_lock_lock"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                    <TextView
+                        android:id="@+id/securitySettingsTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Keamanan"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginStart="16dp"
+                        app:layout_constraintStart_toEndOf="@id/securityIcon"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/securityArrowIcon" />
+
+                    <TextView
+                        android:id="@+id/securitySettingsDescription"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Atur PIN dan otentikasi biometrik"
+                        android:textSize="14sp"
+                        android:layout_marginStart="16dp"
+                        app:layout_constraintStart_toEndOf="@id/securityIcon"
+                        app:layout_constraintTop_toBottomOf="@id/securitySettingsTitle"
+                        app:layout_constraintEnd_toStartOf="@id/securityArrowIcon" />
+
+                    <TextView
+                        android:id="@+id/securitySettingsSubdesc"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="[Offline SQLite] Amankan akses ke data offline Anda"
+                        android:textSize="12sp"
+                        android:textStyle="italic"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="4dp"
+                        app:layout_constraintStart_toEndOf="@id/securityIcon"
+                        app:layout_constraintTop_toBottomOf="@id/securitySettingsDescription"
+                        app:layout_constraintEnd_toStartOf="@id/securityArrowIcon" />
+
+                    <ImageView
+                        android:id="@+id/securityArrowIcon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_media_play"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.cardview.widget.CardView>
+
             <!-- Future settings categories would go here -->
 
         </LinearLayout>

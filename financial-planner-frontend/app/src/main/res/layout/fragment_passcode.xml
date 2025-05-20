@@ -34,15 +34,28 @@
         <RadioButton android:id="@+id/radio6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="false"/>
     </LinearLayout>
 
+    <ImageButton
+        android:id="@+id/biometricLoginButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_lock_lock"  android:contentDescription="Use Biometric Login"
+        app:layout_constraintTop_toBottomOf="@id/layoutPasscodeRadios"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        style="?android:attr/borderlessButtonStyle"
+        app:tint="?attr/colorOnSurface" />
+
     <GridLayout
         android:id="@+id/gridLayoutButtons"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:columnCount="3"
-        app:layout_constraintTop_toBottomOf="@id/layoutPasscodeRadios"
+        app:layout_constraintTop_toBottomOf="@id/biometricLoginButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp">
+        android:layout_marginTop="16dp">
 
         <Button android:id="@+id/button1" android:text="1" style="?android:attr/buttonBarButtonStyle"/>
         <Button android:id="@+id/button2" android:text="2" style="?android:attr/buttonBarButtonStyle"/>
