@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import authRoutes from "./auth.routes";
-import deleteRequestApiRoutes from "./auth/delete.request.routes";
+import accountRoutes from "./account.routes";
+import accountApiRoutes from "./account-api.routes";
 
 const apiRouter = Router();
 
@@ -16,6 +17,11 @@ apiRouter.get("/", (_req: Request, res: Response) => {
 
 // API routes
 apiRouter.use("/api/auth", authRoutes);
+// TODO: Uncomment and implement accountApiRoutes when the account API functionality is ready.
 // apiRouter.use("/api/auth/delete-request", deleteRequestApiRoutes);
+// apiRouter.use("/api/account", accountApiRoutes);
+
+// Web routes
+apiRouter.use("/account", accountRoutes);
 
 export default apiRouter;
