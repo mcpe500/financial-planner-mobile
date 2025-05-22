@@ -1,6 +1,5 @@
 import { Router, Request, Response } from "express";
 import authRoutes from "./auth.routes";
-// import deleteRequestApiRoutes from "./auth/delete.request.routes";
 import accountRoutes from "./account.routes";
 import accountApiRoutes from "./account-api.routes";
 
