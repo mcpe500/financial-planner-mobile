@@ -75,6 +75,9 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     kapt("androidx.room:room-compiler:2.6.1")
 
-// Glide for image loading
+    // Glide for image loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
+
+
+    implementation("androidx.biometric:biometric:1.1.0")
 }
