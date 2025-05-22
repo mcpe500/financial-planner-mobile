@@ -5,6 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
+import com.example.financialplannerapp.R
 import com.example.financialplannerapp.activities.MainActivity
 import com.example.financialplannerapp.databinding.FragmentDashboardBinding
 import com.example.financialplannerapp.utils.TokenManager
@@ -45,6 +47,15 @@ class DashboardFragment : Fragment() {
         // Set up any dashboard-specific UI components here
         // For example:
         // binding.addTransactionButton.setOnClickListener { /* Navigate to add transaction screen */ }
+
+        // Settings button navigation
+        binding.settingsButton.setOnClickListener {
+            navigateToSettings()
+        }
+    }
+
+    private fun navigateToSettings() {
+        findNavController().navigate(R.id.action_dashboardFragment_to_settingsFragment)
     }
 
     override fun onDestroyView() {

@@ -47,21 +47,27 @@ class UserProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        // Load profile data from local database
-        loadUserProfile()
-        
-        // Set up save button
+        try {
+            setupUI()
+            loadUserProfile()
+            updateSyncButtonState()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in onViewCreated: ${e.message}", e)
+            Toast.makeText(context, "Error initializing profile view", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setupUI() {
+        // Setup UI components
         binding.saveButton.setOnClickListener {
             saveUserProfile()
         }
         
-        // Set up sync button - only enabled if online
         binding.syncButton.setOnClickListener {
             syncUserProfile()
         }
         
-        // Check if we're online to enable/disable sync button
-        updateSyncButtonState()
+        // Additional UI setup
     }
     
     private fun loadUserProfile() {
@@ -204,30 +210,45 @@ class UserProfileFragment : Fragment() {
     }
     
     private fun updateSyncButtonState() {
-        val isOnline = NetworkUtils.isNetworkAvailable(requireContext())
-        val isLoggedIn = tokenManager.getToken() != null
-        
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = tokenManager.getUserId() ?: "guest_user"
-            val profile = userProfileDao.getUserProfile(userId)
-            val needsSync = profile?.needsSync == true
+        try {
+            if (context == null) return
             
-            binding.syncButton.isEnabled = isOnline && isLoggedIn && needsSync
-            binding.offlineIndicator.visibility = if (isOnline) View.GONE else View.VISIBLE
-            
-            if (!isOnline) {
-                binding.syncStatusText.text = "Mode Offline"
-                binding.syncStatusText.setTextColor(Color.RED)
-            } else if (!isLoggedIn) {
-                binding.syncStatusText.text = "Login diperlukan untuk sinkronisasi"
-                binding.syncStatusText.setTextColor(Color.YELLOW)
-            } else if (needsSync) {
-                binding.syncStatusText.text = "Perubahan belum disinkronkan"
-                binding.syncStatusText.setTextColor(Color.YELLOW)
-            } else {
-                binding.syncStatusText.text = "Profil telah tersinkronisasi"
-                binding.syncStatusText.setTextColor(Color.GREEN)
+            val isOnline = try {
+                NetworkUtils.isNetworkAvailable(requireContext())
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking network state: ${e.message}", e)
+                false
             }
+            
+            val isLoggedIn = tokenManager.getToken() != null
+            
+            viewLifecycleOwner.lifecycleScope.launch {
+                val userId = tokenManager.getUserId() ?: "guest_user"
+                val profile = userProfileDao.getUserProfile(userId)
+                val needsSync = profile?.needsSync == true
+                
+                binding.syncButton.isEnabled = isOnline && isLoggedIn && needsSync
+                binding.offlineIndicator.visibility = if (isOnline) View.GONE else View.VISIBLE
+                
+                if (!isOnline) {
+                    binding.syncStatusText.text = "Mode Offline"
+                    binding.syncStatusText.setTextColor(Color.RED)
+                } else if (!isLoggedIn) {
+                    binding.syncStatusText.text = "Login diperlukan untuk sinkronisasi"
+                    binding.syncStatusText.setTextColor(Color.YELLOW)
+                } else if (needsSync) {
+                    binding.syncStatusText.text = "Perubahan belum disinkronkan"
+                    binding.syncStatusText.setTextColor(Color.YELLOW)
+                } else {
+                    binding.syncStatusText.text = "Profil telah tersinkronisasi"
+                    binding.syncStatusText.setTextColor(Color.GREEN)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating sync button state: ${e.message}", e)
+            // Set default state to avoid UI issues
+            binding.syncButton.isEnabled = false
+            binding.syncStatusText.text = "Status unavailable"
         }
     }
 
