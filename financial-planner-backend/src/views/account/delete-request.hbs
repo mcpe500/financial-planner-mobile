@@ -1,0 +1,44 @@
+{{!-- First screen: Email input form --}}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-6 offset-md-3">
+      <div class="card">
+        <div class="card-header bg-danger text-white">
+          <h3>Delete Your Account</h3>
+        </div>
+        <div class="card-body">
+          {{#if error}}
+            <div class="alert alert-danger">{{error}}</div>
+          {{/if}}
+          
+          {{#if message}}
+            <div class="alert alert-info">{{message}}</div>
+          {{/if}}
+          
+          <p class="mb-4">
+            Deleting your account is permanent and cannot be undone. All your data will be removed from our systems.
+          </p>
+
+          <form action="/account/delete" method="POST">
+            <div class="form-group mb-3">
+              <label for="email">Please enter your email address to confirm:</label>
+              <input 
+                type="email" 
+                class="form-control" 
+                id="email" 
+                name="email" 
+                placeholder="Enter your email address" 
+                required
+              >
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-danger">Request Account Deletion</button>
+              <a href="/" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

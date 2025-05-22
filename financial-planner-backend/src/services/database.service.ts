@@ -77,6 +77,25 @@ class Database {
 
 		return data as UserType | null;
 	}
+	
+	async deleteUser(email: string): Promise<void> {
+		// First, check if the user exists
+		const user = await this.findUserByEmail(email);
+		
+		if (!user) {
+			throw new Error("User not found");
+		}
+		
+		// Delete the user
+		const { error } = await this.supabase
+			.from("users")
+			.delete()
+			.eq("email", email);
+		
+		if (error) {
+			throw error;
+		}
+	}
 }
 
 export default Database.getInstance();

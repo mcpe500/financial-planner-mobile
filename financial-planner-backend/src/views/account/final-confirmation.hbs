@@ -1,0 +1,49 @@
+{{!-- Third screen: Final confirmation with email re-entry --}}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-6 offset-md-3">
+      <div class="card">
+        <div class="card-header bg-danger text-white">
+          <h3>Final Confirmation</h3>
+        </div>
+        <div class="card-body">
+          {{#if error}}
+            <div class="alert alert-danger">{{error}}</div>
+          {{/if}}
+          
+          <div class="alert alert-warning">
+            <h5><i class="fas fa-exclamation-triangle"></i> Warning: This action cannot be undone!</h5>
+            <p>You are about to permanently delete your account and all associated data.</p>
+          </div>
+          
+          <form action="/account/delete/confirm/{{token}}" method="POST">
+            <div class="form-group mb-3">
+              <label for="email">To confirm deletion, please type your email address again:</label>
+              <input 
+                type="email" 
+                class="form-control" 
+                id="email" 
+                name="email" 
+                placeholder="Enter your email address" 
+                required
+              >
+              <small class="form-text text-muted">Please type: {{email}}</small>
+            </div>
+            
+            <div class="form-check mb-4">
+              <input class="form-check-input" type="checkbox" id="confirmCheckbox" required>
+              <label class="form-check-label" for="confirmCheckbox">
+                I understand that this action is permanent and cannot be reversed
+              </label>
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-danger">Permanently Delete My Account</button>
+              <a href="/" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
