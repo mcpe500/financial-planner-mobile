@@ -20,6 +20,7 @@ object SecurityUtils {
     private const val KEY_ENCRYPTED_PIN_HASH = "key_encrypted_pin_hash"
     private const val KEY_BIOMETRIC_ENABLED = "key_biometric_enabled"
     private const val SHARED_PREF_KEY_IV = "pin_encryption_iv" // For storing the Initialization Vector
+    private const val KEY_LAST_AUTH_TIMESTAMP = "key_last_auth_timestamp"
 
     // Keystore and Cipher Constants
     private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
@@ -219,5 +220,29 @@ object SecurityUtils {
                 return false
             }
         }
+    }
+
+    // Authentication Timestamp Management
+    fun updateLastAuthTimestamp(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_SECURITY, Context.MODE_PRIVATE)
+        prefs.edit().putLong(KEY_LAST_AUTH_TIMESTAMP, System.currentTimeMillis()).apply()
+    }
+
+    fun getLastAuthTimestamp(context: Context): Long {
+        val prefs = context.getSharedPreferences(PREFS_SECURITY, Context.MODE_PRIVATE)
+        return prefs.getLong(KEY_LAST_AUTH_TIMESTAMP, 0L)
+    }
+
+    fun isAuthRequired(context: Context, timeoutMillis: Long): Boolean {
+        if (!isPinLockEnabled(context)) {
+            return false // No auth needed if PIN lock is not enabled
+        }
+
+        val lastAuthTime = getLastAuthTimestamp(context)
+        if (lastAuthTime == 0L) {
+            return true // Never authenticated before or app just installed
+        }
+
+        return (System.currentTimeMillis() - lastAuthTime > timeoutMillis)
     }
 }

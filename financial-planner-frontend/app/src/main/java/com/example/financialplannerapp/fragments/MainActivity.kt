@@ -12,12 +12,14 @@ import com.example.financialplannerapp.R
 import com.example.financialplannerapp.databinding.ActivityMainBinding
 import com.example.financialplannerapp.fragments.auth.LoginFragment
 import com.example.financialplannerapp.utils.TokenManager
+import com.example.financialplannerapp.utils.SecurityUtils
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     lateinit var tokenManager: TokenManager
     private lateinit var navController: NavController
     private val TAG = "MainActivity"
+    private const val AUTH_TIMEOUT_MILLIS = 30 * 1000L // 30 seconds
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,5 +116,36 @@ class MainActivity : AppCompatActivity() {
 
     fun hideLogoutButton() {
         binding.logoutButton.visibility = View.GONE
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Log.d(TAG, "onStart called. Checking if auth is required.")
+        if (SecurityUtils.isAuthRequired(this, AUTH_TIMEOUT_MILLIS)) {
+            Log.d(TAG, "Authentication is required. Checking current destination.")
+            val currentDestinationId = navController.currentDestination?.id
+            Log.d(TAG, "Current destination ID: $currentDestinationId")
+
+            // Prevent navigation if already on an auth screen or no destination yet
+            if (currentDestinationId != null &&
+                currentDestinationId != R.id.passcodeFragment &&
+                currentDestinationId != R.id.loginFragment) {
+                
+                Log.d(TAG, "Navigating to PasscodeFragment as auth is required and not on auth screen.")
+                // Ensure PasscodeFragment is reachable, e.g., via a global action
+                // or as a top-level destination in your nav_graph.
+                // This assumes R.id.passcodeFragment exists and is navigable from current location.
+                try {
+                    navController.navigate(R.id.passcodeFragment)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to navigate to PasscodeFragment. Ensure it's in nav_graph and reachable.", e)
+                    Toast.makeText(this, "Error navigating to security screen.", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                Log.d(TAG, "Not navigating to PasscodeFragment: currentDestinationId is null, or already on PasscodeFragment/LoginFragment.")
+            }
+        } else {
+            Log.d(TAG, "Authentication is not required or PIN lock is disabled.")
+        }
     }
 }

@@ -8,8 +8,11 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.RadioButton
 import android.widget.Toast
-import com.example.financialplannerapp.utils.SecurityUtils
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.example.financialplannerapp.utils.SecurityUtils
+import java.util.concurrent.Executor
 import androidx.navigation.fragment.findNavController
 import com.example.financialplannerapp.R
 import com.example.financialplannerapp.databinding.FragmentPasscodeBinding
@@ -19,6 +22,9 @@ class PasscodeFragment : Fragment() {
     private val binding get() = _binding!! // This property is only valid between onCreateView and onDestroyView.
 
     private var passcode = ""
+    private lateinit var biometricPrompt: BiometricPrompt
+    private lateinit var promptInfo: BiometricPrompt.PromptInfo
+    private lateinit var executor: Executor
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -31,6 +37,49 @@ class PasscodeFragment : Fragment() {
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        executor = ContextCompat.getMainExecutor(requireContext())
+
+        biometricPrompt = BiometricPrompt(this, executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    SecurityUtils.updateLastAuthTimestamp(requireContext())
+                    findNavController().navigate(R.id.action_passcodeFragment_to_dashboardFragment)
+                    clearPinIndicators() // Clear PIN input as well
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    // Don't show error for user cancellation
+                    if (errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON && errorCode != BiometricPrompt.ERROR_USER_CANCELED) {
+                        Toast.makeText(requireContext(), "Biometric error: $errString", Toast.LENGTH_LONG).show()
+                    }
+                }
+
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    Toast.makeText(requireContext(), "Biometric authentication failed. Try PIN.", Toast.LENGTH_SHORT).show()
+                }
+            })
+
+        promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Biometric Login")
+            .setSubtitle("Log in using your biometric credential")
+            .setNegativeButtonText("Use PIN")
+            .build()
+
+        val canUseBiometrics = SecurityUtils.canAuthenticateWithBiometrics(requireContext()) && SecurityUtils.isBiometricAuthEnabled(requireContext())
+        if (canUseBiometrics) {
+            binding.biometricLoginButton.visibility = View.VISIBLE
+            binding.biometricLoginButton.setOnClickListener {
+                biometricPrompt.authenticate(promptInfo)
+            }
+            // Optional: Automatically trigger prompt on fragment start
+            biometricPrompt.authenticate(promptInfo)
+        } else {
+            binding.biometricLoginButton.visibility = View.GONE
+        }
 
         val passcodeButtons: List<Button> = listOf(
             binding.button0,
@@ -92,6 +141,7 @@ private fun handleSubmitPasscode(enteredPasscode: String) {
 
     if (isPinLockEnabled && storedPinHash != null && storedPinHash == enteredPasscode) {
         // PIN is correct and PIN lock is enabled
+        SecurityUtils.updateLastAuthTimestamp(requireContext())
         findNavController().navigate(R.id.action_passcodeFragment_to_dashboardFragment)
         // clearPinIndicators() will be called below, which also clears 'passcode'
     } else {
