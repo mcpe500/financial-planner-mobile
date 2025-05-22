@@ -17,6 +17,7 @@ apiRouter.get("/", (_req: Request, res: Response) => {
 
 // API routes
 apiRouter.use("/api/auth", authRoutes);
+// TODO: Uncomment and implement accountApiRoutes when the account API functionality is ready.
 // apiRouter.use("/api/auth/delete-request", deleteRequestApiRoutes);
 // apiRouter.use("/api/account", accountApiRoutes);
 
