@@ -16,9 +16,15 @@ object NetworkUtils {
         } catch (e: SecurityException) {
             Log.e("NetworkUtils", "Permission denied: ${e.message}")
             return false
-        } catch (e: Exception) {
-            Log.e("NetworkUtils", "Error checking network state: ${e.message}")
+        } catch (e: NullPointerException) {
+            Log.e("NetworkUtils", "Null pointer exception: ${e.message}")
             return false
+        } catch (e: ClassCastException) {
+            Log.e("NetworkUtils", "Class cast exception: ${e.message}")
+            return false
+        } catch (e: Throwable) {
+            Log.e("NetworkUtils", "Unexpected error: ${e.message}")
+            throw e
         }
     }
 }
