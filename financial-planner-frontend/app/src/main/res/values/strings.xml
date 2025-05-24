@@ -6,4 +6,61 @@
     <string name="auth_passcode_enter_passcode">Enter Passcode</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <!-- Error messages for ContactUsReportFragment -->
+    <string name="error_subject_empty">Subjek tidak boleh kosong</string>
+    <string name="error_subject_min_length">Subjek minimal 10 karakter</string>
+    <string name="error_message_empty">Pesan tidak boleh kosong</string>
+    <string name="error_message_min_length">Pesan minimal 20 karakter</string>
+    <string name="error_no_internet">Tidak ada koneksi internet. Silakan periksa jaringan Anda.</string>
+    
+    <!-- Account Deletion Strings -->
+    <string name="delete_account_title">Delete Account</string>
+    <string name="delete_account_warning">This action will permanently delete your account and all associated data. This cannot be undone.</string>
+    <string name="account_to_delete">Account to delete:</string>
+    <string name="deletion_consequences">After deletion, you will lose access to:\n• All your financial data\n• Transaction history\n• Budget plans\n• Reports and analytics\n• App preferences</string>
+    <string name="start_deletion_process">I Understand, Delete My Account</string>
+    <string name="cancel">Cancel</string>
+    
+    <!-- Email Verification Step -->
+    <string name="check_your_email">Check Your Email</string>
+    <string name="email_sent_to">We\'ve sent a verification email to %s</string>
+    <string name="email_instructions">Please check your email and click the verification link, then return here to continue.</string>
+    <string name="open_email_app">Open Email App</string>
+    <string name="i_have_the_otp">I Have the OTP Code</string>
+    <string name="back">Back</string>
+    
+    <!-- OTP Verification Step -->
+    <string name="enter_verification_code">Enter Verification Code</string>
+    <string name="otp_instructions">Enter the 6-digit code from your email to verify your identity.</string>
+    <string name="enter_otp">Enter OTP</string>
+    <string name="verify_otp">Verify Code</string>
+    <string name="resend_email">Resend Email</string>
+    <string name="enter_valid_otp">Please enter a valid 6-digit OTP</string>
+    <string name="invalid_session">Invalid session. Please start over.</string>
+    
+    <!-- Final Confirmation Step -->
+    <string name="final_confirmation">Final Confirmation</string>
+    <string name="final_confirmation_warning">This is your last chance to cancel. Once confirmed, your account will be permanently deleted.</string>
+    <string name="confirm_email_label">To confirm, type your email address below:</string>
+    <string name="type_email_to_confirm">Type your email to confirm</string>
+    <string name="email_does_not_match">Email address does not match</string>
+    <string name="delete_my_account">DELETE MY ACCOUNT</string>
+    
+    <!-- Completion Step -->
+    <string name="account_deleted_title">Account Deleted</string>
+    <string name="account_deleted_message">Your account has been successfully deleted. Thank you for using Financial Planner.</string>
+    <string name="redirecting_to_login">Redirecting to login screen...</string>
+    
+    <!-- Warning Dialog -->
+    <string name="delete_account_warning_title">⚠️ Final Warning</string>
+    <string name="delete_account_warning_message">Are you absolutely sure you want to delete your account? This action is irreversible and will permanently remove all your data.</string>
+    <string name="yes_delete_account">Yes, Delete My Account</string>
+    
+    <!-- Error Messages -->
+    <string name="authentication_required">Authentication required</string>
+    <string name="no_email_app_found">No email app found</string>
+    
+    <!-- Settings Integration -->
+    <string name="delete_account">Delete Account</string>
+    <string name="delete_account_description">Permanently delete your account and all data</string>
 </resources>
