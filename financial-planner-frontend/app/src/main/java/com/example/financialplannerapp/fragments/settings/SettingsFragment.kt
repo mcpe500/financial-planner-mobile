@@ -91,7 +91,11 @@ class SettingsFragment : Fragment() {
 
         // Contact us card
         binding.contactUsCard.setOnClickListener {
-            Toast.makeText(context, "Contact form coming soon", Toast.LENGTH_SHORT).show()
+            try {
+                findNavController().navigate(R.id.action_settingsFragment_to_contactUsReportFragment)
+            } catch (e: Exception) {
+                Toast.makeText(context, "Navigation failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
     
