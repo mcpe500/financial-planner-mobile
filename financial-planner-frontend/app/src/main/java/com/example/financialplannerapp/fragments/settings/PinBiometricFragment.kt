@@ -1,5 +1,4 @@
 package com.example.financialplannerapp.fragments.settings
-
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
