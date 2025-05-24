@@ -61,6 +61,9 @@
         <action
             android:id="@+id/action_settingsFragment_to_backupRestoreFragment"
             app:destination="@id/backupRestoreFragment" />
+        <action
+            android:id="@+id/action_settingsFragment_to_helpAndFAQFragment"
+            app:destination="@id/helpAndFAQFragment" />
     </fragment>
 
     <fragment
@@ -86,4 +89,10 @@
         android:name="com.example.financialplannerapp.fragments.settings.BackupRestoreFragment"
         android:label="Pencadangan &amp; Pemulihan"
         tools:layout="@layout/fragment_backup_restore" />
+
+    <fragment
+        android:id="@+id/helpAndFAQFragment"
+        android:name="com.example.financialplannerapp.fragments.settings.HelpAndFAQFragment"
+        android:label="Pusat Bantuan &amp; FAQ"
+        tools:layout="@layout/fragment_help_and_f_a_q" />
 </navigation>
