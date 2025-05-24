@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph_main"
+    app:startDestination="@id/homeFragmentMain">
+
+    <fragment
+        android:id="@+id/homeFragmentMain"
+        android:name="com.example.financialplannerapp.ui.fragments.main.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home" /> <!-- Placeholder layout, actual content is Compose -->
+
+    <fragment
+        android:id="@+id/transactionsFragmentMain"
+        android:name="com.example.financialplannerapp.ui.fragments.main.TransactionsFragment"
+        android:label="Transactions"
+        tools:layout="@layout/fragment_transactions" /> <!-- Placeholder layout -->
+
+    <fragment
+        android:id="@+id/goalsFragmentMain"
+        android:name="com.example.financialplannerapp.ui.fragments.main.GoalsFragment"
+        android:label="Goals"
+        tools:layout="@layout/fragment_goals" /> <!-- Placeholder layout -->
+
+    <fragment
+        android:id="@+id/settingsFragmentMain"
+        android:name="com.example.financialplannerapp.ui.fragments.main.SettingsFragment"
+        android:label="Settings"
+        tools:layout="@layout/fragment_settings" /> <!-- Existing layout, but content will be Compose -->
+
+    <!-- Example of navigating to a detail screen from Home (not implemented yet)
+    <action
+        android:id="@+id/action_homeFragment_to_detailFragment"
+        app:destination="@id/someDetailFragment"/>
+
+    <fragment
+        android:id="@+id/someDetailFragment"
+        android:name="com.example.financialplannerapp.ui.fragments.detail.SomeDetailFragment"
+        android:label="Detail"
+        tools:layout="@layout/fragment_some_detail" />
+     -->
+
+</navigation>

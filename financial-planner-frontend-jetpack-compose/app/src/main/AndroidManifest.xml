@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+
+    <application
+        android:name=".FinancialPlannerApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.FinancialPlannerApp"
+        android:usesCleartextTraffic="${usesCleartextTraffic}"
+        tools:targetApi="31">
+
+        <!-- AuthActivity is now the LAUNCHER -->
+        <activity
+            android:name=".ui.activities.AuthActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.FinancialPlannerApp.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Moved deep link here, assuming it's part of auth flow -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="finplanner" android:host="auth" />
+            </intent-filter>
+        </activity>
+
+        <!-- MainActivity no longer the LAUNCHER -->
+        <activity
+            android:name=".ui.activities.MainActivity"
+            android:exported="false"
+            android:label="@string/title_activity_main"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.FinancialPlannerApp.NoActionBar" />
+
+
+        <!-- For Account Deletion Web UI -->
+        <activity
+            android:name=".ui.activities.AccountDeletionWebActivity"
+            android:exported="false"
+            android:label="@string/title_account_deletion"
+            android:theme="@style/Theme.FinancialPlannerApp.NoActionBar" />
+
+        <service
+            android:name=".services.AccountDeletionService"
+            android:exported="false" />
+
+    </application>
+
+</manifest>

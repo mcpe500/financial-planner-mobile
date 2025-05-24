@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/homeFragmentMain"
+        android:icon="@drawable/ic_home_24"
+        android:title="Home" />
+    <item
+        android:id="@+id/transactionsFragmentMain"
+        android:icon="@drawable/ic_transactions_24"
+        android:title="Transactions" />
+    <item
+        android:id="@+id/goalsFragmentMain"
+        android:icon="@drawable/ic_goals_24"
+        android:title="Goals" />
+    <item
+        android:id="@+id/settingsFragmentMain"
+        android:icon="@drawable/ic_settings_24"
+        android:title="Settings" />
+</menu>
