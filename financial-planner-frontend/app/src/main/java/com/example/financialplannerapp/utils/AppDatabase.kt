@@ -5,11 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.financialplannerapp.db.UserProfileDao
+import com.example.financialplannerapp.db.HelpContentDao
 import com.example.financialplannerapp.models.roomdb.UserProfile
+import com.example.financialplannerapp.models.roomdb.HelpContent
+import com.example.financialplannerapp.models.roomdb.FAQItem
 
-@Database(entities = [UserProfile::class], version = 1, exportSchema = false)
+@Database(entities = [UserProfile::class, HelpContent::class, FAQItem::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userProfileDao(): UserProfileDao
+    abstract fun helpContentDao(): HelpContentDao
     
     companion object {
         @Volatile
@@ -21,7 +25,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "financial_planner_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration() // For development - recreates DB on schema changes
+                .build()
                 INSTANCE = instance
                 instance
             }

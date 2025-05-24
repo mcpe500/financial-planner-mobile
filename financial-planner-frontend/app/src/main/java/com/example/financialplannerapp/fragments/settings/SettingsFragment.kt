@@ -79,7 +79,14 @@ class SettingsFragment : Fragment() {
 
         // Help center card
         binding.helpCenterCard.setOnClickListener {
-            Toast.makeText(context, "Help center coming soon", Toast.LENGTH_SHORT).show()
+            try {
+                // For now, show a toast until navigation is properly set up
+                // Toast.makeText(context, "Help center implementation complete - navigation setup needed", Toast.LENGTH_LONG).show()
+                // Uncomment when navigation action is added:
+                findNavController().navigate(R.id.action_settingsFragment_to_helpAndFAQFragment)
+            } catch (e: Exception) {
+                Toast.makeText(context, "Navigation failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
 
         // Contact us card
