@@ -55,6 +55,12 @@
         <action
             android:id="@+id/action_settingsFragment_to_pinBiometricFragment"
             app:destination="@id/pinBiometricFragment" />
+        <action
+            android:id="@+id/action_settingsFragment_to_dataSyncFragment"
+            app:destination="@id/dataSyncFragment" />
+        <action
+            android:id="@+id/action_settingsFragment_to_backupRestoreFragment"
+            app:destination="@id/backupRestoreFragment" />
     </fragment>
 
     <fragment
@@ -66,6 +72,18 @@
     <fragment
         android:id="@+id/pinBiometricFragment"
         android:name="com.example.financialplannerapp.fragments.settings.PinBiometricFragment"
-        android:label="PinBiometricFragment"
+        android:label="Pengaturan Keamanan"
         tools:layout="@layout/fragment_pin_biometric" />
+
+    <fragment
+        android:id="@+id/dataSyncFragment"
+        android:name="com.example.financialplannerapp.fragments.settings.DataSyncFragment"
+        android:label="Sinkronisasi Data"
+        tools:layout="@layout/fragment_data_sync" />
+
+    <fragment
+        android:id="@+id/backupRestoreFragment"
+        android:name="com.example.financialplannerapp.fragments.settings.BackupRestoreFragment"
+        android:label="Pencadangan &amp; Pemulihan"
+        tools:layout="@layout/fragment_backup_restore" />
 </navigation>

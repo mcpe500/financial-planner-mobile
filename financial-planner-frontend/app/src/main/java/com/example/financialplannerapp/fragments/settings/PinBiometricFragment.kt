@@ -163,13 +163,21 @@ class PinBiometricFragment : Fragment() {
                     biometricPrompt.authenticate(promptInfo)
                 }
                 binding.biometricStatusText.text = "Biometrik tersedia"
-                binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.green_success))
+                try {
+                    binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark))
+                } catch (e: Exception) {
+                    binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black))
+                }
             }
             BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
                 binding.biometricSwitch.isChecked = false
                 binding.biometricSwitch.isEnabled = false
                 binding.biometricStatusText.text = "Perangkat ini tidak mendukung biometrik"
-                binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.red_error))
+                try {
+                    binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+                } catch (e: Exception) {
+                    binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black))
+                }
                 if (showToast) {
                     Toast.makeText(context, "Perangkat ini tidak mendukung biometrik", Toast.LENGTH_SHORT).show()
                 }
@@ -178,7 +186,11 @@ class PinBiometricFragment : Fragment() {
                 binding.biometricSwitch.isChecked = false
                 binding.biometricSwitch.isEnabled = false
                 binding.biometricStatusText.text = "Biometrik tidak tersedia saat ini"
-                binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.red_error))
+                try {
+                    binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+                } catch (e: Exception) {
+                    binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black))
+                }
                 if (showToast) {
                     Toast.makeText(context, "Biometrik tidak tersedia saat ini", Toast.LENGTH_SHORT).show()
                 }
@@ -186,7 +198,11 @@ class PinBiometricFragment : Fragment() {
             BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
                 binding.biometricSwitch.isChecked = false
                 binding.biometricStatusText.text = "Tidak ada biometrik yang terdaftar di perangkat"
-                binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.yellow_warning))
+                try {
+                    binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark))
+                } catch (e: Exception) {
+                    binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black))
+                }
                 if (showToast) {
                     Toast.makeText(
                         context,
@@ -199,7 +215,11 @@ class PinBiometricFragment : Fragment() {
                 binding.biometricSwitch.isChecked = false
                 binding.biometricSwitch.isEnabled = false
                 binding.biometricStatusText.text = "Status biometrik tidak diketahui"
-                binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.red_error))
+                try {
+                    binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+                } catch (e: Exception) {
+                    binding.biometricStatusText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black))
+                }
             }
         }
     }

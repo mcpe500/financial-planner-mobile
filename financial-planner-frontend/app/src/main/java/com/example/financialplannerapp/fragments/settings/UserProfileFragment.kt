@@ -193,9 +193,11 @@ class UserProfileFragment : Fragment() {
                 val dateFormat = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault())
                 val currentTime = dateFormat.format(Date())
                 
-                profile.lastSynced = currentTime
-                profile.needsSync = false
-                userProfileDao.insertOrUpdate(profile)
+                val updatedProfile = profile.copy(
+                    lastSynced = currentTime,
+                    needsSync = false
+                )
+                userProfileDao.insertOrUpdate(updatedProfile)
                 
                 binding.lastSyncTextView.text = "Terakhir disinkronisasi: $currentTime"
                 Toast.makeText(requireContext(), "Profil berhasil disinkronkan", Toast.LENGTH_SHORT).show()
@@ -223,25 +225,37 @@ class UserProfileFragment : Fragment() {
             val isLoggedIn = tokenManager.getToken() != null
             
             viewLifecycleOwner.lifecycleScope.launch {
-                val userId = tokenManager.getUserId() ?: "guest_user"
-                val profile = userProfileDao.getUserProfile(userId)
-                val needsSync = profile?.needsSync == true
-                
-                binding.syncButton.isEnabled = isOnline && isLoggedIn && needsSync
-                binding.offlineIndicator.visibility = if (isOnline) View.GONE else View.VISIBLE
-                
-                if (!isOnline) {
-                    binding.syncStatusText.text = "Mode Offline"
-                    binding.syncStatusText.setTextColor(Color.RED)
-                } else if (!isLoggedIn) {
-                    binding.syncStatusText.text = "Login diperlukan untuk sinkronisasi"
-                    binding.syncStatusText.setTextColor(Color.YELLOW)
-                } else if (needsSync) {
-                    binding.syncStatusText.text = "Perubahan belum disinkronkan"
-                    binding.syncStatusText.setTextColor(Color.YELLOW)
-                } else {
-                    binding.syncStatusText.text = "Profil telah tersinkronisasi"
-                    binding.syncStatusText.setTextColor(Color.GREEN)
+                try {
+                    val userId = tokenManager.getUserId() ?: "guest_user"
+                    val profile = userProfileDao.getUserProfile(userId)
+                    val needsSync = profile?.needsSync == true
+                    
+                    binding.syncButton.isEnabled = isOnline && isLoggedIn && needsSync
+                    binding.offlineIndicator.visibility = if (isOnline) View.GONE else View.VISIBLE
+                    
+                    when {
+                        !isOnline -> {
+                            binding.syncStatusText.text = "Mode Offline"
+                            binding.syncStatusText.setTextColor(Color.RED)
+                        }
+                        !isLoggedIn -> {
+                            binding.syncStatusText.text = "Login diperlukan untuk sinkronisasi"
+                            binding.syncStatusText.setTextColor(Color.parseColor("#FFA500")) // Orange
+                        }
+                        needsSync -> {
+                            binding.syncStatusText.text = "Perubahan belum disinkronkan"
+                            binding.syncStatusText.setTextColor(Color.parseColor("#FFA500")) // Orange
+                        }
+                        else -> {
+                            binding.syncStatusText.text = "Profil telah tersinkronisasi"
+                            binding.syncStatusText.setTextColor(Color.GREEN)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error updating sync button state: ${e.message}", e)
+                    // Set default state to avoid UI issues
+                    binding.syncButton.isEnabled = false
+                    binding.syncStatusText.text = "Status unavailable"
                 }
             }
         } catch (e: Exception) {
