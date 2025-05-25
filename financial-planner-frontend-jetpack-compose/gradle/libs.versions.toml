@@ -9,10 +9,6 @@ lifecycleRuntimeKtx = "2.9.0"
 activityCompose = "1.10.1"
 composeBom = "2024.06.00" # Check for latest BOM
 googleGmsServices = "4.4.1"
-kspVersion = "2.0.0-1.0.22" # KSP version aligned with Kotlin 2.0.0
-hiltVersion = "2.51.1"      # Hilt version
-hiltNavigationComposeVersion = "1.2.0" # Hilt Navigation Compose
-glideVersion = "4.16.0"     # Glide version
 # --- Add these versions (check for latest!) ---
 materialIcons = "1.6.8"
 navigationCompose = "2.7.7"
@@ -63,11 +59,6 @@ androidx-compose-ui-viewbinding = { group = "androidx.compose.ui", name = "ui-vi
 androidx-biometric-ktx = { group = "androidx.biometric", name = "biometric-ktx", version.ref = "biometric" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "testExtJunit" } # Added explicit alias
-google-dagger-hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hiltVersion" }
-google-dagger-hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hiltVersion" }
-androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationComposeVersion" }
-bumptech-glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glideVersion" }
-bumptech-glide-ksp = { group = "com.github.bumptech.glide", name = "ksp", version.ref = "glideVersion" }
 
 
 [plugins]
@@ -76,5 +67,3 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 google-gms-services = { id = "com.google.gms.google-services", version.ref = "googleGmsServices" }
-google-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
-google-dagger-hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hiltVersion" }

@@ -2,8 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose) // Corrected alias
-    alias(libs.plugins.google.devtools.ksp) // Added KSP plugin
-    alias(libs.plugins.google.dagger.hilt.android) // Added Hilt plugin
+    alias(libs.plugins.kapt)             // Corrected alias
 }
 
 android {
@@ -18,8 +17,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // Define BASE_URL for BuildConfig
-        buildConfigField("String", "BASE_URL", "\"YOUR_API_BASE_URL_HERE\"")
     }
 
     buildTypes {
@@ -29,22 +26,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            manifestPlaceholders["usesCleartextTraffic"] = "false"
-        }
-        debug {
-            manifestPlaceholders["usesCleartextTraffic"] = "true"
-            // Optionally override for debug builds if needed
-            // buildConfigField("String", "BASE_URL", "\"http://debug.example.com/api/\"")
-        }
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            manifestPlaceholders["usesCleartextTraffic"] = "false"
-            // Ensure BASE_URL is also defined for release or inherits from defaultConfig
-            // buildConfigField("String", "BASE_URL", "\"https://release.example.com/api/\"")
         }
     }
     compileOptions {
@@ -56,11 +37,8 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true // Enable BuildConfig generation
-        viewBinding = true // Enable ViewBinding
     }
-    // packagingOptions is deprecated, renamed to packaging
-    packaging {
+    packagingOptions {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
@@ -79,16 +57,6 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.core) // Will need definition in TOML
     implementation(libs.androidx.compose.material.icons.extended) // Will need definition in TOML
 
-    // ConstraintLayout for XML layouts
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    
-    // Material Components for XML layouts
-    implementation("com.google.android.material:material:1.11.0")
-    
-    // Navigation Component
-    implementation("androidx.navigation:navigation-fragment-ktx:2.7.6")
-    implementation("androidx.navigation:navigation-ui-ktx:2.7.6")
-
     // Navigation Compose
     implementation(libs.androidx.navigation.compose) // Will need definition in TOML
 
@@ -101,6 +69,7 @@ dependencies {
 
     // Room
     implementation(libs.androidx.room.runtime) // Will need definition in TOML
+    kapt(libs.androidx.room.compiler) // Will need definition in TOML
     implementation(libs.androidx.room.ktx) // Will need definition in TOML
 
     // Retrofit & Gson
@@ -124,10 +93,6 @@ dependencies {
     // Coil
     implementation(libs.coil.compose) // Will need definition in TOML
 
-    // Glide
-    implementation(libs.bumptech.glide) // Will need definition in TOML (e.g., com.github.bumptech.glide:glide:4.16.0)
-    ksp(libs.bumptech.glide.ksp) // Will need definition in TOML (e.g., com.github.bumptech.glide:ksp:4.16.0)
-
     // Testing
     testImplementation(libs.junit) // Already in TOML
     androidTestImplementation(libs.androidx.junit) // Already in TOML
@@ -137,8 +102,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling) // Will need definition in TOML
     debugImplementation(libs.androidx.ui.test.manifest) // Will need definition in TOML
 
-    // Hilt
-    implementation(libs.google.dagger.hilt.android) // Will need definition in TOML
-    ksp(libs.google.dagger.hilt.compiler)          // Will need definition in TOML (use KSP)
-    implementation(libs.androidx.hilt.navigation.compose) // Will need definition in TOML
+    // Hilt (Commented)
+    // implementation(libs.google.dagger.hilt.android)
+    // kapt(libs.google.dagger.hilt.compiler)
+    // implementation(libs.androidx.hilt.navigation.compose)
 }

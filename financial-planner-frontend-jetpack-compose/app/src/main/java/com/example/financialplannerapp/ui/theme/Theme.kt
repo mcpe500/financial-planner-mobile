@@ -56,13 +56,3 @@ fun FinancialPlannerAppTheme(
         content = content
     )
 }
-
-@Composable
-fun FinancialPlannerTheme(
-    content: @Composable () -> Unit
-) {
-    MaterialTheme(
-        colorScheme = LightColorScheme,
-        content = content
-    )
-}

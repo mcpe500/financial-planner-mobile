@@ -1,24 +1,3 @@
 <resources>
     <string name="app_name">Financial Planner App</string>
-    <string name="title_activity_main">MainActivity</string>
-    <string name="title_account_deletion">Account Deletion</string>
-
-    <!-- Strings for SettingsFragment -->
-    <string name="guest_user">Guest User</string>
-    <string name="using_app_in_no_account_mode">Using app in no-account mode</string>
-    <string name="login_or_register">Login / Register</string>
-    <string name="not_set">Not Set</string>
-    <string name="error_loading_profile">Error loading profile</string>
-    <string name="logout_confirmation_title">Logout Confirmation</string>
-    <string name="logout_confirmation_message">Are you sure you want to logout?</string>
-    <string name="cancel">Cancel</string>
-    <string name="logout">Logout</string>
-    <string name="edit_profile">Edit Profile</string>
-    <string name="account_settings">Account Settings</string>
-    <string name="notifications">Notifications</string>
-    <string name="security">Security</string>
-    <string name="help_and_faq">Help &amp; FAQ</string>
-    <string name="contact_us">Contact Us / Report Issue</string>
-    <string name="delete_account">Delete Account</string>
-    <string name="about">About</string>
 </resources>
