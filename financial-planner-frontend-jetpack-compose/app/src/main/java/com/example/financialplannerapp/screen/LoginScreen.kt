@@ -33,6 +33,7 @@ import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.api.RetrofitClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
 
 private const val TAG_LOGIN_SCREEN = "LoginScreen"
 
@@ -110,6 +111,45 @@ fun LoginScreen(navController: NavController, tokenManager: TokenManager) {
             }) {
                 Text("Continue Without Account")
             }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoginScreenPreview() {
+    LoginScreenContent()
+}
+
+@Composable
+private fun LoginScreenContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Welcome to Financial Planner", 
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 100.dp)
+        )
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Button(onClick = { /* Preview - no action */ }) {
+            Text("Sign in with Google")
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(onClick = { /* Preview - no action */ }) {
+            Text("Use Passcode")
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(onClick = { /* Preview - no action */ }) {
+            Text("Continue Without Account")
         }
     }
 }

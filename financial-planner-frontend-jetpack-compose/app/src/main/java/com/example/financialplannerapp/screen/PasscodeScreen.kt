@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun PasscodeScreen(navController: NavController) {
@@ -125,4 +126,91 @@ fun PasscodeDot(isFilled: Boolean) {
                 if (isFilled) it.background(Color.Black) else it.background(Color.LightGray)
             }
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PasscodeScreenPreview() {
+    PasscodeScreenContent()
+}
+
+@Composable
+private fun PasscodeScreenContent() {
+    var passcode by remember { mutableStateOf("123") } // Sample passcode for preview
+    val passcodeLength = 6
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceAround
+    ) {
+        Text("Enter Passcode", fontSize = 24.sp)
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            for (i in 0 until passcodeLength) {
+                PasscodeDot(isFilled = i < passcode.length)
+            }
+        }
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val buttonModifier = Modifier
+                .padding(4.dp)
+                .size(72.dp)
+            val numberButtonData = listOf(
+                listOf("1", "2", "3"),
+                listOf("4", "5", "6"),
+                listOf("7", "8", "9")
+            )
+
+            numberButtonData.forEach { rowData ->
+                Row(horizontalArrangement = Arrangement.Center) {
+                    rowData.forEach { number ->
+                        Button(
+                            onClick = { /* Preview - no action */ },
+                            modifier = buttonModifier
+                        ) {
+                            Text(number, fontSize = 20.sp)
+                        }
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Spacer(modifier = buttonModifier)
+                Button(
+                    onClick = { /* Preview - no action */ },
+                    modifier = buttonModifier
+                ) {
+                    Text("0", fontSize = 20.sp)
+                }
+                IconButton(
+                    onClick = { /* Preview - no action */ },
+                    modifier = buttonModifier
+                ) {
+                    Icon(Icons.Filled.Backspace, contentDescription = "Backspace")
+                }
+            }
+        }
+
+        Button(onClick = { /* Preview - no action */ }) {
+            Text("Back to Login")
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PasscodeDotPreview() {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        PasscodeDot(isFilled = true)
+        PasscodeDot(isFilled = true)
+        PasscodeDot(isFilled = true)
+        PasscodeDot(isFilled = false)
+        PasscodeDot(isFilled = false)
+        PasscodeDot(isFilled = false)
+    }
 }
