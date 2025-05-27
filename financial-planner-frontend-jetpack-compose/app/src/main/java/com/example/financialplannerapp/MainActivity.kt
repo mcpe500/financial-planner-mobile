@@ -24,13 +24,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        Log.d(TAG_MAIN_ACTIVITY, "MainActivity onCreate")
+        Log.d(TAG_MAIN_ACTIVITY, "Intent: ${intent?.dataString}")
+        
         tokenManager = TokenManager(this)
 
         setContent {
             FinancialPlannerAppTheme {
-                val navController = rememberNavController()
-
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    val navController = rememberNavController()
                     AppNavigation(
                         navController = navController,
                         tokenManager = tokenManager,
@@ -39,35 +41,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        // Process initial intent in case of deep link launch
-        intent?.let { handleDeepLinkIntent(it, tokenManager) }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        Log.d(TAG_MAIN_ACTIVITY, "onNewIntent received: ${intent.dataString}")
-        setIntent(intent) // Update the activity's intent so LoginScreen's LaunchedEffect can pick it up
-        // Process the new intent
-        handleDeepLinkIntent(intent, tokenManager)
-    }
-
-    private fun handleDeepLinkIntent(intent: Intent, tokenManager: TokenManager) {
-        val data = intent.data
-        if (data != null && "finplanner" == data.scheme) {
-            val token = data.getQueryParameter("token")
-            Log.d(TAG_MAIN_ACTIVITY, "MainActivity: Received token via deep link: $token")
-            if (token != null) {
-                tokenManager.saveToken(token)
-                tokenManager.setNoAccountMode(false) 
-                Log.d(TAG_MAIN_ACTIVITY, "Token saved. LoginScreen will handle navigation.")
-            } else {
-                Toast.makeText(this, "Authentication failed: No token received via deep link", Toast.LENGTH_SHORT).show()
-            }
-            // LoginScreen's LaunchedEffect, keyed on activity.intent, will handle the navigation.
-            // To prevent re-processing if LoginScreen is already visible and receives the same intent again
-            // before a new one arrives, LoginScreen itself should clear the intent data or use a ViewModel event.
-            // For example, in LoginScreen's LaunchedEffect after handling the deep link:
-            // (context as? Activity)?.intent?.data = null
-        }
+        Log.d(TAG_MAIN_ACTIVITY, "onNewIntent called with: ${intent.dataString}")
+        setIntent(intent)
     }
 }

@@ -56,6 +56,11 @@ class TokenManager(context: Context) {
         return prefs.getString(USER_NAME_KEY, null)
     }
 
+    // Check if user is fully authenticated (has token and user info)
+    fun isAuthenticated(): Boolean {
+        return getToken() != null && getUserId() != null
+    }
+
     // Clear all preferences
     fun clear() {
         prefs.edit().clear().apply()
