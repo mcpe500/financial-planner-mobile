@@ -10,6 +10,11 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+
+private val BibitGreen = Color(0xFF4CAF50)
+private val BibitLightGreen = Color(0xFF81C784)
+private val BibitDarkGreen = Color(0xFF388E3C)
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -18,9 +23,9 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = BibitGreen,
+    secondary = BibitLightGreen,
+    tertiary = BibitDarkGreen
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),

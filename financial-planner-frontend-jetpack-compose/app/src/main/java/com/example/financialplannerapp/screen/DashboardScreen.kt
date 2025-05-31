@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -60,9 +61,9 @@ fun DashboardScreen(navController: NavController, tokenManager: TokenManager) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    // TODO: Navigate to add transaction screen
-                    navController.navigate("")
-                    Log.d(TAG_DASHBOARD_SCREEN, "Add transaction FAB clicked")
+                    // TODO: Navigate to add transaction screen when route is available
+                    Log.d(TAG_DASHBOARD_SCREEN, "Add transaction FAB clicked - feature coming soon")
+                    // For now, just log the action instead of navigating
                 },
                 containerColor = BibitGreen,
                 contentColor = Color.White,
@@ -88,6 +89,10 @@ fun DashboardScreen(navController: NavController, tokenManager: TokenManager) {
                     launchSingleTop = true
                 }
             },
+            onSettingsClick = {
+                Log.d(TAG_DASHBOARD_SCREEN, "Settings icon clicked, navigating to settingsScreen")
+                navController.navigate("settingsScreen")
+            },
             modifier = Modifier.padding(paddingValues)
         )
     }
@@ -100,6 +105,7 @@ private fun DashboardContent(
     isLoggedIn: Boolean = false,
     isNoAccountMode: Boolean = false,
     onLogout: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Mock data
@@ -124,7 +130,8 @@ private fun DashboardContent(
         HeaderSection(
             userName = userName,
             currentDate = currentDate,
-            isNoAccountMode = isNoAccountMode
+            isNoAccountMode = isNoAccountMode,
+            onSettingsClick = onSettingsClick
         )
 
         // Income vs Expenses Chart
@@ -177,7 +184,8 @@ private fun DashboardContent(
 private fun HeaderSection(
     userName: String,
     currentDate: String,
-    isNoAccountMode: Boolean
+    isNoAccountMode: Boolean,
+    onSettingsClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -193,7 +201,9 @@ private fun HeaderSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
                     text = "Hi, ${if (isNoAccountMode) "Guest" else userName} 👋",
                     fontSize = 24.sp,
@@ -208,12 +218,35 @@ private fun HeaderSection(
                 )
             }
 
-            Icon(
-                imageVector = Icons.Default.Notifications,
-                contentDescription = "Notifications",
-                tint = BibitGreen,
-                modifier = Modifier.size(24.dp)
-            )
+            // Icon container with proper spacing
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                IconButton(
+                    onClick = { /* TODO: Handle notifications */ },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Notifications",
+                        tint = BibitGreen,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = BibitGreen,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
         }
     }
 }
