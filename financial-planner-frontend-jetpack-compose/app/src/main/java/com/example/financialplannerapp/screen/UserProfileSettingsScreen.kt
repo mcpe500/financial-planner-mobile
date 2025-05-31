@@ -1,5 +1,6 @@
 package com.example.financialplannerapp.screen
 
+import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -28,6 +29,12 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.config.Config
+import com.example.financialplannerapp.data.DatabaseManager
+import com.example.financialplannerapp.data.UserProfileData
+import com.example.financialplannerapp.data.UserProfileDatabaseHelper
+import com.example.financialplannerapp.data.UserProfile
+import com.example.financialplannerapp.data.toUserProfile
+import com.example.financialplannerapp.data.toUserProfileData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -118,18 +125,6 @@ data class UserProfileResponse(
     val updatedAt: String
 )
 
-data class UserProfile(
-    val name: String = "",
-    val email: String = "",
-    val phone: String = "",
-    val dateOfBirth: String = "",
-    val occupation: String = "",
-    val monthlyIncome: String = "",
-    val financialGoals: String = "",
-    val lastSyncTime: String = "",
-    val isDataModified: Boolean = false
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenManager? = null) {
@@ -137,6 +132,9 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
     
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    
+    // Database helper - using centralized helper with memory-safe context
+    val databaseHelper = remember { UserProfileDatabaseHelper.getInstance(context) }
     
     // State for user profile data
     var userProfile by remember { 
