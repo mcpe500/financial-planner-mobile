@@ -25,12 +25,12 @@
     <fragment
         android:id="@+id/passcodeFragment"
         android:name="com.example.financialplannerapp.fragments.auth.PasscodeFragment"
-        android:label="Enter Passcode"
+        android:label="Passcode Login"
         tools:layout="@layout/fragment_passcode">
         <action
             android:id="@+id/action_passcodeFragment_to_dashboardFragment"
             app:destination="@id/dashboardFragment"
-            app:popUpTo="@id/passcodeFragment"
+            app:popUpTo="@id/loginFragment"
             app:popUpToInclusive="true" />
     </fragment>
 
@@ -47,11 +47,23 @@
     <fragment
         android:id="@+id/settingsFragment"
         android:name="com.example.financialplannerapp.fragments.settings.SettingsFragment"
-        android:label="Pengaturan"
+        android:label="Settings"
         tools:layout="@layout/fragment_settings">
         <action
             android:id="@+id/action_settingsFragment_to_userProfileFragment"
             app:destination="@id/userProfileFragment" />
+        <action
+            android:id="@+id/action_settingsFragment_to_pinBiometricFragment"
+            app:destination="@id/pinBiometricFragment" />
+        <action
+            android:id="@+id/action_settingsFragment_to_dataSyncFragment"
+            app:destination="@id/dataSyncFragment" />
+        <action
+            android:id="@+id/action_settingsFragment_to_backupRestoreFragment"
+            app:destination="@id/backupRestoreFragment" />
+        <action
+            android:id="@+id/action_settingsFragment_to_helpAndFAQFragment"
+            app:destination="@id/helpAndFAQFragment" />
     </fragment>
 
     <fragment
@@ -59,4 +71,28 @@
         android:name="com.example.financialplannerapp.fragments.settings.UserProfileFragment"
         android:label="Profil Pengguna"
         tools:layout="@layout/fragment_user_profile" />
+
+    <fragment
+        android:id="@+id/pinBiometricFragment"
+        android:name="com.example.financialplannerapp.fragments.settings.PinBiometricFragment"
+        android:label="Pengaturan Keamanan"
+        tools:layout="@layout/fragment_pin_biometric" />
+
+    <fragment
+        android:id="@+id/dataSyncFragment"
+        android:name="com.example.financialplannerapp.fragments.settings.DataSyncFragment"
+        android:label="Sinkronisasi Data"
+        tools:layout="@layout/fragment_data_sync" />
+
+    <fragment
+        android:id="@+id/backupRestoreFragment"
+        android:name="com.example.financialplannerapp.fragments.settings.BackupRestoreFragment"
+        android:label="Pencadangan &amp; Pemulihan"
+        tools:layout="@layout/fragment_backup_restore" />
+
+    <fragment
+        android:id="@+id/helpAndFAQFragment"
+        android:name="com.example.financialplannerapp.fragments.settings.HelpAndFAQFragment"
+        android:label="Pusat Bantuan &amp; FAQ"
+        tools:layout="@layout/fragment_help_and_f_a_q" />
 </navigation>

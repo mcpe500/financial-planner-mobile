@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import authRoutes from "./auth.routes";
 import accountRoutes from "./account.routes";
+import profileRoutes from "./profile.routes";
 // import accountApiRoutes from "./account-api.routes";
 
 const apiRouter = Router();
@@ -17,6 +18,7 @@ apiRouter.get("/", (_req: Request, res: Response) => {
 
 // API routes
 apiRouter.use("/api/auth", authRoutes);
+apiRouter.use("/api/profile", profileRoutes);
 // apiRouter.use("/api/account", accountApiRoutes);
 
 // Web routes

@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.api.RetrofitClient
+import com.example.financialplannerapp.api.LoginResponse
 import kotlinx.coroutines.launch
 
 private const val TAG_TOKEN_ENTRY = "TokenEntryScreen"
@@ -110,17 +111,22 @@ private fun verifyAndSaveToken(
                 
                 if (response.isSuccessful) {
                     // Token is valid, save user info
-                    response.body()?.let { userResponse ->
-                        val user = userResponse.user
-                        tokenManager.saveUserInfo(user.id, user.email, user.name)
-                        tokenManager.setNoAccountMode(false)
-                        Log.d(TAG_TOKEN_ENTRY, "Token verified successfully for user: ${user.name}")
-                        
-                        Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
-                        navController.navigate("dashboard") {
-                            popUpTo("login") { inclusive = true }
-                            launchSingleTop = true
+                    response.body()?.let { userResponse: LoginResponse ->
+                        userResponse.user?.let { user ->
+                            tokenManager.saveUserInfo(user.id, user.email, user.name)
+                            tokenManager.setNoAccountMode(false)
+                            Log.d(TAG_TOKEN_ENTRY, "Token verified successfully for user: ${user.name}")
+                            
+                            Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
+                            navController.navigate("dashboard") {
+                                popUpTo("login") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        } ?: run {
+                            Toast.makeText(context, "Invalid user data received", Toast.LENGTH_LONG).show()
                         }
+                    } ?: run {
+                        Toast.makeText(context, "Invalid response from server", Toast.LENGTH_LONG).show()
                     }
                 } else {
                     // Token is invalid

@@ -1,133 +1,150 @@
 package com.example.financialplannerapp.fragments.settings
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.financialplannerapp.R
 import com.example.financialplannerapp.databinding.FragmentSettingsBinding
+import com.example.financialplannerapp.db.UserProfileDao
+import com.example.financialplannerapp.utils.AppDatabase
 import com.example.financialplannerapp.utils.NetworkUtils
+import com.example.financialplannerapp.utils.TokenManager
+import kotlinx.coroutines.launch
 
 class SettingsFragment : Fragment() {
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
+    
+    private lateinit var tokenManager: TokenManager
+    private lateinit var userProfileDao: UserProfileDao
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
+        
+        tokenManager = TokenManager(requireContext())
+        val db = AppDatabase.getDatabase(requireContext())
+        userProfileDao = db.userProfileDao()
+        
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Set all texts programmatically
-        binding.settingsTitle.text = "Pengaturan"
-
-        // Card 1: Profil Pengguna
-        binding.profileSettingsTitle.text = "Profil Pengguna"
-        binding.profileSettingsDescription.text = "Lihat dan ubah profil pengguna Anda"
-        binding.profileSettingsSubdesc.text = "[Offline SQLite] Melihat data, [Online Required] untuk sinkronisasi perubahan"
-
-        // Card 2: Profil Pengguna (duplicate card)
-        binding.profileSettingsCard2.findViewById<TextView>(R.id.profileSettingsTitle)?.text = "Profil Pengguna"
-        binding.profileSettingsCard2.findViewById<TextView>(R.id.profileSettingsDescription)?.text = "Melihat data, sinkronisasi perubahan"
-        binding.profileSettingsCard2.findViewById<TextView>(R.id.profileSettingsSubdesc)?.text = "[Offline SQLite] Melihat data, [Online Required] untuk sinkronisasi"
-
-        // Card 3: Keamanan
-        binding.securitySettingsCard.findViewById<TextView>(R.id.securitySettingsTitle)?.text = "Keamanan"
-        binding.securitySettingsCard.findViewById<TextView>(R.id.securitySettingsDescription)?.text = "Atur PIN/Biometrik lokal"
-        binding.securitySettingsCard.findViewById<TextView>(R.id.securitySettingsSubdesc)?.text = "[Offline SQLite] Atur PIN/Biometrik lokal"
-
-        // Card 4: Pengaturan Aplikasi
-        binding.appSettingsCard.findViewById<TextView>(R.id.appSettingsTitle)?.text = "Pengaturan Aplikasi"
-        binding.appSettingsCard.findViewById<TextView>(R.id.appSettingsDescription)?.text = "Tema, Bahasa, Mata Uang Default, Notifikasi"
-        binding.appSettingsCard.findViewById<TextView>(R.id.appSettingsSubdesc)?.text = "[Offline SQLite] Tema, Bahasa, Mata Uang Default, Notifikasi Lokal"
-
-        // Card 5: Sinkronisasi Data
-        binding.dataSyncCard.findViewById<TextView>(R.id.dataSyncTitle)?.text = "Sinkronisasi Data"
-        binding.dataSyncCard.findViewById<TextView>(R.id.dataSyncDescription)?.text = "Status Sinkronisasi dan Sinkronkan Sekarang"
-        binding.dataSyncCard.findViewById<TextView>(R.id.dataSyncSubdesc)?.text = "[Online Required] Cek koneksi dan sinkronisasi data"
-
-        // Card 6: Backup & Restore Lokal
-        binding.backupRestoreCard.findViewById<TextView>(R.id.backupRestoreTitle)?.text = "Backup & Restore Lokal"
-        binding.backupRestoreCard.findViewById<TextView>(R.id.backupRestoreDescription)?.text = "Backup dan restore data dari berbagai sumber"
-        binding.backupRestoreCard.findViewById<TextView>(R.id.backupRestoreSubdesc)?.text = "[Offline SQLite] Lokal, [Online Required] untuk cloud"
-
-        // Card 7: Pusat Bantuan / FAQ
-        binding.helpCenterCard.findViewById<TextView>(R.id.helpCenterTitle)?.text = "Pusat Bantuan / FAQ"
-        binding.helpCenterCard.findViewById<TextView>(R.id.helpCenterDescription)?.text = "Informasi bantuan dan pertanyaan umum"
-        binding.helpCenterCard.findViewById<TextView>(R.id.helpCenterSubdesc)?.text = "[Offline SQLite/Online Required] Konten bisa diunduh"
-
-        // Card 8: Hubungi Kami / Laporkan Masalah
-        binding.contactUsCard.findViewById<TextView>(R.id.contactUsTitle)?.text = "Hubungi Kami / Laporkan Masalah"
-        binding.contactUsCard.findViewById<TextView>(R.id.contactUsDescription)?.text = "Kirim feedback atau laporkan masalah"
-        binding.contactUsCard.findViewById<TextView>(R.id.contactUsSubdesc)?.text = "[Online Required] Mengirim feedback ke server"
-
-        // App version
-        binding.root.findViewById<TextView>(R.id.appVersionText)?.text = "Versi Aplikasi: 1.0.0"
-
         setupClickListeners()
+        updateStatusIndicators()
     }
 
     private fun setupClickListeners() {
         // User Profile settings card
         binding.profileSettingsCard.setOnClickListener {
-            findNavController().navigate(R.id.action_settingsFragment_to_userProfileFragment)
+            try {
+                findNavController().navigate(R.id.action_settingsFragment_to_userProfileFragment)
+            } catch (e: Exception) {
+                Toast.makeText(context, "Navigation failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
 
         // Security settings card
         binding.securitySettingsCard.setOnClickListener {
-            // TODO: Navigate to security settings when implemented
-            showFeatureNotImplementedToast("Pengaturan Keamanan")
+            try {
+                findNavController().navigate(R.id.action_settingsFragment_to_pinBiometricFragment)
+            } catch (e: Exception) {
+                Toast.makeText(context, "Navigation failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
 
         // App settings card
         binding.appSettingsCard.setOnClickListener {
-            // TODO: Navigate to app settings when implemented
-            showFeatureNotImplementedToast("Pengaturan Aplikasi")
+            Toast.makeText(context, "App settings coming soon", Toast.LENGTH_SHORT).show()
         }
 
         // Data sync card
         binding.dataSyncCard.setOnClickListener {
-            if (NetworkUtils.isNetworkAvailable(requireContext())) {
-                // TODO: Navigate to data sync screen when implemented
-                showFeatureNotImplementedToast("Sinkronisasi Data")
-            } else {
-                Toast.makeText(requireContext(), "Koneksi internet diperlukan untuk sinkronisasi data", Toast.LENGTH_SHORT).show()
-            }
+            Toast.makeText(context, "Data sync coming soon", Toast.LENGTH_SHORT).show()
         }
 
         // Backup & restore card
         binding.backupRestoreCard.setOnClickListener {
-            // TODO: Navigate to backup & restore screen when implemented
-            showFeatureNotImplementedToast("Backup & Restore")
+            Toast.makeText(context, "Backup & restore coming soon", Toast.LENGTH_SHORT).show()
         }
 
         // Help center card
         binding.helpCenterCard.setOnClickListener {
-            // TODO: Navigate to help center when implemented
-            showFeatureNotImplementedToast("Pusat Bantuan")
+            try {
+                // For now, show a toast until navigation is properly set up
+                // Toast.makeText(context, "Help center implementation complete - navigation setup needed", Toast.LENGTH_LONG).show()
+                // Uncomment when navigation action is added:
+                findNavController().navigate(R.id.action_settingsFragment_to_helpAndFAQFragment)
+            } catch (e: Exception) {
+                Toast.makeText(context, "Navigation failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
 
         // Contact us card
         binding.contactUsCard.setOnClickListener {
-            if (NetworkUtils.isNetworkAvailable(requireContext())) {
-                // TODO: Navigate to contact screen when implemented
-                showFeatureNotImplementedToast("Hubungi Kami")
-            } else {
-                Toast.makeText(requireContext(), "Koneksi internet diperlukan untuk mengirim feedback", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Contact form coming soon", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun updateStatusIndicators() {
+        lifecycleScope.launch {
+            try {
+                // Update profile sync status
+                val userId = tokenManager.getUserId() ?: "guest_user"
+                val profile = userProfileDao.getUserProfile(userId)
+                val profileNeedsSync = profile?.needsSync == true
+                
+                // Update network status
+                val isOnline = NetworkUtils.isNetworkAvailable(requireContext())
+                
+                // Update security status
+                val securityPrefs = requireContext().getSharedPreferences("SecurityPrefs", Context.MODE_PRIVATE)
+                val pinEnabled = securityPrefs.getBoolean("pin_enabled", false)
+                val biometricEnabled = securityPrefs.getBoolean("biometric_enabled", false)
+                
+                // Update Profile Settings status
+                if (profileNeedsSync) {
+                    binding.profileSettingsDescription.text = "Perubahan belum disinkronkan"
+                    binding.profileSettingsDescription.setTextColor(resources.getColor(R.color.yellow_warning, null))
+                } else {
+                    binding.profileSettingsDescription.text = "Lihat dan ubah profil pengguna Anda"
+                    binding.profileSettingsDescription.setTextColor(resources.getColor(android.R.color.tertiary_text_dark, null))
+                }
+                
+                // Update Security Settings status
+                val securityStatus = when {
+                    pinEnabled && biometricEnabled -> "PIN dan Biometrik aktif"
+                    pinEnabled -> "PIN aktif"
+                    biometricEnabled -> "Biometrik aktif"
+                    else -> "Belum dikonfigurasi"
+                }
+                
+                binding.securitySettingsDescription.text = securityStatus
+                binding.securitySettingsDescription.setTextColor(
+                    if (pinEnabled || biometricEnabled) 
+                        resources.getColor(R.color.green_success, null) 
+                    else 
+                        resources.getColor(R.color.red_error, null)
+                )
+                
+            } catch (e: Exception) {
+                // Handle error silently to avoid UI disruption
             }
         }
     }
 
-    private fun showFeatureNotImplementedToast(featureName: String) {
-        Toast.makeText(requireContext(), "$featureName akan segera hadir!", Toast.LENGTH_SHORT).show()
+    override fun onResume() {
+        super.onResume()
+        updateStatusIndicators()
     }
 
     override fun onDestroyView() {
