@@ -96,6 +96,48 @@ class Database {
 			throw error;
 		}
 	}
+
+	async updateUserProfile(userId: string, profileData: any): Promise<any> {
+		try {
+			console.log(`Updating user profile for ID: ${userId}`);
+			
+			// Prepare update data - map frontend fields to database columns
+			const updateData: any = {};
+			
+			if (profileData.name) updateData.name = profileData.name;
+			if (profileData.phone) updateData.phone = profileData.phone;
+			if (profileData.dateOfBirth) updateData.date_of_birth = profileData.dateOfBirth;
+			if (profileData.occupation) updateData.occupation = profileData.occupation;
+			if (profileData.monthlyIncome) updateData.monthly_income = profileData.monthlyIncome;
+			if (profileData.financialGoals) updateData.financial_goals = profileData.financialGoals;
+			
+			// Add updated timestamp
+			updateData.updated_at = new Date().toISOString();
+
+			const { data, error } = await this.supabase
+				.from('users')
+				.update(updateData)
+				.eq('id', userId)
+				.select()
+				.single();
+
+			if (error) {
+				console.error('Supabase error updating user profile:', error);
+				throw error;
+			}
+
+			if (!data) {
+				console.log('No user found with ID:', userId);
+				return null;
+			}
+
+			console.log('User profile updated successfully:', data);
+			return data;
+		} catch (error) {
+			console.error('Error in updateUserProfile:', error);
+			throw error;
+		}
+	}
 }
 
 export default Database.getInstance();

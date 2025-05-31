@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose) // Corrected alias
     alias(libs.plugins.kapt)             // Corrected alias
+    kotlin("plugin.serialization") version "1.9.10"
 }
 
 android {
@@ -79,7 +80,20 @@ dependencies {
 
     // Coroutines
     implementation(libs.jetbrains.kotlinx.coroutines.android) // Will need definition in TOML
-    implementation(libs.jetbrains.kotlinx.coroutines.core) // Will need definition in TOML
+    implementation(libs.jetbrains.kotlinx.coroutines.core) // Will need definition in TOML    // Kotlinx Serialization for JSON parsing
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    
+    // Network utilities
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    
+    // Retrofit for network calls
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    
+    // Gson for JSON serialization
+    implementation("com.google.code.gson:gson:2.10.1")
 
     // Google Sign-In
     implementation(libs.google.android.gms.play.services.auth) // Will need definition in TOML
