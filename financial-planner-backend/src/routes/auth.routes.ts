@@ -1,8 +1,7 @@
 import { RequestHandler, Router } from "express";
 import passport from "passport";
-// import { googleAuth, googleCallback, getCurrentUser } from "../controllers/auth.controller";
 import { authenticate } from "../middleware/auth.middleware";
-import { getCurrentUser, googleAuth, googleCallback } from "../controllers/auth.controller";
+import { getCurrentUser, googleAuth, googleCallback, logout } from "../controllers/auth.controller";
 
 const router = Router();
 
@@ -16,5 +15,8 @@ router.get(
 
 // Get current user
 router.get("/me", authenticate, getCurrentUser);
+
+// Logout endpoint
+router.post("/logout", authenticate, logout);
 
 export default router;

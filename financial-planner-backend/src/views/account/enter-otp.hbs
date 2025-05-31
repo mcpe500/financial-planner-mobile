@@ -1,0 +1,45 @@
+{{!-- Second screen: OTP verification form --}}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-6 offset-md-3">
+      <div class="card">
+        <div class="card-header bg-danger text-white">
+          <h3>Verify OTP</h3>
+        </div>
+        <div class="card-body">
+          {{#if error}}
+            <div class="alert alert-danger">{{error}}</div>
+          {{/if}}
+          
+          <p class="mb-4">
+            We sent a One-Time Password (OTP) to <strong>{{email}}</strong>. 
+            Please check your email and enter the 6-digit code below.
+          </p>
+
+          <form action="/account/delete/verify/{{token}}" method="POST">
+            <div class="form-group mb-3">
+              <label for="otp">Enter the 6-digit OTP code:</label>
+              <input 
+                type="text" 
+                class="form-control text-center" 
+                id="otp" 
+                name="otp" 
+                placeholder="Enter the 6-digit code"
+                pattern="[0-9]{6}" 
+                inputmode="numeric"
+                maxlength="6"
+                required
+              >
+              <small class="form-text text-muted">The OTP is valid for 60 minutes</small>
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-danger">Verify OTP</button>
+              <a href="/" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

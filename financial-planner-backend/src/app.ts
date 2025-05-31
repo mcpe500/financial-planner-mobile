@@ -5,9 +5,28 @@ import morgan from "morgan";
 import passport from "passport";
 import routes from "./routes";
 import "./config/passport";
+import path from "path";
+import { engine } from 'express-handlebars';
 
 // Initialize express app
 const app: Application = express();
+
+app.engine(
+	'hbs',
+	engine({
+		extname: '.hbs',
+		defaultLayout: 'main',
+		layoutsDir: path.join(__dirname, 'views', 'layouts'),
+		partialsDir: path.join(__dirname, 'views', 'partials'),
+		helpers: {
+			json: function (context: any) {
+				return JSON.stringify(context);
+			},
+		}
+	})
+);
+app.set('view engine', 'hbs');
+app.set('views', path.join(__dirname, 'views'));
 
 // Middleware
 app.use(express.json());

@@ -30,18 +30,23 @@ export const googleCallback = (req: Request, res: Response): void => {
         const user = req.user as UserType;
 
         if (!user) {
+            console.error("No user found in request after authentication");
             res.status(401).json({ message: "Authentication failed" });
             return;
         }
 
         // Generate token
         const token = generateToken(user.id);
+        
+        console.log(`User ${user.email} authenticated successfully, generating token`);
 
-        // For mobile apps, redirect to a custom URL scheme that your Android app can handle
-        res.redirect(`finplanner://auth?token=${token}`);
-
-        // Alternatively, use a JSON response if your app prefers that
-        // res.json({ token });
+        // Create the deep link URL
+        const mobileUrl = `finplanner://auth?token=${token}&userId=${user.id}&email=${encodeURIComponent(user.email || '')}&name=${encodeURIComponent(user.name || '')}`;
+        
+        console.log(`Direct redirect to: ${mobileUrl}`);
+        
+        // Direct redirect - NO HTML
+        res.redirect(302, mobileUrl);
     } catch (error) {
         console.error("Authentication callback error:", error);
         res.status(500).json({ message: "Authentication failed" });
@@ -56,5 +61,17 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error("Get current user error:", error);
         res.status(500).json({ message: "Failed to get user information" });
+    }
+};
+
+// Logout endpoint (for token blacklisting if needed)
+export const logout = async (req: AuthRequest, res: Response) => {
+    try {
+        // Since we're using JWT tokens, we just need to tell the client to discard the token
+        // In a more secure implementation, you might want to blacklist the token
+        res.json({ message: "Logged out successfully" });
+    } catch (error) {
+        console.error("Logout error:", error);
+        res.status(500).json({ message: "Logout failed" });
     }
 };
