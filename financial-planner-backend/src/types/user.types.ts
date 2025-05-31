@@ -14,6 +14,15 @@ export interface UserType {
 	phone?: string; // VARCHAR field from database
 }
 
+export interface UserProfileUpdatePayload {
+	name?: string;
+	phone?: string;
+	date_of_birth?: string;
+	occupation?: string;
+	monthly_income?: number;
+	financial_goals?: string;
+}
+
 export interface DecodedToken {
 	id: string;
 	iat: number;

@@ -45,6 +45,9 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -104,7 +107,6 @@ data class ApiResponse(
 
 @Serializable
 data class UserProfileResponse(
-    val id: String,
     val name: String,
     val email: String,
     val phone: String?,
@@ -117,7 +119,6 @@ data class UserProfileResponse(
 )
 
 data class UserProfile(
-    val id: String = "",
     val name: String = "",
     val email: String = "",
     val phone: String = "",
@@ -141,7 +142,6 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
     var userProfile by remember { 
         mutableStateOf(
             UserProfile(
-                id = tokenManager?.getUserId() ?: "",
                 name = tokenManager?.getUserName() ?: "",
                 email = tokenManager?.getUserEmail() ?: "",
                 phone = "",
@@ -195,7 +195,6 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                     if (result.success) {
                         result.data?.let { responseData ->
                             userProfile = userProfile.copy(
-                                id = responseData.id,
                                 name = responseData.name,
                                 email = responseData.email,
                                 phone = responseData.phone ?: "",
@@ -228,6 +227,34 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                     loadError = e.message
                     Toast.makeText(context, "Gagal memuat profil: ${e.message}", Toast.LENGTH_LONG).show()
                     Log.e(TAG_USER_PROFILE, "Profile load error", e)
+                }
+            }
+        }
+    }
+
+    // Function to check server connectivity
+    fun checkServerConnection() {
+        Log.d(TAG_USER_PROFILE, "Checking server connection to ${Config.BASE_URL}")
+        
+        coroutineScope.launch {
+            try {
+                val result = testServerConnection()
+                
+                withContext(Dispatchers.Main) {
+                    isConnected = result.success
+                    val message = if (result.success) {
+                        "Terhubung ke server: ${Config.BASE_URL}"
+                    } else {
+                        "Tidak dapat terhubung ke server: ${result.message}"
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                    Log.d(TAG_USER_PROFILE, "Connection test result: ${result.success} - ${result.message}")
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    isConnected = false
+                    Toast.makeText(context, "Error testing connection: ${e.message}", Toast.LENGTH_LONG).show()
+                    Log.e(TAG_USER_PROFILE, "Connection test error", e)
                 }
             }
         }
@@ -339,18 +366,41 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                         // Save button
                         TextButton(
                             onClick = {
+                                // Validate input before saving
+                                val validation = validateAndSanitizeInput(
+                                    editName,
+                                    editPhone,
+                                    editDateOfBirth,
+                                    editOccupation,
+                                    editMonthlyIncome,
+                                    editFinancialGoals
+                                )
+                                
+                                if (!validation.first) {
+                                    Toast.makeText(context, validation.second, Toast.LENGTH_LONG).show()
+                                    return@TextButton
+                                }
+                                
+                                // Sanitize inputs
+                                val sanitizedName = sanitizeString(editName)
+                                val sanitizedPhone = sanitizeString(editPhone)
+                                val sanitizedDateOfBirth = sanitizeString(editDateOfBirth)
+                                val sanitizedOccupation = sanitizeString(editOccupation)
+                                val sanitizedMonthlyIncome = sanitizeString(editMonthlyIncome)
+                                val sanitizedFinancialGoals = sanitizeString(editFinancialGoals)
+                                
                                 // Save changes to local storage (SQLite simulation)
                                 userProfile = userProfile.copy(
-                                    name = editName,
-                                    phone = editPhone,
-                                    dateOfBirth = editDateOfBirth,
-                                    occupation = editOccupation,
-                                    monthlyIncome = editMonthlyIncome,
-                                    financialGoals = editFinancialGoals,
+                                    name = sanitizedName,
+                                    phone = sanitizedPhone,
+                                    dateOfBirth = sanitizedDateOfBirth,
+                                    occupation = sanitizedOccupation,
+                                    monthlyIncome = sanitizedMonthlyIncome,
+                                    financialGoals = sanitizedFinancialGoals,
                                     isDataModified = true
                                 )
                                 isEditMode = false
-                                Log.d(TAG_USER_PROFILE, "Profile data saved locally")
+                                Log.d(TAG_USER_PROFILE, "Profile data saved locally with validation")
                                 Toast.makeText(context, "Data disimpan. Tekan 'Sinkronkan ke Server' untuk menyimpan ke cloud.", Toast.LENGTH_LONG).show()
                             }
                         ) {
@@ -475,10 +525,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
             ProfileHeaderCard(
                 userProfile = userProfile,
                 isConnected = isConnected,
-                onConnectionCheck = {
-                    isConnected = !isConnected
-                    Toast.makeText(context, "Status koneksi: ${if (isConnected) "Terhubung" else "Tidak Terhubung"}", Toast.LENGTH_SHORT).show()
-                }
+                onConnectionCheck = { checkServerConnection() }
             )
             
             // Profile Information Cards
@@ -570,6 +617,56 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
 @Composable
 fun UserProfileSettingsScreenPreview() {
     UserProfileSettingsScreen(navController = rememberNavController())
+}
+
+// Test server connection with actual HTTP request
+suspend fun testServerConnection(): ApiResponse {
+    return withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG_USER_PROFILE, "Testing connection to: ${Config.BASE_URL}")
+            
+            val url = URL("${Config.BASE_URL}/api/health") // Health check endpoint
+            val connection = url.openConnection() as HttpURLConnection
+            
+            connection.apply {
+                requestMethod = "GET"
+                connectTimeout = 5000
+                readTimeout = 5000
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("User-Agent", "FinancialPlannerApp")
+            }
+            
+            val responseCode = connection.responseCode
+            Log.d(TAG_USER_PROFILE, "Server response code: $responseCode")
+            
+            when (responseCode) {
+                200 -> {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    Log.d(TAG_USER_PROFILE, "Server response: $response")
+                    ApiResponse(success = true, message = "Server is reachable")
+                }
+                404 -> {
+                    // If health endpoint doesn't exist, try the base URL
+                    ApiResponse(success = true, message = "Server is reachable (no health endpoint)")
+                }
+                else -> {
+                    ApiResponse(success = false, message = "Server returned code: $responseCode")
+                }
+            }
+        } catch (e: ConnectException) {
+            Log.e(TAG_USER_PROFILE, "Connection refused: ${e.message}")
+            ApiResponse(success = false, message = "Connection refused - server may be down")
+        } catch (e: SocketTimeoutException) {
+            Log.e(TAG_USER_PROFILE, "Connection timeout: ${e.message}")
+            ApiResponse(success = false, message = "Connection timeout - server not responding")
+        } catch (e: UnknownHostException) {
+            Log.e(TAG_USER_PROFILE, "Unknown host: ${e.message}")
+            ApiResponse(success = false, message = "Cannot resolve host - check internet connection")
+        } catch (e: Exception) {
+            Log.e(TAG_USER_PROFILE, "Connection test failed", e)
+            ApiResponse(success = false, message = "Connection failed: ${e.message}")
+        }
+    }
 }
 
 // HTTP API call function to get user profile
@@ -747,11 +844,6 @@ private fun ProfileHeaderCard(
                     Text(
                         text = userProfile.email,
                         fontSize = 14.sp,
-                        color = MediumGray
-                    )
-                    Text(
-                        text = "ID: ${userProfile.id}",
-                        fontSize = 12.sp,
                         color = MediumGray
                     )
                 }
@@ -1030,4 +1122,54 @@ private fun isValidDate(dateString: String): Boolean {
     val yyyymmdd = Regex("^(\\d{4})-(\\d{2})-(\\d{2})$")
     
     return ddmmyyyy.matches(dateString) || yyyymmdd.matches(dateString)
+}
+
+// Input validation and sanitization
+private fun validateAndSanitizeInput(
+    name: String,
+    phone: String,
+    dateOfBirth: String,
+    occupation: String,
+    monthlyIncome: String,
+    financialGoals: String
+): Pair<Boolean, String> {
+    // Name validation
+    if (name.isBlank() || name.length < 2 || name.length > 100) {
+        return false to "Nama harus diisi (2-100 karakter)"
+    }
+    
+    // Phone validation
+    if (phone.isNotBlank() && !isValidPhoneNumber(phone)) {
+        return false to "Format nomor telepon tidak valid"
+    }
+    
+    // Date validation
+    if (dateOfBirth.isNotBlank() && !isValidDate(dateOfBirth)) {
+        return false to "Format tanggal tidak valid (gunakan DD/MM/YYYY)"
+    }
+    
+    // Occupation validation
+    if (occupation.length > 100) {
+        return false to "Pekerjaan maksimal 100 karakter"
+    }
+    
+    // Monthly income validation
+    if (monthlyIncome.isNotBlank()) {
+        val income = monthlyIncome.toDoubleOrNull()
+        if (income == null || income < 0 || income > 999999999) {
+            return false to "Pendapatan bulanan tidak valid"
+        }
+    }
+    
+    // Financial goals validation
+    if (financialGoals.length > 500) {
+        return false to "Tujuan keuangan maksimal 500 karakter"
+    }
+    
+    return true to "Valid"
+}
+
+// Sanitize string input
+private fun sanitizeString(input: String): String {
+    return input.trim().replace(Regex("<[^>]*>"), "") // Remove HTML tags
 }
