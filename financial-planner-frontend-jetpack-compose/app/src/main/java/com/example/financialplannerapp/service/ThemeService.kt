@@ -1,24 +1,16 @@
 package com.example.financialplannerapp.service
 
-import android.content.Context
-import android.content.res.Configuration
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectAsState
 
 /**
  * Theme Service
@@ -39,7 +31,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * themeService.setTheme("dark")
  * ```
  */
-open class ThemeService private constructor() {
+open class ThemeService {
     
     companion object {
         @Volatile
@@ -62,7 +54,7 @@ open class ThemeService private constructor() {
      * 
      * @param theme Theme mode ("light", "dark", "system")
      */
-    fun setTheme(theme: String) {
+    open fun setTheme(theme: String) {
         if (theme in listOf("light", "dark", "system")) {
             currentThemeMode = theme
             _currentTheme.value = theme
@@ -74,7 +66,7 @@ open class ThemeService private constructor() {
      * 
      * @return Current theme mode
      */
-    fun getCurrentTheme(): String = currentThemeMode
+    open fun getCurrentTheme(): String = currentThemeMode
     
     /**
      * Check if dark theme should be used
@@ -82,7 +74,7 @@ open class ThemeService private constructor() {
      * @param isSystemInDarkTheme Whether system is in dark theme
      * @return True if dark theme should be used
      */
-    fun isDarkTheme(isSystemInDarkTheme: Boolean): Boolean {
+    open fun isDarkTheme(isSystemInDarkTheme: Boolean): Boolean {
         return when (currentThemeMode) {
             "light" -> false
             "dark" -> true
@@ -97,7 +89,7 @@ open class ThemeService private constructor() {
      * @param isDark Whether dark theme is active
      * @return Material Design color scheme
      */
-    fun getColorScheme(isDark: Boolean): ColorScheme {
+    open fun getColorScheme(isDark: Boolean): ColorScheme {
         return if (isDark) bibitDarkColorScheme else bibitLightColorScheme
     }
 }
@@ -211,7 +203,12 @@ fun ThemeProvider(
     val isSystemInDarkTheme = isSystemInDarkTheme()
     
     // Update theme when it changes
-    themeService.setTheme(theme)
+    LaunchedEffect(theme) {
+        themeService.setTheme(theme)
+    }
+    
+    // Observe theme changes reactively
+    val currentTheme by themeService.currentTheme.collectAsState(initial = theme)
     
     val isDarkTheme = themeService.isDarkTheme(isSystemInDarkTheme)
     val colorScheme = themeService.getColorScheme(isDarkTheme)

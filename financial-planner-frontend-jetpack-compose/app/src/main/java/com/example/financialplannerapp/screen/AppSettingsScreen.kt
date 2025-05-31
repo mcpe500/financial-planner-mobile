@@ -15,385 +15,378 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
-import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectAsState
 import com.example.financialplannerapp.data.AppSettings
-import com.example.financialplannerapp.service.LocalTranslator
-import com.example.financialplannerapp.service.LocalThemeService
-import com.example.financialplannerapp.service.TranslationProvider
-import com.example.financialplannerapp.service.ThemeProvider
-import com.example.financialplannerapp.service.AppProvider
-import com.example.financialplannerapp.service.rememberSettingsManager
+import com.example.financialplannerapp.service.SettingsManager
+import com.example.financialplannerapp.service.ThemeService
+import com.example.financialplannerapp.service.TranslationService
+import com.example.financialplannerapp.utils.Translations
 
 private const val TAG_APP_SETTINGS = "AppSettingsScreen"
 
+/**
+ * App Settings Screen
+ * 
+ * Complete settings management screen with working theme and language switching
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppSettingsScreen(navController: NavController) {
-    Log.d(TAG_APP_SETTINGS, "AppSettingsScreen composing...")
-    
+fun AppSettingsScreen(
+    onNavigateBack: () -> Unit = {}
+) {
     val context = LocalContext.current
+    val themeService = remember { ThemeService.getInstance() }
+    val translationService = remember { TranslationService.getInstance() }
+    val settingsManager = remember { 
+        SettingsManager.getInstance(context, themeService, translationService) 
+    }
     val coroutineScope = rememberCoroutineScope()
-    val translator = LocalTranslator.current
-    val themeService = LocalThemeService.current
-    val settingsManager = rememberSettingsManager()
     
-    // Database helper - using centralized helper with memory-safe context
-    val databaseHelper = remember { AppSettingsDatabaseHelper.getInstance(context) }
-    val userId = "default_user" // In real app, get from TokenManager
+    // State for current settings
+    var currentTheme by remember { mutableStateOf("system") }
+    var currentLanguage by remember { mutableStateOf("en") }
+    var currentCurrency by remember { mutableStateOf("IDR") }
+    var notificationsEnabled by remember { mutableStateOf(true) }
     
-    // State for settings - load from database
-    var appSettings by remember { mutableStateOf(AppSettings()) }
+    // Observe settings changes
+    val settings by settingsManager.currentSettings.collectAsState(initial = AppSettings())
     
-    // Load settings from database on startup
-    LaunchedEffect(Unit) {
-        appSettings = databaseHelper.getAppSettings(userId)
+    // Update UI state when settings change
+    LaunchedEffect(settings) {
+        currentTheme = settings.theme
+        currentLanguage = settings.language
+        currentCurrency = settings.currency
+        notificationsEnabled = settings.notificationsEnabled
+        Log.d(TAG_APP_SETTINGS, "Settings updated: theme=${settings.theme}, language=${settings.language}")
     }
     
-    // Reactive settings updates
-    LaunchedEffect(Unit) {
-        settingsManager.getSettingsFlow().collect { settings ->
-            appSettings = settings
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onNavigateBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = Translations.get(Translations.Key.Back))
+            }
+            Text(
+                text = Translations.get(Translations.Key.AppSettings),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Theme Settings
+        SettingsSection(
+            title = Translations.get(Translations.Key.ThemeSetting),
+            description = Translations.get(Translations.Key.ThemeSettingDesc),
+            icon = Icons.Default.Palette
+        ) {
+            ThemeSelectionCard(
+                currentTheme = currentTheme,
+                onThemeSelected = { theme ->
+                    currentTheme = theme
+                    coroutineScope.launch {
+                        settingsManager.setTheme(theme)
+                        Log.d(TAG_APP_SETTINGS, "Theme changed to: $theme")
+                        Toast.makeText(context, Translations.get(Translations.Key.ThemeChangedTo, theme), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Language Settings
+        SettingsSection(
+            title = Translations.get(Translations.Key.LanguageSetting),
+            description = Translations.get(Translations.Key.LanguageSettingDesc),
+            icon = Icons.Default.Language
+        ) {
+            LanguageSelectionCard(
+                currentLanguage = currentLanguage,
+                onLanguageSelected = { language ->
+                    currentLanguage = language
+                    coroutineScope.launch {
+                        settingsManager.setLanguage(language)
+                        Log.d(TAG_APP_SETTINGS, "Language changed to: $language")
+                        Toast.makeText(context, "Language changed to $language", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Currency Settings
+        SettingsSection(
+            title = Translations.get(Translations.Key.CurrencySetting),
+            description = Translations.get(Translations.Key.CurrencySettingDesc),
+            icon = Icons.Default.AttachMoney
+        ) {
+            CurrencySelectionCard(
+                currentCurrency = currentCurrency,
+                onCurrencySelected = { currency ->
+                    currentCurrency = currency
+                    coroutineScope.launch {
+                        settingsManager.setCurrency(currency)
+                        Log.d(TAG_APP_SETTINGS, "Currency changed to: $currency")
+                        Toast.makeText(context, Translations.get(Translations.Key.CurrencyChangedTo, currency), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Notification Settings
+        SettingsSection(
+            title = Translations.get(Translations.Key.NotificationsSetting),
+            description = Translations.get(Translations.Key.NotificationsSettingDesc),
+            icon = Icons.Default.Notifications
+        ) {
+            NotificationSettingsCard(
+                notificationsEnabled = notificationsEnabled,
+                onNotificationsToggled = { enabled ->
+                    notificationsEnabled = enabled
+                    coroutineScope.launch {
+                        settingsManager.setNotifications(enabled)
+                        Log.d(TAG_APP_SETTINGS, "Notifications ${if (enabled) "enabled" else "disabled"}")
+                        Toast.makeText(
+                            context,
+                            if (enabled) Translations.get(Translations.Key.NotificationsEnabled) 
+                            else Translations.get(Translations.Key.NotificationsDisabled),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+@Composable
+private fun SettingsSection(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    content: @Composable () -> Unit
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 12.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        content()
+    }
+}
+
+@Composable
+private fun ThemeSelectionCard(
+    currentTheme: String,
+    onThemeSelected: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            val themeOptions = listOf(
+                "light" to Translations.get(Translations.Key.ThemeLight),
+                "dark" to Translations.get(Translations.Key.ThemeDark),
+                "system" to Translations.get(Translations.Key.ThemeSystem)
+            )
+            
+            themeOptions.forEach { (themeKey, themeName) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = currentTheme == themeKey,
+                        onClick = { onThemeSelected(themeKey) }
+                    )
+                    Text(
+                        text = themeName,
+                        modifier = Modifier.padding(start = 8.dp),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageSelectionCard(
+    currentLanguage: String,
+    onLanguageSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
     
-    // Theme options with translations
-    val themeOptions = mapOf(
-        "light" to translator.get("theme_light"),
-        "dark" to translator.get("theme_dark"),
-        "system" to translator.get("theme_system")
-    )
-    
-    // Language options with translations
     val languageOptions = mapOf(
         "id" to "Bahasa Indonesia",
         "en" to "English",
         "zh" to "中文"
     )
     
-    // Currency options with translations
-    val currencyOptions = mapOf(
-        "IDR" to translator.get("currency_idr"),
-        "USD" to translator.get("currency_usd"),
-        "EUR" to translator.get("currency_eur"),
-        "JPY" to translator.get("currency_jpy")
-    )
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = translator.get("app_settings"),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            Log.d(TAG_APP_SETTINGS, "Back button clicked")
-                            navController.popBackStack()
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = translator.get("back"),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.padding(16.dp)
         ) {
-            // Theme Setting
-            SettingCard(
-                title = translator.get("theme_setting"),
-                icon = Icons.Filled.Palette
+            OutlinedTextField(
+                value = languageOptions[currentLanguage] ?: "Unknown",
+                onValueChange = { },
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
             ) {
-                Column {
-                    Text(
-                        text = translator.get("theme_setting_desc"),
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    
-                    themeOptions.forEach { (themeKey, themeName) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = appSettings.theme == themeKey,
-                                onClick = { 
-                                    coroutineScope.launch {
-                                        settingsManager.setTheme(themeKey)
-                                        Log.d(TAG_APP_SETTINGS, "Theme changed to: $themeKey")
-                                        Toast.makeText(
-                                            context, 
-                                            translator.get("theme_changed_to", themeName), 
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                },
-                                colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
-                            )
-                            Text(
-                                text = themeName,
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
+                languageOptions.forEach { (languageKey, languageName) ->
+                    DropdownMenuItem(
+                        text = { Text(languageName) },
+                        onClick = {
+                            onLanguageSelected(languageKey)
+                            expanded = false
                         }
-                    }
+                    )
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CurrencySelectionCard(
+    currentCurrency: String,
+    onCurrencySelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    val currencyOptions = mapOf(
+        "IDR" to Translations.get(Translations.Key.CurrencyIdr),
+        "USD" to Translations.get(Translations.Key.CurrencyUsd),
+        "EUR" to Translations.get(Translations.Key.CurrencyEur),
+        "JPY" to Translations.get(Translations.Key.CurrencyJpy)
+    )
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.padding(16.dp)
+        ) {
+            OutlinedTextField(
+                value = currencyOptions[currentCurrency] ?: "Unknown",
+                onValueChange = { },
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
+            )
             
-            // Language Setting
-            SettingCard(
-                title = translator.get("language_setting"),
-                icon = Icons.Filled.Language
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
             ) {
-                Column {
-                    Text(
-                        text = translator.get("language_setting_desc"),
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    
-                    var expanded by remember { mutableStateOf(false) }
-                    
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = !expanded }
-                    ) {
-                        OutlinedTextField(
-                            value = languageOptions[appSettings.language] ?: "Bahasa Indonesia",
-                            onValueChange = {},
-                            readOnly = true,
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-                        
-                        ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            languageOptions.forEach { (languageKey, languageName) ->
-                                DropdownMenuItem(
-                                    text = { Text(languageName) },
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            // Update language in settings manager and database
-                                            settingsManager.setLanguage(languageKey)
-                                            expanded = false
-                                            Log.d(TAG_APP_SETTINGS, "Language changed to: $languageKey")
-                                            
-                                            // Note: Translation will update on next recomposition through AppProvider
-                                            Toast.makeText(
-                                                context, 
-                                                "Language changed to $languageName", // Use static text for immediate feedback
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                )
-                            }
+                currencyOptions.forEach { (currencyKey, currencyName) ->
+                    DropdownMenuItem(
+                        text = { Text(currencyName) },
+                        onClick = {
+                            onCurrencySelected(currencyKey)
+                            expanded = false
                         }
-                    }
-                }
-            }
-            
-            // Currency Setting
-            SettingCard(
-                title = translator.get("currency_setting"),
-                icon = Icons.Filled.AttachMoney
-            ) {
-                Column {
-                    Text(
-                        text = translator.get("currency_setting_desc"),
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 12.dp)
                     )
-                    
-                    var expanded by remember { mutableStateOf(false) }
-                    
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = !expanded }
-                    ) {
-                        OutlinedTextField(
-                            value = currencyOptions[appSettings.currency] ?: translator.get("currency_idr"),
-                            onValueChange = {},
-                            readOnly = true,
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-                        
-                        ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            currencyOptions.forEach { (currencyKey, currencyName) ->
-                                DropdownMenuItem(
-                                    text = { Text(currencyName) },
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            settingsManager.setCurrency(currencyKey)
-                                            expanded = false
-                                            Log.d(TAG_APP_SETTINGS, "Currency changed to: $currencyKey")
-                                            Toast.makeText(
-                                                context, 
-                                                translator.get("currency_changed_to", currencyName), 
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
                 }
             }
-            
-            // Notifications Setting
-            SettingCard(
-                title = translator.get("notifications_setting"),
-                icon = Icons.Filled.Notifications
-            ) {
-                Column {
-                    Text(
-                        text = translator.get("notifications_setting_desc"),
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = translator.get("enable_notifications"),
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        
-                        Switch(
-                            checked = appSettings.notificationsEnabled,
-                            onCheckedChange = { enabled ->
-                                coroutineScope.launch {
-                                    settingsManager.setNotifications(enabled)
-                                    Log.d(TAG_APP_SETTINGS, "Notifications ${if (enabled) "enabled" else "disabled"}")
-                                    Toast.makeText(
-                                        context, 
-                                        translator.get(if (enabled) "notifications_enabled" else "notifications_disabled"), 
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        )
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
 @Composable
-private fun SettingCard(
-    title: String,
-    icon: ImageVector,
-    content: @Composable () -> Unit
+private fun NotificationSettingsCard(
+    notificationsEnabled: Boolean,
+    onNotificationsToggled: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            .shadow(4.dp, RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            
-            content()
+            Text(
+                text = Translations.get(Translations.Key.EnableNotifications),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Switch(
+                checked = notificationsEnabled,
+                onCheckedChange = onNotificationsToggled
+            )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun AppSettingsScreenPreview() {
-    AppProvider {
-        AppSettingsScreen(navController = rememberNavController())
     }
 }

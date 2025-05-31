@@ -51,7 +51,9 @@ fun AppNavigation(
         }
         
         composable("appSettings") {
-            AppSettingsScreen(navController = navController)
+            AppSettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
         
         composable("dataSyncSettings") {
