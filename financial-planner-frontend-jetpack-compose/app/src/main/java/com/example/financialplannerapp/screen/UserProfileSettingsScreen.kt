@@ -125,11 +125,6 @@ data class UserProfileResponse(
     val updatedAt: String
 )
 
-// Simple PIN hashing function (in production, use proper hashing)
-fun hashPin(pin: String): String {
-    return pin.hashCode().toString()
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenManager? = null) {

@@ -601,6 +601,19 @@ data class SecuritySettings(
 
 // ============================================================================
 
+/**
+ * Simple PIN hashing function
+ * 
+ * In production, use proper hashing algorithms like BCrypt or Argon2.
+ * This is a simplified implementation for development purposes.
+ * 
+ * @param pin PIN string to hash
+ * @return Hashed PIN as string
+ */
+fun hashPin(pin: String): String {
+    return pin.hashCode().toString()
+}
+
 // ============================================================================
 // ROOM IMPLEMENTATIONS (for production) - COMMENTED OUT
 // ============================================================================

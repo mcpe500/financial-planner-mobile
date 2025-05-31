@@ -36,6 +36,7 @@ import com.example.financialplannerapp.data.SecurityDatabaseHelper
 import com.example.financialplannerapp.data.SecuritySettings
 import com.example.financialplannerapp.data.toSecuritySettings
 import com.example.financialplannerapp.data.toSecurityData
+import com.example.financialplannerapp.data.hashPin
 
 private const val TAG_SECURITY = "SecuritySettingsScreen"
 
@@ -47,11 +48,6 @@ private val MediumGray = Color(0xFF9E9E9E)
 private val SoftGray = Color(0xFFF5F5F5)
 private val WarningOrange = Color(0xFFFF9800)
 private val ErrorRed = Color(0xFFF44336)
-
-// Simple PIN hashing function (in production, use proper hashing)
-fun hashPin(pin: String): String {
-    return pin.hashCode().toString()
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
