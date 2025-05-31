@@ -31,6 +31,10 @@ import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.config.Config
 import com.example.financialplannerapp.data.DatabaseManager
 import com.example.financialplannerapp.data.UserProfileData
+import com.example.financialplannerapp.data.UserProfileDatabaseHelper
+import com.example.financialplannerapp.data.UserProfile
+import com.example.financialplannerapp.data.toUserProfile
+import com.example.financialplannerapp.data.toUserProfileData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -121,81 +125,10 @@ data class UserProfileResponse(
     val updatedAt: String
 )
 
-data class UserProfile(
-    val name: String = "",
-    val email: String = "",
-    val phone: String = "",
-    val dateOfBirth: String = "",
-    val occupation: String = "",
-    val monthlyIncome: String = "",
-    val financialGoals: String = "",
-    val lastSyncTime: String = "",
-    val isDataModified: Boolean = false
-)
-
-// Database helper functions
-class UserProfileDatabaseHelper(private val context: Context) {
-    private val databaseManager = DatabaseManager.getInstance(context)
-    private val userProfileRepository = databaseManager.userProfileRepository
-    
-    suspend fun getUserProfile(userId: String): UserProfile? {
-        return userProfileRepository.getUserProfile(userId)?.toUserProfile()
-    }
-    
-    suspend fun saveUserProfile(userId: String, profile: UserProfile) {
-        val profileData = profile.toUserProfileData(userId)
-        userProfileRepository.updateUserProfile(profileData)
-    }
-    
-    suspend fun markForSync(userId: String, needsSync: Boolean) {
-        userProfileRepository.markProfileForSync(userId, needsSync)
-    }
+// Simple PIN hashing function (in production, use proper hashing)
+fun hashPin(pin: String): String {
+    return pin.hashCode().toString()
 }
-
-// Convert between UserProfileData and UserProfile for UI compatibility
-fun UserProfileData.toUserProfile() = UserProfile(
-    name = name,
-    email = email,
-    phone = phone,
-    dateOfBirth = dateOfBirth,
-    occupation = occupation,
-    monthlyIncome = monthlyIncome,
-    financialGoals = financialGoals,
-    lastSyncTime = lastSyncTime,
-    isDataModified = needsSync
-)
-
-fun UserProfile.toUserProfileData(userId: String) = UserProfileData(
-    userId = userId,
-    name = name,
-    email = email,
-    phone = phone,
-    dateOfBirth = dateOfBirth,
-    occupation = occupation,
-    monthlyIncome = monthlyIncome,
-    financialGoals = financialGoals,
-    lastSyncTime = lastSyncTime,
-    needsSync = isDataModified
-)
-
-/*
-// ============================================================================
-// ROOM DATABASE IMPLEMENTATION (COMMENTED - READY FOR PRODUCTION)
-// ============================================================================
-
-// When ready to switch to Room database, simply:
-// 1. Change USE_ROOM_DATABASE = true in DatabaseManager.kt
-// 2. Uncomment the Room implementation in DatabaseManager.kt
-// 3. Add Room dependencies to build.gradle:
-//    implementation "androidx.room:room-runtime:2.5.0"
-//    implementation "androidx.room:room-ktx:2.5.0"
-//    kapt "androidx.room:room-compiler:2.5.0"
-// 4. Add kapt plugin to build.gradle: apply plugin: 'kotlin-kapt'
-
-// No changes needed in this file - the UserProfileDatabaseHelper will automatically
-// use Room database when the flag is switched in DatabaseManager.kt
-
-*/
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -204,6 +137,9 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
     
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    
+    // Database helper - using centralized helper with memory-safe context
+    val databaseHelper = remember { UserProfileDatabaseHelper.getInstance(context) }
     
     // State for user profile data
     var userProfile by remember { 

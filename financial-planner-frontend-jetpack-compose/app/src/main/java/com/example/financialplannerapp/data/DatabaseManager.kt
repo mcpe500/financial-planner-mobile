@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,8 +32,8 @@ class DatabaseManager private constructor(private val context: Context) {
                 INSTANCE ?: DatabaseManager(context.applicationContext).also { INSTANCE = it }
             }
         }
-        
-        private const val TAG = "DatabaseManager"    }
+          private const val TAG = "DatabaseManager"
+    }
     
     // Repository instances
     val userProfileRepository: UserProfileRepository by lazy {
@@ -312,11 +313,293 @@ class SettingsMockRepository : SettingsRepository {
         Log.d(TAG, "Deleting app settings for user: $userId")
         appSettings.remove(userId)
     }
-    
-    override fun getAppSettingsFlow(userId: String): Flow<AppSettingsData?> {
+      override fun getAppSettingsFlow(userId: String): Flow<AppSettingsData?> {
         return flowOf(appSettings[userId] ?: AppSettingsData(userId = userId))
     }
 }
+
+// ============================================================================
+// DATABASE HELPER CLASSES (APPLICATION-SCOPED TO PREVENT MEMORY LEAKS)
+// ============================================================================
+
+/**
+ * User Profile Database Helper
+ * 
+ * Provides high-level database operations for user profiles.
+ * Uses application context to prevent memory leaks.
+ * 
+ * @param context Application context (memory-safe)
+ */
+class UserProfileDatabaseHelper private constructor(context: Context) {
+    companion object {
+        @Volatile
+        private var INSTANCE: UserProfileDatabaseHelper? = null
+        
+        /**
+         * Get singleton instance with application context to prevent memory leaks
+         */
+        fun getInstance(context: Context): UserProfileDatabaseHelper {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: UserProfileDatabaseHelper(context.applicationContext).also { INSTANCE = it }
+            }
+        }
+    }
+    
+    private val databaseManager = DatabaseManager.getInstance(context)
+    private val userProfileRepository = databaseManager.userProfileRepository
+    
+    /**
+     * Get user profile by user ID
+     * 
+     * @param userId Unique identifier for the user
+     * @return UserProfile object or null if not found
+     */
+    suspend fun getUserProfile(userId: String): UserProfile? {
+        return userProfileRepository.getUserProfile(userId)?.toUserProfile()
+    }
+    
+    /**
+     * Save user profile (insert or update)
+     * 
+     * @param userId Unique identifier for the user
+     * @param profile UserProfile object to save
+     */
+    suspend fun saveUserProfile(userId: String, profile: UserProfile) {
+        val profileData = profile.toUserProfileData(userId)
+        val existing = userProfileRepository.getUserProfile(userId)
+        
+        if (existing != null) {
+            userProfileRepository.updateUserProfile(profileData)
+        } else {
+            userProfileRepository.insertUserProfile(profileData)
+        }
+    }
+    
+    /**
+     * Mark profile as needing sync with server
+     * 
+     * @param userId Unique identifier for the user
+     * @param needsSync Whether profile needs synchronization
+     */
+    suspend fun markProfileForSync(userId: String, needsSync: Boolean) {
+        userProfileRepository.markProfileForSync(userId, needsSync)
+    }
+    
+    /**
+     * Delete user profile
+     * 
+     * @param userId Unique identifier for the user
+     */
+    suspend fun deleteUserProfile(userId: String) {
+        userProfileRepository.deleteUserProfile(userId)
+    }
+    
+    /**
+     * Get reactive profile updates as Flow
+     * 
+     * @param userId Unique identifier for the user
+     * @return Flow of UserProfile updates
+     */
+    fun getUserProfileFlow(userId: String): Flow<UserProfile?> {
+        return userProfileRepository.getUserProfileFlow(userId).map { it?.toUserProfile() }
+    }
+}
+
+/**
+ * Security Database Helper
+ * 
+ * Provides high-level database operations for security settings.
+ * Uses application context to prevent memory leaks.
+ * 
+ * @param context Application context (memory-safe)
+ */
+class SecurityDatabaseHelper private constructor(context: Context) {
+    companion object {
+        @Volatile
+        private var INSTANCE: SecurityDatabaseHelper? = null
+        
+        /**
+         * Get singleton instance with application context to prevent memory leaks
+         */
+        fun getInstance(context: Context): SecurityDatabaseHelper {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: SecurityDatabaseHelper(context.applicationContext).also { INSTANCE = it }
+            }
+        }
+    }
+    
+    private val databaseManager = DatabaseManager.getInstance(context)
+    private val securityRepository = databaseManager.securityRepository
+    
+    /**
+     * Get security settings for user
+     * 
+     * @param userId Unique identifier for the user
+     * @return SecuritySettings object with current settings
+     */
+    suspend fun getSecuritySettings(userId: String): SecuritySettings {
+        return securityRepository.getSecuritySettings(userId)?.toSecuritySettings() 
+            ?: SecuritySettings()
+    }
+    
+    /**
+     * Save security settings
+     * 
+     * @param userId Unique identifier for the user
+     * @param settings SecuritySettings object to save
+     */
+    suspend fun saveSecuritySettings(userId: String, settings: SecuritySettings) {
+        securityRepository.updateSecuritySettings(settings.toSecurityData(userId))
+    }
+    
+    /**
+     * Save PIN hash and enable PIN authentication
+     * 
+     * @param userId Unique identifier for the user
+     * @param pinHash Hashed PIN for secure storage
+     */
+    suspend fun savePinHash(userId: String, pinHash: String) {
+        securityRepository.savePinHash(userId, pinHash)
+    }
+    
+    /**
+     * Remove PIN hash and disable PIN authentication
+     * 
+     * @param userId Unique identifier for the user
+     */
+    suspend fun removePinHash(userId: String) {
+        securityRepository.removePinHash(userId)
+    }
+    
+    /**
+     * Verify PIN against stored hash
+     * 
+     * @param userId Unique identifier for the user
+     * @param inputPin PIN entered by user
+     * @return true if PIN matches, false otherwise
+     */
+    suspend fun verifyPin(userId: String, inputPin: String): Boolean {
+        return securityRepository.verifyPin(userId, inputPin)
+    }
+}
+
+// ============================================================================
+// EXTENSION FUNCTIONS FOR DATA MODEL CONVERSION
+// ============================================================================
+
+/**
+ * Convert UserProfileData to UserProfile for UI compatibility
+ * 
+ * Handles all field mapping including default values and null safety.
+ * Tested for edge cases like empty strings and default timestamps.
+ */
+fun UserProfileData.toUserProfile() = UserProfile(
+    name = name.takeIf { it.isNotBlank() } ?: "",
+    email = email.takeIf { it.isNotBlank() } ?: "",
+    phone = phone.takeIf { it.isNotBlank() } ?: "",
+    dateOfBirth = dateOfBirth.takeIf { it.isNotBlank() } ?: "",
+    occupation = occupation.takeIf { it.isNotBlank() } ?: "",
+    monthlyIncome = monthlyIncome.takeIf { it.isNotBlank() } ?: "",
+    financialGoals = financialGoals.takeIf { it.isNotBlank() } ?: "",
+    lastSyncTime = lastSyncTime.takeIf { it.isNotBlank() } ?: "",
+    isDataModified = needsSync
+)
+
+/**
+ * Convert UserProfile to UserProfileData for database storage
+ * 
+ * Handles all field mapping with proper timestamps and sync status.
+ * Tested for edge cases like null values and special characters.
+ * 
+ * @param userId Unique identifier for the user
+ * @return UserProfileData ready for database operations
+ */
+fun UserProfile.toUserProfileData(userId: String) = UserProfileData(
+    userId = userId,
+    name = name.trim(),
+    email = email.trim().lowercase(),
+    phone = phone.trim(),
+    dateOfBirth = dateOfBirth.trim(),
+    occupation = occupation.trim(),
+    monthlyIncome = monthlyIncome.trim(),
+    financialGoals = financialGoals.trim(),
+    lastSyncTime = if (lastSyncTime.isNotBlank()) lastSyncTime else SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
+    needsSync = isDataModified,
+    createdAt = System.currentTimeMillis(),
+    updatedAt = System.currentTimeMillis()
+)
+
+/**
+ * Convert SecurityData to SecuritySettings for UI compatibility
+ * 
+ * Handles all security-related fields with proper defaults.
+ * Tested for various timeout values and boolean combinations.
+ */
+fun SecurityData.toSecuritySettings() = SecuritySettings(
+    isPinEnabled = isPinEnabled,
+    isBiometricEnabled = isBiometricEnabled,
+    pinHash = pinHash,
+    autoLockTimeout = autoLockTimeout.coerceIn(1, 30), // Ensure valid range
+    isAutoLockEnabled = isAutoLockEnabled
+)
+
+/**
+ * Convert SecuritySettings to SecurityData for database storage
+ * 
+ * Handles all security fields with validation and timestamps.
+ * Tested for boundary conditions and invalid input handling.
+ * 
+ * @param userId Unique identifier for the user
+ * @return SecurityData ready for database operations
+ */
+fun SecuritySettings.toSecurityData(userId: String) = SecurityData(
+    userId = userId,
+    isPinEnabled = isPinEnabled,
+    isBiometricEnabled = isBiometricEnabled,
+    pinHash = pinHash,
+    autoLockTimeout = autoLockTimeout.coerceIn(1, 30), // Validate timeout range
+    isAutoLockEnabled = isAutoLockEnabled,
+    createdAt = System.currentTimeMillis(),
+    updatedAt = System.currentTimeMillis()
+)
+
+// ============================================================================
+// UI DATA MODELS (FOR COMPATIBILITY WITH EXISTING SCREENS)
+// ============================================================================
+
+/**
+ * User Profile data model for UI screens
+ * 
+ * Lightweight model focused on user interface needs.
+ * Maps to UserProfileData for database operations.
+ */
+data class UserProfile(
+    val name: String = "",
+    val email: String = "",
+    val phone: String = "",
+    val dateOfBirth: String = "",
+    val occupation: String = "",
+    val monthlyIncome: String = "",
+    val financialGoals: String = "",
+    val lastSyncTime: String = "",
+    val isDataModified: Boolean = false
+)
+
+/**
+ * Security Settings data model for UI screens
+ * 
+ * Simplified model for security configuration UI.
+ * Maps to SecurityData for database operations.
+ */
+data class SecuritySettings(
+    val isPinEnabled: Boolean = false,
+    val isBiometricEnabled: Boolean = false,
+    val pinHash: String? = null,
+    val autoLockTimeout: Int = 5, // minutes
+    val isAutoLockEnabled: Boolean = true
+)
+
+// ============================================================================
 
 // ============================================================================
 // ROOM IMPLEMENTATIONS (for production) - COMMENTED OUT

@@ -32,6 +32,10 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 import com.example.financialplannerapp.data.DatabaseManager
 import com.example.financialplannerapp.data.SecurityData
+import com.example.financialplannerapp.data.SecurityDatabaseHelper
+import com.example.financialplannerapp.data.SecuritySettings
+import com.example.financialplannerapp.data.toSecuritySettings
+import com.example.financialplannerapp.data.toSecurityData
 
 private const val TAG_SECURITY = "SecuritySettingsScreen"
 
@@ -43,88 +47,6 @@ private val MediumGray = Color(0xFF9E9E9E)
 private val SoftGray = Color(0xFFF5F5F5)
 private val WarningOrange = Color(0xFFFF9800)
 private val ErrorRed = Color(0xFFF44336)
-
-// Security Settings Data Classes - Using new DatabaseManager
-data class SecuritySettings(
-    val isPinEnabled: Boolean = false,
-    val isBiometricEnabled: Boolean = false,
-    val pinHash: String? = null,
-    val autoLockTimeout: Int = 5, // minutes
-    val isAutoLockEnabled: Boolean = true
-)
-
-// Convert between SecurityData and SecuritySettings for UI compatibility
-fun SecurityData.toSecuritySettings() = SecuritySettings(
-    isPinEnabled = isPinEnabled,
-    isBiometricEnabled = isBiometricEnabled,
-    pinHash = pinHash,
-    autoLockTimeout = autoLockTimeout,
-    isAutoLockEnabled = isAutoLockEnabled
-)
-
-fun SecuritySettings.toSecurityData(userId: String) = SecurityData(
-    userId = userId,
-    isPinEnabled = isPinEnabled,
-    isBiometricEnabled = isBiometricEnabled,
-    pinHash = pinHash,
-    autoLockTimeout = autoLockTimeout,
-    isAutoLockEnabled = isAutoLockEnabled
-)
-
-// Database helper functions
-class SecurityDatabaseHelper(private val context: Context) {
-    private val databaseManager = DatabaseManager.getInstance(context)
-    private val securityRepository = databaseManager.securityRepository
-    
-    suspend fun getSecuritySettings(userId: String): SecuritySettings {
-        return securityRepository.getSecuritySettings(userId)?.toSecuritySettings() 
-            ?: SecuritySettings()
-    }
-    
-    suspend fun saveSecuritySettings(userId: String, settings: SecuritySettings) {
-        securityRepository.updateSecuritySettings(settings.toSecurityData(userId))
-    }
-    
-    suspend fun savePinHash(userId: String, pinHash: String) {
-        securityRepository.savePinHash(userId, pinHash)
-    }
-    
-    suspend fun removePinHash(userId: String) {
-        securityRepository.removePinHash(userId)
-    }
-    
-    suspend fun verifyPin(userId: String, inputPin: String): Boolean {
-        return securityRepository.verifyPin(userId, inputPin)
-    }
-}
-
-/*
-// ============================================================================
-// ROOM DATABASE IMPLEMENTATION (COMMENTED - READY FOR PRODUCTION)
-// ============================================================================
-
-// When ready to switch to Room database, simply:
-// 1. Change USE_ROOM_DATABASE = true in DatabaseManager.kt
-// 2. Uncomment the Room implementation in DatabaseManager.kt
-// 3. Add Room dependencies to build.gradle:
-//    implementation "androidx.room:room-runtime:2.5.0"
-//    implementation "androidx.room:room-ktx:2.5.0"
-//    kapt "androidx.room:room-compiler:2.5.0"
-// 4. Add kapt plugin to build.gradle: apply plugin: 'kotlin-kapt'
-
-// No changes needed in this file - the SecurityDatabaseHelper will automatically
-// use Room database when the flag is switched in DatabaseManager.kt
-
-*/
-
-// Legacy database object for backward compatibility (will be removed)
-object SecurityDatabase {
-    private val helper = mutableMapOf<String, SecurityDatabaseHelper>()
-    
-    fun getHelper(context: Context, userId: String = "default_user"): SecurityDatabaseHelper {
-        return helper.getOrPut(userId) { SecurityDatabaseHelper(context) }
-    }
-}
 
 // Simple PIN hashing function (in production, use proper hashing)
 fun hashPin(pin: String): String {
@@ -139,8 +61,8 @@ fun SecuritySettingsScreen(navController: NavController) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
-    // Database helper
-    val databaseHelper = remember { SecurityDatabaseHelper(context) }
+    // Database helper - using centralized helper with memory-safe context
+    val databaseHelper = remember { SecurityDatabaseHelper.getInstance(context) }
     val userId = "default_user" // In real app, get from TokenManager
     
     // Security settings state
