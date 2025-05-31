@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { config } from "../config/config";
-import { UserType } from "../types/user.types";
+import { UserType, UserProfileUpdatePayload } from "../types/user.types";
 
 class Database {
 	private static instance: Database;
@@ -93,6 +93,48 @@ class Database {
 			.eq("email", email);
 		
 		if (error) {
+			throw error;
+		}
+	}
+
+	async updateUserProfile(userId: string, profileData: UserProfileUpdatePayload): Promise<UserType | null> {
+		try {
+			console.log(`Updating user profile for ID: ${userId}`);
+			
+			// Prepare update data - map frontend fields to database columns
+			const updateData: Partial<UserType> = {};
+			
+			if (profileData.name) updateData.name = profileData.name;
+			if (profileData.phone) updateData.phone = profileData.phone;
+			if (profileData.date_of_birth) updateData.date_of_birth = profileData.date_of_birth;
+			if (profileData.occupation) updateData.occupation = profileData.occupation;
+			if (profileData.monthly_income) updateData.monthly_income = profileData.monthly_income;
+			if (profileData.financial_goals) updateData.financial_goals = profileData.financial_goals;
+			
+			// Add updated timestamp
+			updateData.updated_at = new Date().toISOString();
+
+			const { data, error } = await this.supabase
+				.from('users')
+				.update(updateData)
+				.eq('id', userId)
+				.select()
+				.single();
+
+			if (error) {
+				console.error('Supabase error updating user profile:', error);
+				throw error;
+			}
+
+			if (!data) {
+				console.log('No user found with ID:', userId);
+				return null;
+			}
+
+			console.log('User profile updated successfully:', data);
+			return data as UserType;
+		} catch (error) {
+			console.error('Error in updateUserProfile:', error);
 			throw error;
 		}
 	}

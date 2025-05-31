@@ -37,6 +37,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import com.example.financialplannerapp.api.LoginRequest
+import com.example.financialplannerapp.api.LoginResponse
+import com.example.financialplannerapp.config.Config
 
 private const val TAG_LOGIN_SCREEN = "LoginScreen"
 
@@ -324,10 +327,11 @@ private fun verifyTokenAndNavigate(
                 
                 if (response.isSuccessful) {
                     // Token is valid, save user info and navigate to dashboard
-                    response.body()?.let { userResponse ->
-                        val user = userResponse.user
-                        tokenManager.saveUserInfo(user.id, user.email, user.name)
-                        Log.d(TAG_LOGIN_SCREEN, "Token verified successfully for user: ${user.name}")
+                    response.body()?.let { userResponse: LoginResponse ->
+                        userResponse.user?.let { user ->
+                            tokenManager.saveUserInfo(user.id, user.email, user.name)
+                            Log.d(TAG_LOGIN_SCREEN, "Token verified successfully for user: ${user.name}")
+                        }
                     }
                     navigateToDashboard(navController)
                 } else {
@@ -366,8 +370,8 @@ private fun navigateToDashboard(navController: NavController) {
 }
 
 private fun signInWithGoogle(context: Context) {
-    // Use RetrofitClient's BASE_URL from Config rather than hardcoding
-    val googleAuthUrl = "${RetrofitClient.retrofit.baseUrl()}api/auth/google"
+    // Use Config.BASE_URL directly instead of accessing private retrofit property
+    val googleAuthUrl = "${Config.BASE_URL}/api/auth/google"
     Log.d(TAG_LOGIN_SCREEN, "Attempting to sign in with Google: $googleAuthUrl")
     try {
         Toast.makeText(context, "Opening browser for Google Sign-In...", Toast.LENGTH_SHORT).show()

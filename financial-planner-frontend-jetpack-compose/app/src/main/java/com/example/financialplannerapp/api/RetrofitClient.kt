@@ -2,22 +2,48 @@ package com.example.financialplannerapp.api
 
 import com.example.financialplannerapp.config.Config
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(Config.REQUEST_TIMEOUT, TimeUnit.SECONDS)
-        .readTimeout(Config.REQUEST_TIMEOUT, TimeUnit.SECONDS)
-        .writeTimeout(Config.REQUEST_TIMEOUT, TimeUnit.SECONDS)
-        .build()
-
-    val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(Config.API_BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-
-    val authService: AuthService = retrofit.create(AuthService::class.java)
+    
+    // Timeout constants
+    private const val CONNECT_TIMEOUT = 30L
+    private const val READ_TIMEOUT = 30L
+    private const val WRITE_TIMEOUT = 30L
+    
+    // OkHttp client with timeouts and logging
+    private val okHttpClient: OkHttpClient by lazy {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        
+        OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+            .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
+            .addInterceptor(loggingInterceptor)
+            .build()
+    }
+    
+    // Retrofit instance
+    val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(Config.BASE_URL + "/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+    
+    // API service instance
+    val apiService: ApiService by lazy {
+        retrofit.create(ApiService::class.java)
+    }
+    
+    // Auth service alias for backward compatibility
+    val authService: ApiService by lazy {
+        apiService
+    }
 }
