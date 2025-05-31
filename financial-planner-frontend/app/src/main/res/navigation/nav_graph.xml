@@ -64,6 +64,9 @@
         <action
             android:id="@+id/action_settingsFragment_to_helpAndFAQFragment"
             app:destination="@id/helpAndFAQFragment" />
+        <action
+            android:id="@+id/action_settingsFragment_to_contactUsReportFragment"
+            app:destination="@id/contactUsReportFragment" />
     </fragment>
 
     <fragment
@@ -95,4 +98,11 @@
         android:name="com.example.financialplannerapp.fragments.settings.HelpAndFAQFragment"
         android:label="Pusat Bantuan &amp; FAQ"
         tools:layout="@layout/fragment_help_and_f_a_q" />
+
+    <fragment
+        android:id="@+id/contactUsReportFragment"
+        android:name="com.example.financialplannerapp.fragments.settings.ContactUsReportFragment"
+        android:label="Hubungi Kami"
+        tools:layout="@layout/fragment_contact_us_report" />
+
 </navigation>
