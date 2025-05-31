@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -22,16 +21,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
+import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
+import com.example.financialplannerapp.data.AppSettings
+import com.example.financialplannerapp.service.LocalTranslator
+import com.example.financialplannerapp.service.LocalThemeService
+import com.example.financialplannerapp.service.TranslationProvider
+import com.example.financialplannerapp.service.ThemeProvider
+import com.example.financialplannerapp.service.AppProvider
+import com.example.financialplannerapp.service.rememberSettingsManager
 
 private const val TAG_APP_SETTINGS = "AppSettingsScreen"
-
-// Bibit-inspired color palette
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val BibitDarkGreen = Color(0xFF388E3C)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,26 +39,61 @@ fun AppSettingsScreen(navController: NavController) {
     Log.d(TAG_APP_SETTINGS, "AppSettingsScreen composing...")
     
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val translator = LocalTranslator.current
+    val themeService = LocalThemeService.current
+    val settingsManager = rememberSettingsManager()
     
-    // State for settings
-    var selectedTheme by remember { mutableStateOf("Sistem") }
-    var selectedLanguage by remember { mutableStateOf("Bahasa Indonesia") }
-    var selectedCurrency by remember { mutableStateOf("IDR - Rupiah") }
-    var notificationsEnabled by remember { mutableStateOf(true) }
+    // Database helper - using centralized helper with memory-safe context
+    val databaseHelper = remember { AppSettingsDatabaseHelper.getInstance(context) }
+    val userId = "default_user" // In real app, get from TokenManager
     
-    val themeOptions = listOf("Terang", "Gelap", "Sistem")
-    val languageOptions = listOf("Bahasa Indonesia", "English", "中文")
-    val currencyOptions = listOf("IDR - Rupiah", "USD - Dollar", "EUR - Euro", "JPY - Yen")
+    // State for settings - load from database
+    var appSettings by remember { mutableStateOf(AppSettings()) }
+    
+    // Load settings from database on startup
+    LaunchedEffect(Unit) {
+        appSettings = databaseHelper.getAppSettings(userId)
+    }
+    
+    // Reactive settings updates
+    LaunchedEffect(Unit) {
+        settingsManager.getSettingsFlow().collect { settings ->
+            appSettings = settings
+        }
+    }
+    
+    // Theme options with translations
+    val themeOptions = mapOf(
+        "light" to translator.get("theme_light"),
+        "dark" to translator.get("theme_dark"),
+        "system" to translator.get("theme_system")
+    )
+    
+    // Language options with translations
+    val languageOptions = mapOf(
+        "id" to "Bahasa Indonesia",
+        "en" to "English",
+        "zh" to "中文"
+    )
+    
+    // Currency options with translations
+    val currencyOptions = mapOf(
+        "IDR" to translator.get("currency_idr"),
+        "USD" to translator.get("currency_usd"),
+        "EUR" to translator.get("currency_eur"),
+        "JPY" to translator.get("currency_jpy")
+    )
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Pengaturan Aplikasi",
+                        text = translator.get("app_settings"),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = DarkGray
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 },
                 navigationIcon = {
@@ -70,14 +105,14 @@ fun AppSettingsScreen(navController: NavController) {
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Kembali",
-                            tint = BibitGreen
+                            contentDescription = translator.get("back"),
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = DarkGray
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
@@ -92,18 +127,18 @@ fun AppSettingsScreen(navController: NavController) {
         ) {
             // Theme Setting
             SettingCard(
-                title = "Tema Aplikasi",
+                title = translator.get("theme_setting"),
                 icon = Icons.Filled.Palette
             ) {
                 Column {
                     Text(
-                        text = "Pilih tema yang diinginkan",
+                        text = translator.get("theme_setting_desc"),
                         fontSize = 14.sp,
-                        color = MediumGray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                     
-                    themeOptions.forEach { theme ->
+                    themeOptions.forEach { (themeKey, themeName) ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -111,18 +146,24 @@ fun AppSettingsScreen(navController: NavController) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = selectedTheme == theme,
+                                selected = appSettings.theme == themeKey,
                                 onClick = { 
-                                    selectedTheme = theme
-                                    Log.d(TAG_APP_SETTINGS, "Theme changed to: $theme")
-                                    Toast.makeText(context, "Tema diubah ke $theme", Toast.LENGTH_SHORT).show()
+                                    coroutineScope.launch {
+                                        settingsManager.setTheme(themeKey)
+                                        Log.d(TAG_APP_SETTINGS, "Theme changed to: $themeKey")
+                                        Toast.makeText(
+                                            context, 
+                                            translator.get("theme_changed_to", themeName), 
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 },
-                                colors = RadioButtonDefaults.colors(selectedColor = BibitGreen)
+                                colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
                             )
                             Text(
-                                text = theme,
+                                text = themeName,
                                 fontSize = 16.sp,
-                                color = DarkGray,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(start = 8.dp)
                             )
                         }
@@ -132,14 +173,14 @@ fun AppSettingsScreen(navController: NavController) {
             
             // Language Setting
             SettingCard(
-                title = "Bahasa",
+                title = translator.get("language_setting"),
                 icon = Icons.Filled.Language
             ) {
                 Column {
                     Text(
-                        text = "Pilih bahasa aplikasi",
+                        text = translator.get("language_setting_desc"),
                         fontSize = 14.sp,
-                        color = MediumGray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                     
@@ -150,7 +191,7 @@ fun AppSettingsScreen(navController: NavController) {
                         onExpandedChange = { expanded = !expanded }
                     ) {
                         OutlinedTextField(
-                            value = selectedLanguage,
+                            value = languageOptions[appSettings.language] ?: "Bahasa Indonesia",
                             onValueChange = {},
                             readOnly = true,
                             trailingIcon = {
@@ -160,8 +201,8 @@ fun AppSettingsScreen(navController: NavController) {
                                 .fillMaxWidth()
                                 .menuAnchor(),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = BibitGreen,
-                                unfocusedBorderColor = MediumGray
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
                         
@@ -169,14 +210,23 @@ fun AppSettingsScreen(navController: NavController) {
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
-                            languageOptions.forEach { language ->
+                            languageOptions.forEach { (languageKey, languageName) ->
                                 DropdownMenuItem(
-                                    text = { Text(language) },
+                                    text = { Text(languageName) },
                                     onClick = {
-                                        selectedLanguage = language
-                                        expanded = false
-                                        Log.d(TAG_APP_SETTINGS, "Language changed to: $language")
-                                        Toast.makeText(context, "Bahasa diubah ke $language", Toast.LENGTH_SHORT).show()
+                                        coroutineScope.launch {
+                                            // Update language in settings manager and database
+                                            settingsManager.setLanguage(languageKey)
+                                            expanded = false
+                                            Log.d(TAG_APP_SETTINGS, "Language changed to: $languageKey")
+                                            
+                                            // Note: Translation will update on next recomposition through AppProvider
+                                            Toast.makeText(
+                                                context, 
+                                                "Language changed to $languageName", // Use static text for immediate feedback
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                 )
                             }
@@ -187,14 +237,14 @@ fun AppSettingsScreen(navController: NavController) {
             
             // Currency Setting
             SettingCard(
-                title = "Mata Uang Default",
+                title = translator.get("currency_setting"),
                 icon = Icons.Filled.AttachMoney
             ) {
                 Column {
                     Text(
-                        text = "Pilih mata uang default untuk aplikasi",
+                        text = translator.get("currency_setting_desc"),
                         fontSize = 14.sp,
-                        color = MediumGray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                     
@@ -205,7 +255,7 @@ fun AppSettingsScreen(navController: NavController) {
                         onExpandedChange = { expanded = !expanded }
                     ) {
                         OutlinedTextField(
-                            value = selectedCurrency,
+                            value = currencyOptions[appSettings.currency] ?: translator.get("currency_idr"),
                             onValueChange = {},
                             readOnly = true,
                             trailingIcon = {
@@ -215,8 +265,8 @@ fun AppSettingsScreen(navController: NavController) {
                                 .fillMaxWidth()
                                 .menuAnchor(),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = BibitGreen,
-                                unfocusedBorderColor = MediumGray
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
                         
@@ -224,14 +274,20 @@ fun AppSettingsScreen(navController: NavController) {
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
-                            currencyOptions.forEach { currency ->
+                            currencyOptions.forEach { (currencyKey, currencyName) ->
                                 DropdownMenuItem(
-                                    text = { Text(currency) },
+                                    text = { Text(currencyName) },
                                     onClick = {
-                                        selectedCurrency = currency
-                                        expanded = false
-                                        Log.d(TAG_APP_SETTINGS, "Currency changed to: $currency")
-                                        Toast.makeText(context, "Mata uang diubah ke $currency", Toast.LENGTH_SHORT).show()
+                                        coroutineScope.launch {
+                                            settingsManager.setCurrency(currencyKey)
+                                            expanded = false
+                                            Log.d(TAG_APP_SETTINGS, "Currency changed to: $currencyKey")
+                                            Toast.makeText(
+                                                context, 
+                                                translator.get("currency_changed_to", currencyName), 
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                 )
                             }
@@ -242,14 +298,14 @@ fun AppSettingsScreen(navController: NavController) {
             
             // Notifications Setting
             SettingCard(
-                title = "Notifikasi Lokal",
+                title = translator.get("notifications_setting"),
                 icon = Icons.Filled.Notifications
             ) {
                 Column {
                     Text(
-                        text = "Aktifkan notifikasi untuk pengingat dan update",
+                        text = translator.get("notifications_setting_desc"),
                         fontSize = 14.sp,
-                        color = MediumGray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                     
@@ -259,25 +315,27 @@ fun AppSettingsScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Aktifkan Notifikasi",
+                            text = translator.get("enable_notifications"),
                             fontSize = 16.sp,
-                            color = DarkGray
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         
                         Switch(
-                            checked = notificationsEnabled,
-                            onCheckedChange = { 
-                                notificationsEnabled = it
-                                Log.d(TAG_APP_SETTINGS, "Notifications ${if (it) "enabled" else "disabled"}")
-                                Toast.makeText(
-                                    context, 
-                                    "Notifikasi ${if (it) "diaktifkan" else "dinonaktifkan"}", 
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                            checked = appSettings.notificationsEnabled,
+                            onCheckedChange = { enabled ->
+                                coroutineScope.launch {
+                                    settingsManager.setNotifications(enabled)
+                                    Log.d(TAG_APP_SETTINGS, "Notifications ${if (enabled) "enabled" else "disabled"}")
+                                    Toast.makeText(
+                                        context, 
+                                        translator.get(if (enabled) "notifications_enabled" else "notifications_disabled"), 
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = BibitGreen,
-                                checkedTrackColor = BibitLightGreen
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                             )
                         )
                     }
@@ -300,7 +358,7 @@ private fun SettingCard(
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -315,7 +373,7 @@ private fun SettingCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = BibitGreen,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -323,7 +381,7 @@ private fun SettingCard(
                     text = title,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             
@@ -335,5 +393,7 @@ private fun SettingCard(
 @Preview(showBackground = true)
 @Composable
 fun AppSettingsScreenPreview() {
-    AppSettingsScreen(navController = rememberNavController())
+    AppProvider {
+        AppSettingsScreen(navController = rememberNavController())
+    }
 }

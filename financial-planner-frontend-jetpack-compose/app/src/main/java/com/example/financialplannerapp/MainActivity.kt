@@ -16,7 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.example.financialplannerapp.navigation.AppNavigation
-import com.example.financialplannerapp.ui.theme.FinancialPlannerAppTheme
+import com.example.financialplannerapp.service.AppProvider
 
 class MainActivity : ComponentActivity() {
     private lateinit var tokenManager: TokenManager
@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
         
         setContent {
-            FinancialPlannerAppTheme {
+            AppProvider {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

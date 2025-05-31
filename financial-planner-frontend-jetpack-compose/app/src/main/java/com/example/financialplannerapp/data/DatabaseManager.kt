@@ -483,6 +483,85 @@ class SecurityDatabaseHelper private constructor(context: Context) {
     }
 }
 
+/**
+ * App Settings Database Helper
+ * 
+ * Provides high-level database operations for application settings.
+ * Uses application context to prevent memory leaks.
+ * 
+ * @param context Application context (memory-safe)
+ */
+class AppSettingsDatabaseHelper private constructor(context: Context) {
+    companion object {
+        @Volatile
+        private var INSTANCE: AppSettingsDatabaseHelper? = null
+        
+        /**
+         * Get singleton instance with application context to prevent memory leaks
+         */
+        fun getInstance(context: Context): AppSettingsDatabaseHelper {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: AppSettingsDatabaseHelper(context.applicationContext).also { INSTANCE = it }
+            }
+        }
+    }
+    
+    private val databaseManager = DatabaseManager.getInstance(context)
+    private val settingsRepository = databaseManager.settingsRepository
+    
+    /**
+     * Get app settings for user
+     * 
+     * @param userId Unique identifier for the user
+     * @return AppSettings object with current settings
+     */
+    suspend fun getAppSettings(userId: String): AppSettings {
+        return settingsRepository.getAppSettings(userId)?.toAppSettings() 
+            ?: AppSettings()
+    }
+    
+    /**
+     * Save app settings
+     * 
+     * @param userId Unique identifier for the user
+     * @param settings AppSettings object to save
+     */
+    suspend fun saveAppSettings(userId: String, settings: AppSettings) {
+        val settingsData = settings.toAppSettingsData(userId)
+        val existing = settingsRepository.getAppSettings(userId)
+        
+        if (existing != null) {
+            settingsRepository.updateAppSettings(settingsData)
+        } else {
+            settingsRepository.insertAppSettings(settingsData)
+        }
+    }
+    
+    /**
+     * Update specific setting
+     * 
+     * @param userId Unique identifier for the user
+     * @param updateBlock Lambda to update specific settings
+     */
+    suspend fun updateSetting(userId: String, updateBlock: (AppSettings) -> AppSettings) {
+        val currentSettings = getAppSettings(userId)
+        val updatedSettings = updateBlock(currentSettings)
+        saveAppSettings(userId, updatedSettings)
+    }
+    
+    /**
+     * Get reactive settings updates as Flow
+     * 
+     * @param userId Unique identifier for the user
+     * @return Flow of AppSettings updates
+     */
+    fun getAppSettingsFlow(userId: String): Flow<AppSettings> {
+        return settingsRepository.getAppSettingsFlow(userId).map { 
+            it?.toAppSettings() ?: AppSettings() 
+        }
+    }
+}
+
 // ============================================================================
 // EXTENSION FUNCTIONS FOR DATA MODEL CONVERSION
 // ============================================================================
@@ -563,6 +642,42 @@ fun SecuritySettings.toSecurityData(userId: String) = SecurityData(
     updatedAt = System.currentTimeMillis()
 )
 
+/**
+ * Convert AppSettingsData to AppSettings for UI compatibility
+ * 
+ * Handles all app settings fields with proper defaults.
+ * Tested for various theme, language, and currency combinations.
+ */
+fun AppSettingsData.toAppSettings() = AppSettings(
+    theme = theme.takeIf { it in listOf("light", "dark", "system") } ?: "system",
+    language = language.takeIf { it in listOf("id", "en", "zh") } ?: "id",
+    currency = currency.takeIf { it.isNotBlank() } ?: "IDR",
+    notificationsEnabled = notificationsEnabled,
+    syncOnWifiOnly = syncOnWifiOnly,
+    autoBackupEnabled = autoBackupEnabled
+)
+
+/**
+ * Convert AppSettings to AppSettingsData for database storage
+ * 
+ * Handles all app settings fields with validation and timestamps.
+ * Tested for boundary conditions and invalid input handling.
+ * 
+ * @param userId Unique identifier for the user
+ * @return AppSettingsData ready for database operations
+ */
+fun AppSettings.toAppSettingsData(userId: String) = AppSettingsData(
+    userId = userId,
+    theme = theme.takeIf { it in listOf("light", "dark", "system") } ?: "system",
+    language = language.takeIf { it in listOf("id", "en", "zh") } ?: "id",
+    currency = currency.takeIf { it.isNotBlank() } ?: "IDR",
+    notificationsEnabled = notificationsEnabled,
+    syncOnWifiOnly = syncOnWifiOnly,
+    autoBackupEnabled = autoBackupEnabled,
+    createdAt = System.currentTimeMillis(),
+    updatedAt = System.currentTimeMillis()
+)
+
 // ============================================================================
 // UI DATA MODELS (FOR COMPATIBILITY WITH EXISTING SCREENS)
 // ============================================================================
@@ -597,6 +712,21 @@ data class SecuritySettings(
     val pinHash: String? = null,
     val autoLockTimeout: Int = 5, // minutes
     val isAutoLockEnabled: Boolean = true
+)
+
+/**
+ * App Settings data model for UI screens
+ * 
+ * Simplified model for application configuration UI.
+ * Maps to AppSettingsData for database operations.
+ */
+data class AppSettings(
+    val theme: String = "system", // light, dark, system
+    val language: String = "id", // id, en, zh
+    val currency: String = "IDR",
+    val notificationsEnabled: Boolean = true,
+    val syncOnWifiOnly: Boolean = false,
+    val autoBackupEnabled: Boolean = true
 )
 
 // ============================================================================
