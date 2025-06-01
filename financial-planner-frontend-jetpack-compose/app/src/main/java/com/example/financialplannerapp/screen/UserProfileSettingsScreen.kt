@@ -28,6 +28,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.config.Config
+import com.example.financialplannerapp.service.LocalTranslator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -137,6 +138,46 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
     
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    
+    // Safe access to translator with fallback
+    val translator = remember {
+        try {
+            LocalTranslator.current
+        } catch (e: Exception) {
+            Log.w(TAG_USER_PROFILE, "Translation service not available, using fallback")
+            object : com.example.financialplannerapp.service.TranslationService {
+                override fun get(key: String): String = when(key) {
+                    "user_profile" -> "User Profile"
+                    "personal_profile" -> "Personal Profile"
+                    "back" -> "Back"
+                    "edit" -> "Edit"
+                    "save" -> "Save"
+                    "cancel" -> "Cancel"
+                    "loading_profile" -> "Loading profile..."
+                    "personal_info" -> "Personal Information"
+                    "professional_info" -> "Professional Information"
+                    "financial_goals_field" -> "Financial Goals"
+                    "name_field" -> "Name"
+                    "email_field" -> "Email"
+                    "phone_field" -> "Phone"
+                    "birth_date_field" -> "Date of Birth"
+                    "occupation_field" -> "Occupation"
+                    "monthly_income_field" -> "Monthly Income"
+                    "email_readonly" -> "Email cannot be changed"
+                    "sync_data" -> "Sync Data"
+                    "last_sync" -> "Last Sync"
+                    "unsaved_changes" -> "Unsaved changes"
+                    "syncing" -> "Syncing..."
+                    "offline_mode" -> "Offline Mode"
+                    "sync_to_server" -> "Sync to Server"
+                    "offline_notice" -> "Data saved locally only"
+                    "error_loading" -> "Error loading profile"
+                    "try_again" -> "Try Again"
+                    else -> key
+                }
+            }
+        }
+    }
     
     // Validate TokenManager on start
     LaunchedEffect(Unit) {
@@ -417,7 +458,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
             TopAppBar(
                 title = {
                     Text(
-                        text = "Profil Pengguna",
+                        text = translator.get("personal_profile"),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = DarkGray
@@ -432,7 +473,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Kembali",
+                            contentDescription = translator.get("back"),
                             tint = BibitGreen
                         )
                     }
@@ -480,7 +521,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                                 Toast.makeText(context, "Data disimpan. Tekan 'Sinkronkan ke Server' untuk menyimpan ke cloud.", Toast.LENGTH_LONG).show()
                             }
                         ) {
-                            Text("Simpan", color = BibitGreen, fontWeight = FontWeight.Medium)
+                            Text(translator.get("save"), color = BibitGreen, fontWeight = FontWeight.Medium)
                         }
                         
                         // Cancel button
@@ -497,7 +538,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                                 Log.d(TAG_USER_PROFILE, "Edit mode cancelled")
                             }
                         ) {
-                            Text("Batal", color = MediumGray)
+                            Text(translator.get("cancel"), color = MediumGray)
                         }
                     } else {
                         // Edit button
@@ -606,32 +647,32 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
             
             // Profile Information Cards
             ProfileInfoCard(
-                title = "Informasi Personal",
+                title = translator.get("personal_info"),
                 icon = Icons.Filled.Person,
                 content = {
                     ProfileTextField(
-                        label = "Nama Lengkap",
+                        label = translator.get("name_field"),
                         value = if (isEditMode) editName else userProfile.name,
                         isEditMode = isEditMode,
                         onValueChange = { editName = it }
                     )
                     
                     ProfileTextField(
-                        label = "Email",
+                        label = translator.get("email_field"),
                         value = userProfile.email,
                         isEditMode = false, // Email cannot be edited
                         onValueChange = { }
                     )
                     
                     ProfileTextField(
-                        label = "Nomor Telepon",
+                        label = translator.get("phone_field"),
                         value = if (isEditMode) editPhone else userProfile.phone,
                         isEditMode = isEditMode,
                         onValueChange = { editPhone = it }
                     )
                     
                     ProfileTextField(
-                        label = "Tanggal Lahir",
+                        label = translator.get("birth_date_field"),
                         value = if (isEditMode) editDateOfBirth else userProfile.dateOfBirth,
                         isEditMode = isEditMode,
                         onValueChange = { editDateOfBirth = it }
@@ -641,18 +682,18 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
             
             // Professional Information Card
             ProfileInfoCard(
-                title = "Informasi Profesional",
+                title = translator.get("professional_info"),
                 icon = Icons.Filled.Work,
                 content = {
                     ProfileTextField(
-                        label = "Pekerjaan",
+                        label = translator.get("occupation_field"),
                         value = if (isEditMode) editOccupation else userProfile.occupation,
                         isEditMode = isEditMode,
                         onValueChange = { editOccupation = it }
                     )
                     
                     ProfileTextField(
-                        label = "Pendapatan Bulanan (IDR)",
+                        label = translator.get("monthly_income_field"),
                         value = if (isEditMode) editMonthlyIncome else userProfile.monthlyIncome,
                         isEditMode = isEditMode,
                         onValueChange = { editMonthlyIncome = it }
@@ -662,11 +703,11 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
             
             // Financial Goals Card
             ProfileInfoCard(
-                title = "Tujuan Keuangan",
+                title = translator.get("financial_goals_field"),
                 icon = Icons.Filled.TrendingUp,
                 content = {
                     ProfileTextField(
-                        label = "Tujuan Keuangan",
+                        label = translator.get("financial_goals_field"),
                         value = if (isEditMode) editFinancialGoals else userProfile.financialGoals,
                         isEditMode = isEditMode,
                         onValueChange = { editFinancialGoals = it },
@@ -1001,6 +1042,21 @@ private fun ProfileTextField(
     onValueChange: (String) -> Unit,
     maxLines: Int = 1
 ) {
+    // Safe access to translator with fallback
+    val translator = remember {
+        try {
+            LocalTranslator.current
+        } catch (e: Exception) {
+            object : com.example.financialplannerapp.service.TranslationService {
+                override fun get(key: String): String = when(key) {
+                    "email_field" -> "Email"
+                    "email_readonly" -> "Email cannot be changed"
+                    else -> key
+                }
+            }
+        }
+    }
+    
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1013,7 +1069,7 @@ private fun ProfileTextField(
             modifier = Modifier.padding(bottom = 4.dp)
         )
         
-        if (isEditMode && label != "Email") {
+        if (isEditMode && label != translator.get("email_field")) {
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
@@ -1035,9 +1091,9 @@ private fun ProfileTextField(
                     .padding(12.dp),
                 maxLines = maxLines
             )
-            if (label == "Email") {
+            if (label == translator.get("email_field")) {
                 Text(
-                    text = "Email tidak dapat diubah",
+                    text = translator.get("email_readonly"),
                     fontSize = 10.sp,
                     color = MediumGray,
                     modifier = Modifier.padding(top = 2.dp)
@@ -1054,6 +1110,25 @@ private fun SyncStatusCard(
     isSyncing: Boolean,
     onSyncNow: () -> Unit
 ) {
+    val translator = remember {
+        try {
+            LocalTranslator.current
+        } catch (e: Exception) {
+            object : com.example.financialplannerapp.service.TranslationService {
+                override fun get(key: String): String = when(key) {
+                    "sync_data" -> "Sync Data"
+                    "last_sync" -> "Last Sync"
+                    "unsaved_changes" -> "Unsaved changes"
+                    "syncing" -> "Syncing..."
+                    "offline_mode" -> "Offline Mode"
+                    "sync_to_server" -> "Sync to Server"
+                    "offline_notice" -> "Data saved locally only"
+                    else -> key
+                }
+            }
+        }
+    }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1073,13 +1148,13 @@ private fun SyncStatusCard(
             ) {
                 Icon(
                     imageVector = Icons.Filled.CloudSync,
-                    contentDescription = "Sinkronisasi",
+                    contentDescription = translator.get("sync_data"),
                     tint = BibitGreen,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Sinkronisasi Data",
+                    text = translator.get("sync_data"),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = DarkGray
@@ -1091,7 +1166,7 @@ private fun SyncStatusCard(
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 Text(
-                    text = "Sinkronisasi Terakhir:",
+                    text = translator.get("last_sync"),
                     fontSize = 12.sp,
                     color = MediumGray
                 )
@@ -1109,13 +1184,13 @@ private fun SyncStatusCard(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Warning,
-                            contentDescription = "Perubahan Belum Disinkronkan",
+                            contentDescription = translator.get("unsaved_changes"),
                             tint = Color(0xFFFF9800),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Ada perubahan yang belum disinkronkan",
+                            text = translator.get("unsaved_changes"),
                             fontSize = 12.sp,
                             color = Color(0xFFFF9800)
                         )
@@ -1142,7 +1217,7 @@ private fun SyncStatusCard(
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Menyinkronkan...")
+                    Text(translator.get("syncing"))
                 } else if (!isConnected) {
                     Icon(
                         imageVector = Icons.Filled.CloudOff,
@@ -1150,7 +1225,7 @@ private fun SyncStatusCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Offline - Tidak dapat sinkronisasi")
+                    Text(translator.get("offline_mode"))
                 } else {
                     Icon(
                         imageVector = Icons.Filled.CloudUpload,
@@ -1158,14 +1233,14 @@ private fun SyncStatusCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Sinkronkan ke Server")
+                    Text(translator.get("sync_to_server"))
                 }
             }
             
             // Offline notice
             if (!isConnected) {
                 Text(
-                    text = "💾 Data disimpan secara lokal dan akan disinkronkan saat online",
+                    text = translator.get("offline_notice"),
                     fontSize = 12.sp,
                     color = MediumGray,
                     modifier = Modifier.padding(top = 8.dp),
@@ -1200,43 +1275,30 @@ private fun validateAndSanitizeInput(
     monthlyIncome: String,
     financialGoals: String
 ): Pair<Boolean, String> {
-    // Name validation
-    if (name.isBlank() || name.length < 2 || name.length > 100) {
-        return false to "Nama harus diisi (2-100 karakter)"
+    if (name.isBlank()) {
+        return false to "Nama tidak boleh kosong"
     }
-    
-    // Phone validation
+    if (name.length > 100) {
+        return false to "Nama terlalu panjang (maksimal 100 karakter)"
+    }
     if (phone.isNotBlank() && !isValidPhoneNumber(phone)) {
         return false to "Format nomor telepon tidak valid"
     }
-    
-    // Date validation
     if (dateOfBirth.isNotBlank() && !isValidDate(dateOfBirth)) {
-        return false to "Format tanggal tidak valid (gunakan DD/MM/YYYY)"
+        return false to "Format tanggal lahir tidak valid (gunakan DD/MM/YYYY atau YYYY-MM-DD)"
     }
-    
-    // Occupation validation
     if (occupation.length > 100) {
-        return false to "Pekerjaan maksimal 100 karakter"
+        return false to "Pekerjaan terlalu panjang (maksimal 100 karakter)"
     }
-    
-    // Monthly income validation
-    if (monthlyIncome.isNotBlank()) {
-        val income = monthlyIncome.toDoubleOrNull()
-        if (income == null || income < 0 || income > 999999999) {
-            return false to "Pendapatan bulanan tidak valid"
-        }
+    if (monthlyIncome.isNotBlank() && monthlyIncome.toLongOrNull() == null) {
+        return false to "Pendapatan bulanan harus berupa angka"
     }
-    
-    // Financial goals validation
     if (financialGoals.length > 500) {
-        return false to "Tujuan keuangan maksimal 500 karakter"
+        return false to "Tujuan keuangan terlalu panjang (maksimal 500 karakter)"
     }
-    
-    return true to "Valid"
+    return true to ""
 }
 
-// Sanitize string input
 private fun sanitizeString(input: String): String {
-    return input.trim().replace(Regex("<[^>]*>"), "") // Remove HTML tags
+    return input.trim().replace(Regex("[<>\"'&]"), "")
 }

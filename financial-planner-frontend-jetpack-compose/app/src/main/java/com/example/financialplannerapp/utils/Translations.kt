@@ -4,7 +4,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 
 /**
- * Translation System for Financial Planner App
+ * Translation System            // User Profile Settings
+            "name_field" to "Nama Lengkap",
+            "email_field" to "Email",
+            "phone_field" to "Nomor Telepon",
+            "birth_date_field" to "Tanggal Lahir",
+            "occupation_field" to "Pekerjaan",
+            "monthly_income_field" to "Pendapatan Bulanan (IDR)",
+            "financial_goals_field" to "Tujuan Keuangan",
+            "personal_info" to "Informasi Personal",
+            "professional_info" to "Informasi Profesional",
+            "sync_data" to "Sinkronisasi Data",
+            "last_sync" to "Sinkronisasi Terakhir:",
+            "sync_to_server" to "Sinkronkan ke Server",
+            "syncing" to "Menyinkronkan...",
+            "offline_mode" to "Offline - Tidak dapat sinkronisasi",
+            "offline_notice" to "💾 Data disimpan secara lokal dan akan disinkronkan saat online",
+            "check_connection" to "Cek Koneksi",
+            "edit_profile" to "Edit Profil",
+            "email_readonly" to "Email tidak dapat diubah",
+            "unsaved_changes" to "Ada perubahan yang belum disinkronkan",or Financial Planner App
  * 
  * Provides complete translations for Indonesian, English, and Chinese languages.
  * Includes reactive translation updates when language changes.
@@ -70,6 +89,32 @@ object Translations {
         object HelpCenterDesc : Key("help_center_desc");
         object ContactSupport : Key("contact_support");
         object ContactSupportDesc : Key("contact_support_desc");
+        
+        // Security Settings
+        object PinApplication : Key("pin_application");
+        object PinProtectApp : Key("pin_protect_app");
+        object PinActive : Key("pin_active");
+        object PinInactive : Key("pin_inactive");
+        object PinProtected : Key("pin_protected");
+        object PinNotProtected : Key("pin_not_protected");
+        object BiometricAuth : Key("biometric_auth");
+        object UseFingerprintFace : Key("use_fingerprint_face");
+        object BiometricActive : Key("biometric_active");
+        object BiometricInactive : Key("biometric_inactive");
+        object AutoLock : Key("auto_lock");
+        object LockWhenInactive : Key("lock_when_inactive");
+        object AutoLockActive : Key("auto_lock_active");
+        object AutoLockInactive : Key("auto_lock_inactive");
+        object SetupPin : Key("setup_pin");
+        object DisablePin : Key("disable_pin");
+        object DisablePinConfirm : Key("disable_pin_confirm");
+        object Yes : Key("yes");
+        object SecurityTips : Key("security_tips");
+        object PinStrength : Key("pin_strength");
+        object TooShort : Key("too_short");
+        object Weak : Key("weak");
+        object Medium : Key("medium");
+        object Strong : Key("strong");
     }
     
     /**
@@ -126,7 +171,33 @@ object Translations {
             "help_center" to "Pusat Bantuan",
             "help_center_desc" to "FAQ dan panduan penggunaan",
             "contact_support" to "Hubungi Kami",
-            "contact_support_desc" to "Laporkan masalah atau kirim feedback"
+            "contact_support_desc" to "Laporkan masalah atau kirim feedback",
+            
+            // Security Settings
+            "pin_application" to "PIN Aplikasi",
+            "pin_protect_app" to "Lindungi aplikasi dengan PIN 4-6 digit",
+            "pin_active" to "PIN Aktif",
+            "pin_inactive" to "PIN Tidak Aktif",
+            "pin_protected" to "🛡️ Aplikasi terlindungi dengan PIN",
+            "pin_not_protected" to "⚠️ Aplikasi tidak memiliki proteksi PIN",
+            "biometric_auth" to "Autentikasi Biometrik",
+            "use_fingerprint_face" to "Gunakan sidik jari atau Face ID",
+            "biometric_active" to "Biometrik Aktif",
+            "biometric_inactive" to "Biometrik Tidak Aktif",
+            "auto_lock" to "Kunci Otomatis",
+            "lock_when_inactive" to "Kunci aplikasi saat tidak aktif",
+            "auto_lock_active" to "Kunci Otomatis Aktif",
+            "auto_lock_inactive" to "Kunci Otomatis Tidak Aktif",
+            "setup_pin" to "Atur PIN Aplikasi",
+            "disable_pin" to "Nonaktifkan PIN",
+            "disable_pin_confirm" to "Apakah Anda yakin ingin menonaktifkan PIN? Aplikasi akan menjadi kurang aman.",
+            "yes" to "Ya",
+            "security_tips" to "Tips Keamanan:",
+            "pin_strength" to "Kekuatan PIN:",
+            "too_short" to "Terlalu Pendek",
+            "weak" to "Lemah",
+            "medium" to "Sedang",
+            "strong" to "Kuat"
         ),
         
         "en" to mapOf( // English
@@ -178,7 +249,51 @@ object Translations {
             "help_center" to "Help Center",
             "help_center_desc" to "FAQ and user guide",
             "contact_support" to "Contact Us",
-            "contact_support_desc" to "Report issues or send feedback"
+            "contact_support_desc" to "Report issues or send feedback",
+            
+            // User Profile Settings
+            "name_field" to "Full Name",
+            "email_field" to "Email",
+            "phone_field" to "Phone Number",
+            "birth_date_field" to "Date of Birth",
+            "occupation_field" to "Occupation",
+            "monthly_income_field" to "Monthly Income (IDR)",
+            "financial_goals_field" to "Financial Goals",
+            "personal_info" to "Personal Information",
+            "professional_info" to "Professional Information",
+            "sync_data" to "Data Sync",
+            "last_sync" to "Last Sync:",
+            "sync_to_server" to "Sync to Server",
+            "syncing" to "Syncing...",
+            "offline_mode" to "Offline - Cannot sync",
+            "offline_notice" to "💾 Data saved locally and will sync when online",
+            "check_connection" to "Check Connection",
+            "edit_profile" to "Edit Profile",
+            "email_readonly" to "Email cannot be changed",
+            "unsaved_changes" to "There are unsaved changes",
+            "pin_protect_app" to "Protect app with 4-6 digit PIN",
+            "pin_active" to "PIN Active",
+            "pin_inactive" to "PIN Inactive",
+            "pin_protected" to "🛡️ App protected with PIN",
+            "pin_not_protected" to "⚠️ App has no PIN protection",
+            "biometric_auth" to "Biometric Authentication",
+            "use_fingerprint_face" to "Use fingerprint or Face ID",
+            "biometric_active" to "Biometric Active",
+            "biometric_inactive" to "Biometric Inactive",
+            "auto_lock" to "Auto Lock",
+            "lock_when_inactive" to "Lock app when inactive",
+            "auto_lock_active" to "Auto Lock Active",
+            "auto_lock_inactive" to "Auto Lock Inactive",
+            "setup_pin" to "Setup App PIN",
+            "disable_pin" to "Disable PIN",
+            "disable_pin_confirm" to "Are you sure you want to disable PIN? The app will become less secure.",
+            "yes" to "Yes",
+            "security_tips" to "Security Tips:",
+            "pin_strength" to "PIN Strength:",
+            "too_short" to "Too Short",
+            "weak" to "Weak",
+            "medium" to "Medium",
+            "strong" to "Strong"
         ),
         
         "zh" to mapOf( // Chinese
@@ -230,7 +345,54 @@ object Translations {
             "help_center" to "帮助中心",
             "help_center_desc" to "常见问题和用户指南",
             "contact_support" to "联系我们",
-            "contact_support_desc" to "报告问题或发送反馈"
+            "contact_support_desc" to "报告问题或发送反馈",
+            
+            // User Profile Settings
+            "name_field" to "全名",
+            "email_field" to "邮箱",
+            "phone_field" to "电话号码",
+            "birth_date_field" to "出生日期",
+            "occupation_field" to "职业",
+            "monthly_income_field" to "月收入 (IDR)",
+            "financial_goals_field" to "财务目标",
+            "personal_info" to "个人信息",
+            "professional_info" to "职业信息",
+            "sync_data" to "数据同步",
+            "last_sync" to "最后同步:",
+            "sync_to_server" to "同步到服务器",
+            "syncing" to "同步中...",
+            "offline_mode" to "离线 - 无法同步",
+            "offline_notice" to "💾 数据已在本地保存，联网时将同步",
+            "check_connection" to "检查连接",
+            "edit_profile" to "编辑个人资料",
+            "email_readonly" to "邮箱无法更改",
+            "unsaved_changes" to "有未保存的更改",
+            
+            // Security Settings  
+            "pin_application" to "应用PIN",
+            "pin_protect_app" to "使用4-6位PIN保护应用",
+            "pin_active" to "PIN已激活",
+            "pin_inactive" to "PIN未激活",
+            "pin_protected" to "🛡️ 应用已受PIN保护",
+            "pin_not_protected" to "⚠️ 应用没有PIN保护",
+            "biometric_auth" to "生物识别认证",
+            "use_fingerprint_face" to "使用指纹或Face ID",
+            "biometric_active" to "生物识别已激活",
+            "biometric_inactive" to "生物识别未激活",
+            "auto_lock" to "自动锁定",
+            "lock_when_inactive" to "闲置时锁定应用",
+            "auto_lock_active" to "自动锁定已激活",
+            "auto_lock_inactive" to "自动锁定未激活",
+            "setup_pin" to "设置应用PIN",
+            "disable_pin" to "禁用PIN",
+            "disable_pin_confirm" to "您确定要禁用PIN吗？应用将变得不太安全。",
+            "yes" to "是",
+            "security_tips" to "安全提示：",
+            "pin_strength" to "PIN强度：",
+            "too_short" to "太短",
+            "weak" to "弱",
+            "medium" to "中等",
+            "strong" to "强"
         )
     )
     
