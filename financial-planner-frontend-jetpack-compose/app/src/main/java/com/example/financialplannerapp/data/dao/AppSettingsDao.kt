@@ -5,10 +5,10 @@ import kotlinx.coroutines.flow.Flow
 import com.example.financialplannerapp.data.model.AppSettings
 
 /**
- * App Settings DAO
+ * Data Access Object for App Settings
  * 
- * Data Access Object for app settings operations.
- * Provides CRUD operations with reactive Flow support.
+ * Provides database operations for app settings including reactive Flow-based queries.
+ * Uses REPLACE strategy to maintain single settings record.
  */
 @Dao
 interface AppSettingsDao {
@@ -20,26 +20,33 @@ interface AppSettingsDao {
     fun getSettings(): Flow<AppSettings?>
     
     /**
-     * Get app settings once
+     * Get app settings once (for immediate access)
      */
     @Query("SELECT * FROM app_settings WHERE id = 0 LIMIT 1")
     suspend fun getSettingsOnce(): AppSettings?
     
     /**
-     * Insert app settings (replace if exists)
+     * Insert or update app settings
+     * Uses REPLACE strategy to ensure single record
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSettings(settings: AppSettings)
     
     /**
-     * Update app settings
+     * Update existing app settings
      */
     @Update
     suspend fun updateSettings(settings: AppSettings)
     
     /**
-     * Delete all settings
+     * Delete all settings (for reset purposes)
      */
     @Query("DELETE FROM app_settings")
     suspend fun deleteAllSettings()
+    
+    /**
+     * Check if settings exist
+     */
+    @Query("SELECT COUNT(*) FROM app_settings WHERE id = 0")
+    suspend fun settingsExist(): Int
 }

@@ -2,42 +2,38 @@ package com.example.financialplannerapp.service
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.flow.collectAsState
+import androidx.compose.runtime.collectAsState
+import com.example.financialplannerapp.utils.TranslationProvider
+import com.example.financialplannerapp.utils.ThemeProvider
+import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
 
 /**
- * App Provider
- * 
- * Main provider that wraps the entire app with all necessary services.
- * Handles theme switching, translations, and settings management.
+ * App Provider - Main provider that wraps the entire app with database-backed settings
  */
 @Composable
 fun AppProvider(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
+    val dbHelper = remember { AppSettingsDatabaseHelper.getInstance(context) }
+    val settingsService = remember { ReactiveSettingsService.getInstance() }
     
-    // Create service instances
-    val themeService = remember { ThemeService.getInstance() }
-    val translationService = remember { TranslationService.getInstance() }
-    val settingsManager = remember { 
-        SettingsManager.getInstance(context, themeService, translationService)
+    // Initialize settings service
+    LaunchedEffect(Unit) {
+        settingsService.initialize(dbHelper)
     }
     
-    // Observe current settings and theme changes
-    val currentSettings by settingsManager.currentSettings.collectAsState(
-        initial = com.example.financialplannerapp.data.AppSettings()
-    )
+    // Collect current settings
+    val currentSettings by settingsService.currentSettings.collectAsState()
     
-    // Observe theme changes from the theme service
-    val currentTheme by themeService.currentTheme.collectAsState(initial = "system")
-    
-    // Apply theme based on current settings or theme service
-    val effectiveTheme = currentSettings.theme.takeIf { it.isNotEmpty() } ?: currentTheme
-    
-    // Apply theme based on current settings
-    ThemeProvider(theme = effectiveTheme) {
-        TranslationProvider(language = currentSettings.language) {
-            content()
+    // Apply theme and translation providers with reactive settings
+    CompositionLocalProvider(
+        LocalSettingsService provides settingsService
+    ) {
+        ThemeProvider(theme = currentSettings.theme) {
+            TranslationProvider(language = currentSettings.language) {
+                content()
+            }
         }
     }
 }

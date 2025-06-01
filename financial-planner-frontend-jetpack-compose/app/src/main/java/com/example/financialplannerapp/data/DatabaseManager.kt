@@ -21,8 +21,8 @@ import java.util.*
 class DatabaseManager private constructor(private val context: Context) {
     
     companion object {
-        // 🔧 TOGGLE THIS FLAG TO SWITCH BETWEEN MOCK AND ROOM DATABASE
-        private const val USE_ROOM_DATABASE = false // Set to true when ready for production
+        // Set to true to use Room Database, false for mock data
+        private const val USE_ROOM_DATABASE = true
         
         @Volatile
         private var INSTANCE: DatabaseManager? = null
@@ -38,20 +38,18 @@ class DatabaseManager private constructor(private val context: Context) {
     // Repository instances
     val userProfileRepository: UserProfileRepository by lazy {
         if (USE_ROOM_DATABASE) {
-            Log.d(TAG, "Using Room Database for User Profile")
-            // UserProfileRoomRepository(context) // Uncomment when Room is enabled
-            throw UnsupportedOperationException("Room database not enabled. Set USE_ROOM_DATABASE = true and uncomment Room implementations.")
-        } else {
             Log.d(TAG, "Using Mock Database for User Profile")
+            UserProfileMockRepository()
+        } else {
+            Log.d(TAG, "Using Mock Database for User Profile") 
             UserProfileMockRepository()
         }
     }
     
     val securityRepository: SecurityRepository by lazy {
         if (USE_ROOM_DATABASE) {
-            Log.d(TAG, "Using Room Database for Security")
-            // SecurityRoomRepository(context) // Uncomment when Room is enabled
-            throw UnsupportedOperationException("Room database not enabled. Set USE_ROOM_DATABASE = true and uncomment Room implementations.")
+            Log.d(TAG, "Using Mock Database for Security")
+            SecurityMockRepository()
         } else {
             Log.d(TAG, "Using Mock Database for Security")
             SecurityMockRepository()
@@ -61,8 +59,7 @@ class DatabaseManager private constructor(private val context: Context) {
     val settingsRepository: SettingsRepository by lazy {
         if (USE_ROOM_DATABASE) {
             Log.d(TAG, "Using Room Database for Settings")
-            // SettingsRoomRepository(context) // Uncomment when Room is enabled
-            throw UnsupportedOperationException("Room database not enabled. Set USE_ROOM_DATABASE = true and uncomment Room implementations.")
+            SettingsRoomMockRepository(context) // Use Room-backed implementation
         } else {
             Log.d(TAG, "Using Mock Database for Settings")
             SettingsMockRepository()
@@ -315,6 +312,77 @@ class SettingsMockRepository : SettingsRepository {
     }
       override fun getAppSettingsFlow(userId: String): Flow<AppSettingsData?> {
         return flowOf(appSettings[userId] ?: AppSettingsData(userId = userId))
+    }
+}
+
+/**
+ * Settings Repository that uses actual Room Database
+ * This implementation persists data properly
+ */
+class SettingsRoomMockRepository(private val context: Context) : SettingsRepository {
+    private val database = AppDatabase.getDatabase(context)
+    private val dao = database.appSettingsDao()
+    
+    override suspend fun getAppSettings(userId: String): AppSettingsData? {
+        return try {
+            val entity = dao.getSettingsOnce()
+            entity?.let {
+                AppSettingsData(
+                    userId = userId,
+                    theme = it.theme,
+                    language = it.language,
+                    currency = it.currency,
+                    notificationsEnabled = it.notificationsEnabled,
+                    syncOnWifiOnly = it.syncOnWifiOnly,
+                    autoBackupEnabled = it.autoBackupEnabled,
+                    createdAt = it.createdAt,
+                    updatedAt = it.updatedAt
+                )
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    override suspend fun insertAppSettings(settings: AppSettingsData) {
+        val entity = com.example.financialplannerapp.data.model.AppSettings(
+            id = 0,
+            theme = settings.theme,
+            language = settings.language,
+            currency = settings.currency,
+            notificationsEnabled = settings.notificationsEnabled,
+            syncOnWifiOnly = settings.syncOnWifiOnly,
+            autoBackupEnabled = settings.autoBackupEnabled,
+            createdAt = settings.createdAt,
+            updatedAt = settings.updatedAt
+        )
+        dao.insertSettings(entity)
+    }
+    
+    override suspend fun updateAppSettings(settings: AppSettingsData) {
+        insertAppSettings(settings) // Using REPLACE strategy
+    }
+    
+    override suspend fun deleteAppSettings(userId: String) {
+        dao.deleteAllSettings()
+    }
+    
+    override fun getAppSettingsFlow(userId: String): Flow<AppSettingsData?> {
+        return dao.getSettings().map { entity ->
+            entity?.let {
+                AppSettingsData(
+                    userId = userId,
+                    theme = it.theme,
+                    language = it.language,
+                    currency = it.currency,
+                    notificationsEnabled = it.notificationsEnabled,
+                    syncOnWifiOnly = it.syncOnWifiOnly,
+                    autoBackupEnabled = it.autoBackupEnabled,
+                    createdAt = it.createdAt,
+                    updatedAt = it.updatedAt
+                )
+            }
+        }
     }
 }
 

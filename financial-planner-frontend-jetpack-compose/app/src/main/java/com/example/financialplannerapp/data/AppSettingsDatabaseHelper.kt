@@ -6,33 +6,23 @@ import kotlinx.coroutines.flow.map
 import com.example.financialplannerapp.data.repository.AppSettingsRepository
 
 /**
- * App Settings Data Model for UI
- * 
- * Simplified model for application settings used in UI layer.
- */
-data class AppSettings(
-    val theme: String = "system", // light, dark, system
-    val language: String = "id", // id, en, zh
-    val currency: String = "IDR",
-    val notificationsEnabled: Boolean = true,
-    val syncOnWifiOnly: Boolean = false,
-    val autoBackupEnabled: Boolean = true
-)
-
-/**
  * App Settings Database Helper
  * 
- * Simplified helper for managing app settings with Room database.
- * Provides high-level operations for the UI layer.
+ * High-level helper for managing app settings with database persistence.
+ * Provides a simplified interface for settings operations throughout the app.
  */
 class AppSettingsDatabaseHelper private constructor(context: Context) {
+    
     private val database = AppDatabase.getDatabase(context)
-    private val settingsRepository = AppSettingsRepository(database.appSettingsDao())
+    private val repository = AppSettingsRepository(database.appSettingsDao())
     
     companion object {
         @Volatile
         private var INSTANCE: AppSettingsDatabaseHelper? = null
         
+        /**
+         * Get singleton instance with application context to prevent memory leaks
+         */
         fun getInstance(context: Context): AppSettingsDatabaseHelper {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: AppSettingsDatabaseHelper(context.applicationContext).also { INSTANCE = it }
@@ -40,31 +30,30 @@ class AppSettingsDatabaseHelper private constructor(context: Context) {
         }
     }
       /**
-     * Get app settings from database
+     * Get app settings for a user (using default implementation for now)
      */
     suspend fun getAppSettings(userId: String): AppSettings {
-        return try {
-            val dbSettings = settingsRepository.getAppSettings(userId)
-            dbSettings?.let {
-                AppSettings(
-                    theme = it.theme,
-                    language = it.language,
-                    currency = it.currency,
-                    notificationsEnabled = it.notificationsEnabled,
-                    syncOnWifiOnly = it.syncOnWifiOnly,
-                    autoBackupEnabled = it.autoBackupEnabled
-                )
-            } ?: AppSettings()
-        } catch (e: Exception) {
-            AppSettings()
+        val roomSettings = repository.getSettingsOnce()
+        return if (roomSettings != null) {
+            AppSettings(
+                theme = roomSettings.theme,
+                language = roomSettings.language,
+                currency = roomSettings.currency,
+                notificationsEnabled = roomSettings.notificationsEnabled,
+                syncOnWifiOnly = roomSettings.syncOnWifiOnly,
+                autoBackupEnabled = roomSettings.autoBackupEnabled
+            )
+        } else {
+            getDefaultSettings()
         }
     }
     
     /**
-     * Save app settings to database
+     * Save app settings for a user
      */
     suspend fun saveAppSettings(userId: String, settings: AppSettings) {
-        val dbSettings = com.example.financialplannerapp.data.model.AppSettings(
+        val roomSettings = com.example.financialplannerapp.data.model.AppSettings(
+            id = 0,
             theme = settings.theme,
             language = settings.language,
             currency = settings.currency,
@@ -73,24 +62,15 @@ class AppSettingsDatabaseHelper private constructor(context: Context) {
             autoBackupEnabled = settings.autoBackupEnabled,
             updatedAt = System.currentTimeMillis()
         )
-        settingsRepository.saveAppSettings(dbSettings)
+        repository.saveSettings(roomSettings)
     }
     
     /**
-     * Update app settings using a transformation function
+     * Get app settings as Flow for reactive updates
      */
-    suspend fun updateSetting(userId: String, updateBlock: (AppSettings) -> AppSettings) {
-        val currentSettings = getAppSettings(userId)
-        val updatedSettings = updateBlock(currentSettings)
-        saveAppSettings(userId, updatedSettings)
-    }
-    
-    /**
-     * Get reactive settings updates as Flow
-     */
-    fun getAppSettingsFlow(userId: String): Flow<AppSettings> {
-        return settingsRepository.getAppSettingsFlow(userId).map { dbSettings ->
-            dbSettings?.let {
+    fun getAppSettingsFlow(userId: String): Flow<AppSettings?> {
+        return repository.getSettings().map { roomSettings ->
+            roomSettings?.let {
                 AppSettings(
                     theme = it.theme,
                     language = it.language,
@@ -99,7 +79,56 @@ class AppSettingsDatabaseHelper private constructor(context: Context) {
                     syncOnWifiOnly = it.syncOnWifiOnly,
                     autoBackupEnabled = it.autoBackupEnabled
                 )
-            } ?: AppSettings()
+            }
         }
+    }
+    
+    /**
+     * Update theme setting
+     */
+    suspend fun updateTheme(userId: String, theme: String) {
+        repository.updateTheme(theme)
+    }
+    
+    /**
+     * Update language setting
+     */
+    suspend fun updateLanguage(userId: String, language: String) {
+        repository.updateLanguage(language)
+    }
+    
+    /**
+     * Update currency setting
+     */
+    suspend fun updateCurrency(userId: String, currency: String) {
+        repository.updateCurrency(currency)
+    }
+    
+    /**
+     * Update notification setting
+     */
+    suspend fun updateNotifications(userId: String, enabled: Boolean) {
+        repository.updateNotifications(enabled)
+    }
+    
+    /**
+     * Reset settings to defaults
+     */
+    suspend fun resetSettings(userId: String) {
+        repository.resetSettings()
+    }
+    
+    /**
+     * Get default settings
+     */
+    private fun getDefaultSettings(): AppSettings {
+        return AppSettings(
+            theme = "system",
+            language = "id",
+            currency = "IDR",
+            notificationsEnabled = true,
+            syncOnWifiOnly = false,
+            autoBackupEnabled = true
+        )
     }
 }
