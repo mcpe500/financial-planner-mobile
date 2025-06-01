@@ -1,0 +1,72 @@
+package com.example.financialplannerapp.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.financialplannerapp.data.model.SecuritySettings
+import com.example.financialplannerapp.data.repository.SecurityRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class SecurityViewModel @Inject constructor(
+    private val securityRepository: SecurityRepository
+) : ViewModel() {
+
+    private val _securitySettings = MutableStateFlow<SecuritySettings?>(null)
+    val securitySettings: StateFlow<SecuritySettings?> = _securitySettings.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    init {
+        loadSecuritySettings()
+    }
+
+    fun loadSecuritySettings(userId: String = "1") { // Assuming a default or single user context for app-wide settings
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                securityRepository.getSecuritySettings().collect {
+                    _securitySettings.value = it ?: SecuritySettings() // Provide a default if null
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to load security settings: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun updateSecuritySettings(settings: SecuritySettings) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                securityRepository.insertOrUpdateSecuritySettings(settings)
+                // Refresh the settings flow after update
+                securityRepository.getSecuritySettings().collect {
+                     _securitySettings.value = it
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to update security settings: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+    
+    fun updatePinHash(pinHash: String?, currentSettings: SecuritySettings) {
+        val newSettings = currentSettings.copy(pinHash = pinHash)
+        updateSecuritySettings(newSettings)
+    }
+
+    fun clearError() {
+        _error.value = null
+    }
+}

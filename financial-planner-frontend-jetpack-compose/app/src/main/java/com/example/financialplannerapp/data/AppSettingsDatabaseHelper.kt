@@ -13,7 +13,7 @@ import com.example.financialplannerapp.data.repository.AppSettingsRepository
  */
 class AppSettingsDatabaseHelper private constructor(context: Context) {
     
-    private val database = AppDatabase.getDatabase(context)
+    private val database = DatabaseManager.getDatabase(context)
     private val repository = AppSettingsRepository(database.appSettingsDao())
     
     companion object {

@@ -1,9 +1,11 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose) // Corrected alias
-    alias(libs.plugins.kapt)             // Corrected alias
-    kotlin("plugin.serialization") version "1.9.10"
+    alias(libs.plugins.kotlin.compose)
+    id("kotlin-parcelize")
+    id("com.google.devtools.ksp")
+    kotlin("plugin.serialization")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -39,7 +41,7 @@ android {
     buildFeatures {
         compose = true
     }
-    packagingOptions {
+    packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
@@ -51,73 +53,75 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui) // Will need definition in TOML
-    implementation(libs.androidx.ui.graphics) // Will need definition in TOML
-    implementation(libs.androidx.ui.tooling.preview) // Will need definition in TOML
-    implementation(libs.androidx.material3) // Will need definition in TOML
-    implementation(libs.androidx.compose.material.icons.core) // Will need definition in TOML
-    implementation(libs.androidx.compose.material.icons.extended) // Will need definition in TOML
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.material.icons.core)
+    implementation(libs.androidx.compose.material.icons.extended)
 
     // Navigation Compose
-    implementation(libs.androidx.navigation.compose) // Will need definition in TOML
+    implementation(libs.androidx.navigation.compose)
 
     // ViewModel Compose
-    implementation(libs.androidx.lifecycle.viewmodel.compose) // Will need definition in TOML
-    implementation(libs.androidx.lifecycle.runtime.compose) // Will need definition in TOML
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     // ConstraintLayout Compose
-    implementation(libs.androidx.constraintlayout.compose) // Will need definition in TOML
+    implementation(libs.androidx.constraintlayout.compose)
 
-    // Room
-    implementation(libs.androidx.room.runtime) // Will need definition in TOML
-    kapt(libs.androidx.room.compiler) // Will need definition in TOML
-    implementation(libs.androidx.room.ktx) // Will need definition in TOML
+    // Room - Using KSP instead of KAPT
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
 
     // Retrofit & Gson
-    implementation(libs.squareup.retrofit) // Will need definition in TOML
-    implementation(libs.squareup.retrofit.converter.gson) // Will need definition in TOML
-    implementation(libs.squareup.okhttp3.logging.interceptor) // Will need definition in TOML
+    implementation(libs.squareup.retrofit)
+    implementation(libs.squareup.retrofit.converter.gson)
+    implementation(libs.squareup.okhttp3.logging.interceptor)
 
     // Coroutines
-    implementation(libs.jetbrains.kotlinx.coroutines.android) // Will need definition in TOML
-    implementation(libs.jetbrains.kotlinx.coroutines.core) // Will need definition in TOML    // Kotlinx Serialization for JSON parsing
+    implementation(libs.jetbrains.kotlinx.coroutines.android)
+    implementation(libs.jetbrains.kotlinx.coroutines.core)
+
+    // Kotlinx Serialization for JSON parsing
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    
+
     // Network utilities
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    
+
     // Retrofit for network calls
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    
+
     // Gson for JSON serialization
     implementation("com.google.code.gson:gson:2.10.1")
 
     // Google Sign-In
-    implementation(libs.google.android.gms.play.services.auth) // Will need definition in TOML
+    implementation(libs.google.android.gms.play.services.auth)
 
-    // UI ViewBinding (Check if needed, will need definition in TOML)
-    implementation(libs.androidx.compose.ui.viewbinding) // Will need definition in TOML
+    // UI ViewBinding
+    implementation(libs.androidx.compose.ui.viewbinding)
 
     // Biometric
-    implementation(libs.androidx.biometric.ktx) // Will need definition in TOML
+    implementation(libs.androidx.biometric.ktx)
 
     // Coil
-    implementation(libs.coil.compose) // Will need definition in TOML
+    implementation(libs.coil.compose)
+
+    // Hilt - FIXED: Added missing compiler dependency
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // Testing
-    testImplementation(libs.junit) // Already in TOML
-    androidTestImplementation(libs.androidx.junit) // Already in TOML
-    androidTestImplementation(libs.androidx.espresso.core) // Already in TOML
-    androidTestImplementation(platform(libs.androidx.compose.bom)) // Already in TOML
-    androidTestImplementation(libs.androidx.ui.test.junit4) // Will need definition in TOML
-    debugImplementation(libs.androidx.ui.tooling) // Will need definition in TOML
-    debugImplementation(libs.androidx.ui.test.manifest) // Will need definition in TOML
-
-    // Hilt (Commented)
-    // implementation(libs.google.dagger.hilt.android)
-    // kapt(libs.google.dagger.hilt.compiler)
-    // implementation(libs.androidx.hilt.navigation.compose)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }

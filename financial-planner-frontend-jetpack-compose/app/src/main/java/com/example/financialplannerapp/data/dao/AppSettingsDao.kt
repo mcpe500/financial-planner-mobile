@@ -20,26 +20,25 @@ interface AppSettingsDao {
     fun getSettings(): Flow<AppSettings?>
     
     /**
-     * Get app settings once (for immediate access)
+     * Get app settings once (non-reactive)
      */
     @Query("SELECT * FROM app_settings WHERE id = 0 LIMIT 1")
     suspend fun getSettingsOnce(): AppSettings?
     
     /**
-     * Insert or update app settings
-     * Uses REPLACE strategy to ensure single record
+     * Insert or update settings
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSettings(settings: AppSettings)
     
     /**
-     * Update existing app settings
+     * Update existing settings
      */
     @Update
     suspend fun updateSettings(settings: AppSettings)
     
     /**
-     * Delete all settings (for reset purposes)
+     * Delete all settings
      */
     @Query("DELETE FROM app_settings")
     suspend fun deleteAllSettings()

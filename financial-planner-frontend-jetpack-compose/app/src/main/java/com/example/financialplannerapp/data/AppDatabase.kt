@@ -1,79 +1,48 @@
 package com.example.financialplannerapp.data
 
-import androidx.room.*
-import androidx.room.Database
-import androidx.sqlite.db.SupportSQLiteDatabase
 import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.example.financialplannerapp.data.dao.AppSettingsDao
+import com.example.financialplannerapp.data.dao.SecurityDao
+import com.example.financialplannerapp.data.dao.UserProfileDao
 import com.example.financialplannerapp.data.model.AppSettings
+import com.example.financialplannerapp.data.model.SecuritySettings
+import com.example.financialplannerapp.data.model.UserProfile
 
-/**
- * Room Database for Financial Planner App
- * 
- * Main database class that provides access to DAOs and manages database creation.
- * Includes app settings table for storing user preferences.
- */
 @Database(
-    entities = [AppSettings::class],
-    version = 1,
+    entities = [
+        AppSettings::class,
+        UserProfile::class,
+        SecuritySettings::class
+    ],
+    version = 2,
     exportSchema = false
 )
-@TypeConverters(DatabaseConverters::class)
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
-    
-    /**
-     * Provides access to app settings DAO
-     */
     abstract fun appSettingsDao(): AppSettingsDao
-    
+    abstract fun userProfileDao(): UserProfileDao
+    abstract fun securityDao(): SecurityDao
+
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
-        
-        /**
-         * Get database instance with singleton pattern
-         */
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "financial_planner_database"
+                    "financial_planner_db"
                 )
-                .addCallback(object : RoomDatabase.Callback() {
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        super.onCreate(db)
-                        // Database created, you can add initial data here if needed
-                    }
-                })
+                .fallbackToDestructiveMigration() // Consider a proper migration strategy for production
                 .build()
                 INSTANCE = instance
                 instance
             }
         }
-        
-        /**
-         * Close database (for testing purposes)
-         */
-        fun closeDatabase() {
-            INSTANCE?.close()
-            INSTANCE = null
-        }
-    }
-}
-
-/**
- * Type converters for Room database
- */
-class DatabaseConverters {
-    
-    @TypeConverter
-    fun fromTimestamp(value: Long?): java.util.Date? {
-        return value?.let { java.util.Date(it) }
-    }
-    
-    @TypeConverter
-    fun dateToTimestamp(date: java.util.Date?): Long? {
-        return date?.time
     }
 }
