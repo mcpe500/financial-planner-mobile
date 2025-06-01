@@ -40,10 +40,7 @@ fun AppNavigation(
         
         // Settings Sub-screens
         composable("userProfileSettings") {
-            UserProfileSettingsScreen(
-                navController = navController,
-                tokenManager = tokenManager
-            )
+            UserProfileSettingsScreen()
         }
         
         composable("securitySettings") {
@@ -51,7 +48,9 @@ fun AppNavigation(
         }
         
         composable("appSettings") {
-            AppSettingsScreen(navController = navController)
+            AppSettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
         
         composable("dataSyncSettings") {
