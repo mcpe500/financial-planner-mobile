@@ -138,12 +138,21 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
+    // Validate TokenManager on start
+    LaunchedEffect(Unit) {
+        if (tokenManager == null) {
+            Log.w(TAG_USER_PROFILE, "TokenManager is null - operating in offline mode")
+        } else {
+            Log.d(TAG_USER_PROFILE, "TokenManager available - Name: ${tokenManager.getUserName()}, Email: ${tokenManager.getUserEmail()}")
+        }
+    }
+    
     // State for user profile data
     var userProfile by remember { 
         mutableStateOf(
             UserProfile(
-                name = tokenManager?.getUserName() ?: "",
-                email = tokenManager?.getUserEmail() ?: "",
+                name = tokenManager?.getUserName() ?: "Guest User",
+                email = tokenManager?.getUserEmail() ?: "No email available",
                 phone = "",
                 dateOfBirth = "",
                 occupation = "",
@@ -174,11 +183,51 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
 
     // Function to load profile from backend
     fun loadUserProfile() {
-        val token = tokenManager?.getToken()
-        if (token == null) {
-            Toast.makeText(context, "Autentikasi dibutuhkan. Silakan login kembali.", Toast.LENGTH_LONG).show()
-            loadError = "No authentication token"
+        Log.d(TAG_USER_PROFILE, "Starting loadUserProfile - TokenManager: $tokenManager")
+        
+        // Always first load basic info from TokenManager
+        val currentName = tokenManager?.getUserName() ?: "Guest User"
+        val currentEmail = tokenManager?.getUserEmail() ?: "No email available"
+        
+        Log.d(TAG_USER_PROFILE, "Basic user info - Name: $currentName, Email: $currentEmail")
+        
+        // Update basic profile info first
+        userProfile = userProfile.copy(
+            name = currentName,
+            email = currentEmail
+        )
+        
+        // Try to get token and handle gracefully if not available
+        val token = try {
+            tokenManager?.getToken()
+        } catch (e: Exception) {
+            Log.e(TAG_USER_PROFILE, "Error getting token from TokenManager", e)
+            null
+        }
+        
+        Log.d(TAG_USER_PROFILE, "Token retrieval - Token available: ${!token.isNullOrBlank()}, Token length: ${token?.length ?: 0}")
+        
+        if (token.isNullOrBlank()) {
+            Log.w(TAG_USER_PROFILE, "No valid authentication token available - using offline mode")
             isLoading = false
+            loadError = null
+            isConnected = false
+            
+            // Set profile in offline mode
+            userProfile = userProfile.copy(
+                lastSyncTime = "Belum pernah disinkronkan",
+                isDataModified = false
+            )
+            
+            // Update edit states
+            editName = userProfile.name
+            editPhone = userProfile.phone
+            editDateOfBirth = userProfile.dateOfBirth
+            editOccupation = userProfile.occupation
+            editMonthlyIncome = userProfile.monthlyIncome
+            editFinancialGoals = userProfile.financialGoals
+            
+            Toast.makeText(context, "Mode offline - data disimpan lokal saja", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -262,7 +311,16 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
 
     // Load profile when screen first loads
     LaunchedEffect(Unit) {
+        Log.d(TAG_USER_PROFILE, "LaunchedEffect triggered, loading profile...")
         loadUserProfile()
+    }
+
+    // Cleanup resources when screen is disposed
+    DisposableEffect(Unit) {
+        onDispose {
+            // Cancel any ongoing operations
+            Log.d(TAG_USER_PROFILE, "UserProfileSettingsScreen disposed, cleaning up resources")
+        }
     }
 
     // Function to handle actual API call
@@ -273,9 +331,27 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
         }
         
         val token = tokenManager?.getToken()
-        if (token == null) {
+        if (token.isNullOrBlank()) {
             Toast.makeText(context, "Autentikasi dibutuhkan. Silakan login kembali.", Toast.LENGTH_LONG).show()
+            Log.e(TAG_USER_PROFILE, "No authentication token available for sync")
             return
+        }
+
+        // Validate edit data before syncing
+        if (isEditMode) {
+            val validation = validateAndSanitizeInput(
+                editName,
+                editPhone,
+                editDateOfBirth,
+                editOccupation,
+                editMonthlyIncome,
+                editFinancialGoals
+            )
+            
+            if (!validation.first) {
+                Toast.makeText(context, validation.second, Toast.LENGTH_LONG).show()
+                return
+            }
         }
 
         isSyncing = true
@@ -622,11 +698,12 @@ fun UserProfileSettingsScreenPreview() {
 // Test server connection with actual HTTP request
 suspend fun testServerConnection(): ApiResponse {
     return withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
         try {
             Log.d(TAG_USER_PROFILE, "Testing connection to: ${Config.BASE_URL}")
             
             val url = URL("${Config.BASE_URL}/api/health") // Health check endpoint
-            val connection = url.openConnection() as HttpURLConnection
+            connection = url.openConnection() as HttpURLConnection
             
             connection.apply {
                 requestMethod = "GET"
@@ -665,16 +742,18 @@ suspend fun testServerConnection(): ApiResponse {
         } catch (e: Exception) {
             Log.e(TAG_USER_PROFILE, "Connection test failed", e)
             ApiResponse(success = false, message = "Connection failed: ${e.message}")
+        } finally {
+            connection?.disconnect()
         }
     }
 }
 
-// HTTP API call function to get user profile
 suspend fun getUserProfileFromServer(token: String): ApiResponse {
     return withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
         try {
             val url = URL("${Config.BASE_URL}/api/profile")
-            val connection = url.openConnection() as HttpURLConnection
+            connection = url.openConnection() as HttpURLConnection
             
             connection.apply {
                 requestMethod = "GET"
@@ -712,6 +791,8 @@ suspend fun getUserProfileFromServer(token: String): ApiResponse {
                 success = false,
                 message = "Network error: ${e.message}"
             )
+        } finally {
+            connection?.disconnect()
         }
     }
 }
@@ -719,9 +800,10 @@ suspend fun getUserProfileFromServer(token: String): ApiResponse {
 // HTTP API call function using HttpURLConnection (existing implementation)
 suspend fun syncProfileToServer(token: String, profileData: UserProfileUpdateRequest): ApiResponse {
     return withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
         try {
             val url = URL("${Config.BASE_URL}/api/profile/update")
-            val connection = url.openConnection() as HttpURLConnection
+            connection = url.openConnection() as HttpURLConnection
             
             connection.apply {
                 requestMethod = "PUT"
@@ -773,6 +855,8 @@ suspend fun syncProfileToServer(token: String, profileData: UserProfileUpdateReq
                 success = false,
                 message = "Network error: ${e.message}"
             )
+        } finally {
+            connection?.disconnect()
         }
     }
 }
