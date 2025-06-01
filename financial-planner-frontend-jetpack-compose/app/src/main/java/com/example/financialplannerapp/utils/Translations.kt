@@ -61,7 +61,15 @@ object Translations {
         object PersonalProfile : Key("personal_profile")
         object Security : Key("security")
         object AppInfo : Key("app_info")
-        object Logout : Key("logout")
+        object Logout : Key("logout");
+        object DataSync : Key("data_sync");
+        object DataSyncDesc : Key("data_sync_desc");
+        object BackupRestore : Key("backup_restore");
+        object BackupRestoreDesc : Key("backup_restore_desc");
+        object HelpCenter : Key("help_center");
+        object HelpCenterDesc : Key("help_center_desc");
+        object ContactSupport : Key("contact_support");
+        object ContactSupportDesc : Key("contact_support_desc");
     }
     
     /**
@@ -110,7 +118,15 @@ object Translations {
             "personal_profile" to "Profil Pribadi",
             "security" to "Keamanan",
             "app_info" to "Informasi Aplikasi",
-            "logout" to "Keluar"
+            "logout" to "Keluar",
+            "data_sync" to "Sinkronisasi Data",
+            "data_sync_desc" to "Status dan pengaturan sinkronisasi",
+            "backup_restore" to "Backup & Restore",
+            "backup_restore_desc" to "Cadangkan dan pulihkan data",
+            "help_center" to "Pusat Bantuan",
+            "help_center_desc" to "FAQ dan panduan penggunaan",
+            "contact_support" to "Hubungi Kami",
+            "contact_support_desc" to "Laporkan masalah atau kirim feedback"
         ),
         
         "en" to mapOf( // English
@@ -154,7 +170,15 @@ object Translations {
             "personal_profile" to "Personal Profile",
             "security" to "Security",
             "app_info" to "App Information",
-            "logout" to "Logout"
+            "logout" to "Logout",
+            "data_sync" to "Data Sync",
+            "data_sync_desc" to "Status and sync settings",
+            "backup_restore" to "Backup & Restore",
+            "backup_restore_desc" to "Backup and restore data",
+            "help_center" to "Help Center",
+            "help_center_desc" to "FAQ and user guide",
+            "contact_support" to "Contact Us",
+            "contact_support_desc" to "Report issues or send feedback"
         ),
         
         "zh" to mapOf( // Chinese
@@ -198,7 +222,15 @@ object Translations {
             "personal_profile" to "个人资料",
             "security" to "安全",
             "app_info" to "应用信息",
-            "logout" to "退出"
+            "logout" to "退出",
+            "data_sync" to "数据同步",
+            "data_sync_desc" to "状态和同步设置",
+            "backup_restore" to "备份与恢复",
+            "backup_restore_desc" to "备份和恢复数据",
+            "help_center" to "帮助中心",
+            "help_center_desc" to "常见问题和用户指南",
+            "contact_support" to "联系我们",
+            "contact_support_desc" to "报告问题或发送反馈"
         )
     )
     

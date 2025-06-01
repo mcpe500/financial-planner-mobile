@@ -1,6 +1,8 @@
 package com.example.financialplannerapp.screen
 
 import android.widget.Toast
+import com.example.financialplannerapp.service.ReactiveSettingsService
+import com.example.financialplannerapp.data.AppSettings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,10 +35,10 @@ fun AppSettingsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val dbHelper = remember { AppSettingsDatabaseHelper.getInstance(context) }
-    val settingsService = LocalSettingsService.current
+    val settingsService = ReactiveSettingsService.getInstance()
     
     // Collect current settings from reactive service
-    val currentSettings by settingsService.currentSettings.collectAsState()
+    val currentSettings by settingsService.currentSettings.collectAsState(initial = AppSettings())
 
     Scaffold(
         topBar = {

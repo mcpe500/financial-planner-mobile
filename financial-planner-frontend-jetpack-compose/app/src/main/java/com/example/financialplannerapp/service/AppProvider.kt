@@ -1,11 +1,16 @@
 package com.example.financialplannerapp.service
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
 import com.example.financialplannerapp.utils.TranslationProvider
 import com.example.financialplannerapp.utils.ThemeProvider
 import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
+
+val LocalReactiveSettingsService = compositionLocalOf<ReactiveSettingsService> {
+    error("No ReactiveSettingsService provided")
+}
 
 /**
  * App Provider - Main provider that wraps the entire app with database-backed settings
@@ -28,7 +33,7 @@ fun AppProvider(
     
     // Apply theme and translation providers with reactive settings
     CompositionLocalProvider(
-        LocalSettingsService provides settingsService
+        LocalReactiveSettingsService provides settingsService,
     ) {
         ThemeProvider(theme = currentSettings.theme) {
             TranslationProvider(language = currentSettings.language) {

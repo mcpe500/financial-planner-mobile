@@ -173,10 +173,3 @@ class ReactiveSettingsService private constructor() {
         serviceScope.cancel()
     }
 }
-
-/**
- * Composable Local for Settings Service
- */
-val LocalSettingsService = compositionLocalOf<ReactiveSettingsService> {
-    error("No ReactiveSettingsService provided")
-}
