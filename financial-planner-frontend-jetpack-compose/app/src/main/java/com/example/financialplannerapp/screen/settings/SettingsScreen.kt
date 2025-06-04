@@ -1,6 +1,8 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.screen.settings
 
 import android.util.Log
+import com.example.financialplannerapp.utils.Translations
+import com.example.financialplannerapp.utils.translate
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -47,45 +49,45 @@ fun SettingsScreen(navController: NavController) {
 
     val settingCategories = listOf(
         SettingItem(
-            title = "Profil Pengguna",
-            subtitle = "Kelola informasi akun Anda",
+            title = translate(Translations.Key.PersonalProfile),
+            subtitle = translate(Translations.Key.Profile),
             icon = Icons.Filled.Person,
             route = "userProfileSettings"
         ),
         SettingItem(
-            title = "Keamanan",
-            subtitle = "PIN, biometrik, dan keamanan aplikasi",
+            title = translate(Translations.Key.Security),
+            subtitle = translate(Translations.Key.Security),
             icon = Icons.Filled.Security,
             route = "securitySettings"
         ),
         SettingItem(
-            title = "Pengaturan Aplikasi",
-            subtitle = "Tema, bahasa, mata uang, notifikasi",
+            title = translate(Translations.Key.AppSettings),
+            subtitle = translate(Translations.Key.AppInfo),
             icon = Icons.Filled.Settings,
             route = "appSettings"
         ),
         SettingItem(
-            title = "Sinkronisasi Data",
-            subtitle = "Status dan pengaturan sinkronisasi",
+            title = translate(Translations.Key.DataSync),
+            subtitle = translate(Translations.Key.DataSyncDesc),
             icon = Icons.Filled.Sync,
             route = "dataSyncSettings",
             isOnlineRequired = true
         ),
         SettingItem(
-            title = "Backup & Restore",
-            subtitle = "Cadangkan dan pulihkan data",
+            title = translate(Translations.Key.BackupRestore),
+            subtitle = translate(Translations.Key.BackupRestoreDesc),
             icon = Icons.Filled.CloudUpload,
             route = "backupRestoreSettings"
         ),
         SettingItem(
-            title = "Pusat Bantuan",
-            subtitle = "FAQ dan panduan penggunaan",
+            title = translate(Translations.Key.HelpCenter),
+            subtitle = translate(Translations.Key.HelpCenterDesc),
             icon = Icons.Filled.HelpOutline,
             route = "helpCenterSettings"
         ),
         SettingItem(
-            title = "Hubungi Kami",
-            subtitle = "Laporkan masalah atau kirim feedback",
+            title = translate(Translations.Key.ContactSupport),
+            subtitle = translate(Translations.Key.ContactSupportDesc),
             icon = Icons.Filled.ContactSupport,
             route = "contactSupportSettings",
             isOnlineRequired = true
@@ -97,7 +99,7 @@ fun SettingsScreen(navController: NavController) {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Pengaturan",
+                        text = translate(Translations.Key.Settings),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = DarkGray
@@ -112,7 +114,7 @@ fun SettingsScreen(navController: NavController) {
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Kembali",
+                            contentDescription = translate(Translations.Key.Back),
                             tint = BibitGreen
                         )
                     }

@@ -7,9 +7,8 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.9.0"
 activityCompose = "1.10.1"
-composeBom = "2024.06.00" # Check for latest BOM
+composeBom = "2024.06.00"
 googleGmsServices = "4.4.1"
-# --- Add these versions (check for latest!) ---
 materialIcons = "1.6.8"
 navigationCompose = "2.7.7"
 lifecycle = "2.9.0"
@@ -22,12 +21,14 @@ googleAuth = "21.2.0"
 uiViewbinding = "1.6.8"
 biometric = "1.2.0-alpha05"
 coil = "2.7.0"
-testExtJunit = "1.2.1" # You used 'junitVersion' before, but this is explicit
+testExtJunit = "1.2.1"
+hilt = "2.51.1"
+hiltNavigation = "1.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
-androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "testExtJunit" } # Used more specific ref
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "testExtJunit" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -39,7 +40,6 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
-# --- Add these libraries ---
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "materialIcons" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIcons" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
@@ -58,8 +58,12 @@ google-android-gms-play-services-auth = { group = "com.google.android.gms", name
 androidx-compose-ui-viewbinding = { group = "androidx.compose.ui", name = "ui-viewbinding", version.ref = "uiViewbinding" }
 androidx-biometric-ktx = { group = "androidx.biometric", name = "biometric-ktx", version.ref = "biometric" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
-androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "testExtJunit" } # Added explicit alias
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "testExtJunit" }
 
+# Hilt dependencies
+google-dagger-hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+google-dagger-hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
+androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

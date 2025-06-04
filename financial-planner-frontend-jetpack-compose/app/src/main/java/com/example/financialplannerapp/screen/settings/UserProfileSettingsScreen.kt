@@ -1,6 +1,5 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.screen.settings
 
-import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -15,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -29,12 +27,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.config.Config
-import com.example.financialplannerapp.data.DatabaseManager
-import com.example.financialplannerapp.data.UserProfileData
-import com.example.financialplannerapp.data.UserProfileDatabaseHelper
-import com.example.financialplannerapp.data.UserProfile
-import com.example.financialplannerapp.data.toUserProfile
-import com.example.financialplannerapp.data.toUserProfileData
+import com.example.financialplannerapp.service.LocalTranslator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,7 +41,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonPrimitive
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
@@ -125,6 +117,18 @@ data class UserProfileResponse(
     val updatedAt: String
 )
 
+data class UserProfile(
+    val name: String = "",
+    val email: String = "",
+    val phone: String = "",
+    val dateOfBirth: String = "",
+    val occupation: String = "",
+    val monthlyIncome: String = "",
+    val financialGoals: String = "",
+    val lastSyncTime: String = "",
+    val isDataModified: Boolean = false
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenManager? = null) {
@@ -133,15 +137,56 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
-    // Database helper - using centralized helper with memory-safe context
-    val databaseHelper = remember { UserProfileDatabaseHelper.getInstance(context) }
+    // Simple translation function
+    val translate = remember<(String) -> String> {
+        { key ->
+            when(key) {
+                "user_profile" -> "User Profile"
+                "personal_profile" -> "Personal Profile"
+                "back" -> "Back"
+                "edit" -> "Edit"
+                "save" -> "Save"
+                "cancel" -> "Cancel"
+                "loading_profile" -> "Loading profile..."
+                "personal_info" -> "Personal Information"
+                "professional_info" -> "Professional Information"
+                "financial_goals_field" -> "Financial Goals"
+                "name_field" -> "Name"
+                "email_field" -> "Email"
+                "phone_field" -> "Phone"
+                "birth_date_field" -> "Date of Birth"
+                "occupation_field" -> "Occupation"
+                "monthly_income_field" -> "Monthly Income"
+                "email_readonly" -> "Email cannot be changed"
+                "sync_data" -> "Sync Data"
+                "last_sync" -> "Last Sync"
+                "unsaved_changes" -> "Unsaved changes"
+                "syncing" -> "Syncing..."
+                "offline_mode" -> "Offline Mode"
+                "sync_to_server" -> "Sync to Server"
+                "offline_notice" -> "Data saved locally only"
+                "error_loading" -> "Error loading profile"
+                "try_again" -> "Try Again"
+                else -> key
+            }
+        }
+    }
+    
+    // Validate TokenManager on start
+    LaunchedEffect(Unit) {
+        if (tokenManager == null) {
+            Log.w(TAG_USER_PROFILE, "TokenManager is null - operating in offline mode")
+        } else {
+            Log.d(TAG_USER_PROFILE, "TokenManager available - Name: ${tokenManager.getUserName()}, Email: ${tokenManager.getUserEmail()}")
+        }
+    }
     
     // State for user profile data
     var userProfile by remember { 
         mutableStateOf(
             UserProfile(
-                name = tokenManager?.getUserName() ?: "",
-                email = tokenManager?.getUserEmail() ?: "",
+                name = tokenManager?.getUserName() ?: "Guest User",
+                email = tokenManager?.getUserEmail() ?: "No email available",
                 phone = "",
                 dateOfBirth = "",
                 occupation = "",
@@ -172,11 +217,51 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
 
     // Function to load profile from backend
     fun loadUserProfile() {
-        val token = tokenManager?.getToken()
-        if (token == null) {
-            Toast.makeText(context, "Autentikasi dibutuhkan. Silakan login kembali.", Toast.LENGTH_LONG).show()
-            loadError = "No authentication token"
+        Log.d(TAG_USER_PROFILE, "Starting loadUserProfile - TokenManager: $tokenManager")
+        
+        // Always first load basic info from TokenManager
+        val currentName = tokenManager?.getUserName() ?: "Guest User"
+        val currentEmail = tokenManager?.getUserEmail() ?: "No email available"
+        
+        Log.d(TAG_USER_PROFILE, "Basic user info - Name: $currentName, Email: $currentEmail")
+        
+        // Update basic profile info first
+        userProfile = userProfile.copy(
+            name = currentName,
+            email = currentEmail
+        )
+        
+        // Try to get token and handle gracefully if not available
+        val token = try {
+            tokenManager?.getToken()
+        } catch (e: Exception) {
+            Log.e(TAG_USER_PROFILE, "Error getting token from TokenManager", e)
+            null
+        }
+        
+        Log.d(TAG_USER_PROFILE, "Token retrieval - Token available: ${!token.isNullOrBlank()}, Token length: ${token?.length ?: 0}")
+        
+        if (token.isNullOrBlank()) {
+            Log.w(TAG_USER_PROFILE, "No valid authentication token available - using offline mode")
             isLoading = false
+            loadError = null
+            isConnected = false
+            
+            // Set profile in offline mode
+            userProfile = userProfile.copy(
+                lastSyncTime = "Belum pernah disinkronkan",
+                isDataModified = false
+            )
+            
+            // Update edit states
+            editName = userProfile.name
+            editPhone = userProfile.phone
+            editDateOfBirth = userProfile.dateOfBirth
+            editOccupation = userProfile.occupation
+            editMonthlyIncome = userProfile.monthlyIncome
+            editFinancialGoals = userProfile.financialGoals
+            
+            Toast.makeText(context, "Mode offline - data disimpan lokal saja", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -260,7 +345,16 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
 
     // Load profile when screen first loads
     LaunchedEffect(Unit) {
+        Log.d(TAG_USER_PROFILE, "LaunchedEffect triggered, loading profile...")
         loadUserProfile()
+    }
+
+    // Cleanup resources when screen is disposed
+    DisposableEffect(Unit) {
+        onDispose {
+            // Cancel any ongoing operations
+            Log.d(TAG_USER_PROFILE, "UserProfileSettingsScreen disposed, cleaning up resources")
+        }
     }
 
     // Function to handle actual API call
@@ -271,9 +365,27 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
         }
         
         val token = tokenManager?.getToken()
-        if (token == null) {
+        if (token.isNullOrBlank()) {
             Toast.makeText(context, "Autentikasi dibutuhkan. Silakan login kembali.", Toast.LENGTH_LONG).show()
+            Log.e(TAG_USER_PROFILE, "No authentication token available for sync")
             return
+        }
+
+        // Validate edit data before syncing
+        if (isEditMode) {
+            val validation = validateAndSanitizeInput(
+                editName,
+                editPhone,
+                editDateOfBirth,
+                editOccupation,
+                editMonthlyIncome,
+                editFinancialGoals
+            )
+            
+            if (!validation.first) {
+                Toast.makeText(context, validation.second, Toast.LENGTH_LONG).show()
+                return
+            }
         }
 
         isSyncing = true
@@ -339,7 +451,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
             TopAppBar(
                 title = {
                     Text(
-                        text = "Profil Pengguna",
+                        text = translate("personal_profile"),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = DarkGray
@@ -354,7 +466,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Kembali",
+                            contentDescription = translate("back"),
                             tint = BibitGreen
                         )
                     }
@@ -402,7 +514,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                                 Toast.makeText(context, "Data disimpan. Tekan 'Sinkronkan ke Server' untuk menyimpan ke cloud.", Toast.LENGTH_LONG).show()
                             }
                         ) {
-                            Text("Simpan", color = BibitGreen, fontWeight = FontWeight.Medium)
+                            Text(translate("save"), color = BibitGreen, fontWeight = FontWeight.Medium)
                         }
                         
                         // Cancel button
@@ -419,7 +531,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                                 Log.d(TAG_USER_PROFILE, "Edit mode cancelled")
                             }
                         ) {
-                            Text("Batal", color = MediumGray)
+                            Text(translate("cancel"), color = MediumGray)
                         }
                     } else {
                         // Edit button
@@ -528,71 +640,78 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
             
             // Profile Information Cards
             ProfileInfoCard(
-                title = "Informasi Personal",
+                title = translate("personal_info"),
                 icon = Icons.Filled.Person,
                 content = {
                     ProfileTextField(
-                        label = "Nama Lengkap",
+                        label = translate("name_field"),
                         value = if (isEditMode) editName else userProfile.name,
                         isEditMode = isEditMode,
-                        onValueChange = { editName = it }
+                        onValueChange = { editName = it },
+                        translate = translate
                     )
                     
                     ProfileTextField(
-                        label = "Email",
+                        label = translate("email_field"),
                         value = userProfile.email,
                         isEditMode = false, // Email cannot be edited
-                        onValueChange = { }
+                        onValueChange = { },
+                        translate = translate
                     )
                     
                     ProfileTextField(
-                        label = "Nomor Telepon",
+                        label = translate("phone_field"),
                         value = if (isEditMode) editPhone else userProfile.phone,
                         isEditMode = isEditMode,
-                        onValueChange = { editPhone = it }
+                        onValueChange = { editPhone = it },
+                        translate = translate
                     )
                     
                     ProfileTextField(
-                        label = "Tanggal Lahir",
+                        label = translate("birth_date_field"),
                         value = if (isEditMode) editDateOfBirth else userProfile.dateOfBirth,
                         isEditMode = isEditMode,
-                        onValueChange = { editDateOfBirth = it }
+                        onValueChange = { editDateOfBirth = it },
+                        translate = translate
                     )
                 }
             )
             
             // Professional Information Card
             ProfileInfoCard(
-                title = "Informasi Profesional",
+                title = translate("professional_info"),
                 icon = Icons.Filled.Work,
                 content = {
                     ProfileTextField(
-                        label = "Pekerjaan",
+                        label = translate("occupation_field"),
                         value = if (isEditMode) editOccupation else userProfile.occupation,
                         isEditMode = isEditMode,
-                        onValueChange = { editOccupation = it }
+                        onValueChange = { editOccupation = it },
+                        translate = translate
                     )
                     
                     ProfileTextField(
-                        label = "Pendapatan Bulanan (IDR)",
+                        label = translate("monthly_income_field"),
                         value = if (isEditMode) editMonthlyIncome else userProfile.monthlyIncome,
                         isEditMode = isEditMode,
-                        onValueChange = { editMonthlyIncome = it }
+                        onValueChange = { editMonthlyIncome = it },
+                        translate = translate
                     )
                 }
             )
             
             // Financial Goals Card
             ProfileInfoCard(
-                title = "Tujuan Keuangan",
+                title = translate("financial_goals_field"),
                 icon = Icons.Filled.TrendingUp,
                 content = {
                     ProfileTextField(
-                        label = "Tujuan Keuangan",
+                        label = translate("financial_goals_field"),
                         value = if (isEditMode) editFinancialGoals else userProfile.financialGoals,
                         isEditMode = isEditMode,
                         onValueChange = { editFinancialGoals = it },
-                        maxLines = 4
+                        maxLines = 4,
+                        translate = translate
                     )
                 }
             )
@@ -602,7 +721,8 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                 userProfile = userProfile,
                 isConnected = isConnected,
                 isSyncing = isSyncing,
-                onSyncNow = { performSync() }
+                onSyncNow = { performSync() },
+                translate = translate
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -620,11 +740,12 @@ fun UserProfileSettingsScreenPreview() {
 // Test server connection with actual HTTP request
 suspend fun testServerConnection(): ApiResponse {
     return withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
         try {
             Log.d(TAG_USER_PROFILE, "Testing connection to: ${Config.BASE_URL}")
             
             val url = URL("${Config.BASE_URL}/api/health") // Health check endpoint
-            val connection = url.openConnection() as HttpURLConnection
+            connection = url.openConnection() as HttpURLConnection
             
             connection.apply {
                 requestMethod = "GET"
@@ -663,16 +784,18 @@ suspend fun testServerConnection(): ApiResponse {
         } catch (e: Exception) {
             Log.e(TAG_USER_PROFILE, "Connection test failed", e)
             ApiResponse(success = false, message = "Connection failed: ${e.message}")
+        } finally {
+            connection?.disconnect()
         }
     }
 }
 
-// HTTP API call function to get user profile
 suspend fun getUserProfileFromServer(token: String): ApiResponse {
     return withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
         try {
             val url = URL("${Config.BASE_URL}/api/profile")
-            val connection = url.openConnection() as HttpURLConnection
+            connection = url.openConnection() as HttpURLConnection
             
             connection.apply {
                 requestMethod = "GET"
@@ -710,6 +833,8 @@ suspend fun getUserProfileFromServer(token: String): ApiResponse {
                 success = false,
                 message = "Network error: ${e.message}"
             )
+        } finally {
+            connection?.disconnect()
         }
     }
 }
@@ -717,9 +842,10 @@ suspend fun getUserProfileFromServer(token: String): ApiResponse {
 // HTTP API call function using HttpURLConnection (existing implementation)
 suspend fun syncProfileToServer(token: String, profileData: UserProfileUpdateRequest): ApiResponse {
     return withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
         try {
             val url = URL("${Config.BASE_URL}/api/profile/update")
-            val connection = url.openConnection() as HttpURLConnection
+            connection = url.openConnection() as HttpURLConnection
             
             connection.apply {
                 requestMethod = "PUT"
@@ -771,26 +897,11 @@ suspend fun syncProfileToServer(token: String, profileData: UserProfileUpdateReq
                 success = false,
                 message = "Network error: ${e.message}"
             )
+        } finally {
+            connection?.disconnect()
         }
     }
 }
-
-// Alternative: HTTP API call function using Retrofit (commented out - you can choose either approach)
-/*
-suspend fun syncProfileToServerRetrofit(token: String, profileData: UserProfileUpdateRequest): ApiResponse {
-    return try {
-        val response = RetrofitClient.apiService.updateProfile("Bearer $token", profileData)
-        if (response.isSuccessful) {
-            response.body() ?: ApiResponse(success = false, message = "Empty response")
-        } else {
-            ApiResponse(success = false, message = "Server error: ${response.code()}")
-        }
-    } catch (e: Exception) {
-        Log.e(TAG_USER_PROFILE, "Network error during profile sync", e)
-        ApiResponse(success = false, message = "Network error: ${e.message}")
-    }
-}
-*/
 
 @Composable
 private fun ProfileHeaderCard(
@@ -930,8 +1041,11 @@ private fun ProfileTextField(
     value: String,
     isEditMode: Boolean,
     onValueChange: (String) -> Unit,
-    maxLines: Int = 1
+    maxLines: Int = 1,
+    translate: (String) -> String
 ) {
+    // Removed local translator definition
+    
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -944,7 +1058,7 @@ private fun ProfileTextField(
             modifier = Modifier.padding(bottom = 4.dp)
         )
         
-        if (isEditMode && label != "Email") {
+        if (isEditMode && label != translate("email_field")) {
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
@@ -966,9 +1080,9 @@ private fun ProfileTextField(
                     .padding(12.dp),
                 maxLines = maxLines
             )
-            if (label == "Email") {
+            if (label == translate("email_field")) {
                 Text(
-                    text = "Email tidak dapat diubah",
+                    text = translate("email_readonly"),
                     fontSize = 10.sp,
                     color = MediumGray,
                     modifier = Modifier.padding(top = 2.dp)
@@ -983,8 +1097,11 @@ private fun SyncStatusCard(
     userProfile: UserProfile,
     isConnected: Boolean,
     isSyncing: Boolean,
-    onSyncNow: () -> Unit
+    onSyncNow: () -> Unit,
+    translate: (String) -> String
 ) {
+    // Removed local translator definition
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1004,13 +1121,13 @@ private fun SyncStatusCard(
             ) {
                 Icon(
                     imageVector = Icons.Filled.CloudSync,
-                    contentDescription = "Sinkronisasi",
+                    contentDescription = translate("sync_data"),
                     tint = BibitGreen,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Sinkronisasi Data",
+                    text = translate("sync_data"),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = DarkGray
@@ -1022,7 +1139,7 @@ private fun SyncStatusCard(
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 Text(
-                    text = "Sinkronisasi Terakhir:",
+                    text = translate("last_sync"),
                     fontSize = 12.sp,
                     color = MediumGray
                 )
@@ -1040,13 +1157,13 @@ private fun SyncStatusCard(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Warning,
-                            contentDescription = "Perubahan Belum Disinkronkan",
+                            contentDescription = translate("unsaved_changes"),
                             tint = Color(0xFFFF9800),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Ada perubahan yang belum disinkronkan",
+                            text = translate("unsaved_changes"),
                             fontSize = 12.sp,
                             color = Color(0xFFFF9800)
                         )
@@ -1073,7 +1190,7 @@ private fun SyncStatusCard(
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Menyinkronkan...")
+                    Text(translate("syncing"))
                 } else if (!isConnected) {
                     Icon(
                         imageVector = Icons.Filled.CloudOff,
@@ -1081,7 +1198,7 @@ private fun SyncStatusCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Offline - Tidak dapat sinkronisasi")
+                    Text(translate("offline_mode"))
                 } else {
                     Icon(
                         imageVector = Icons.Filled.CloudUpload,
@@ -1089,14 +1206,14 @@ private fun SyncStatusCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Sinkronkan ke Server")
+                    Text(translate("sync_to_server"))
                 }
             }
             
             // Offline notice
             if (!isConnected) {
                 Text(
-                    text = "💾 Data disimpan secara lokal dan akan disinkronkan saat online",
+                    text = translate("offline_notice"),
                     fontSize = 12.sp,
                     color = MediumGray,
                     modifier = Modifier.padding(top = 8.dp),
@@ -1131,43 +1248,30 @@ private fun validateAndSanitizeInput(
     monthlyIncome: String,
     financialGoals: String
 ): Pair<Boolean, String> {
-    // Name validation
-    if (name.isBlank() || name.length < 2 || name.length > 100) {
-        return false to "Nama harus diisi (2-100 karakter)"
+    if (name.isBlank()) {
+        return false to "Nama tidak boleh kosong"
     }
-    
-    // Phone validation
+    if (name.length > 100) {
+        return false to "Nama terlalu panjang (maksimal 100 karakter)"
+    }
     if (phone.isNotBlank() && !isValidPhoneNumber(phone)) {
         return false to "Format nomor telepon tidak valid"
     }
-    
-    // Date validation
     if (dateOfBirth.isNotBlank() && !isValidDate(dateOfBirth)) {
-        return false to "Format tanggal tidak valid (gunakan DD/MM/YYYY)"
+        return false to "Format tanggal lahir tidak valid (gunakan DD/MM/YYYY atau YYYY-MM-DD)"
     }
-    
-    // Occupation validation
     if (occupation.length > 100) {
-        return false to "Pekerjaan maksimal 100 karakter"
+        return false to "Pekerjaan terlalu panjang (maksimal 100 karakter)"
     }
-    
-    // Monthly income validation
-    if (monthlyIncome.isNotBlank()) {
-        val income = monthlyIncome.toDoubleOrNull()
-        if (income == null || income < 0 || income > 999999999) {
-            return false to "Pendapatan bulanan tidak valid"
-        }
+    if (monthlyIncome.isNotBlank() && monthlyIncome.toLongOrNull() == null) {
+        return false to "Pendapatan bulanan harus berupa angka"
     }
-    
-    // Financial goals validation
     if (financialGoals.length > 500) {
-        return false to "Tujuan keuangan maksimal 500 karakter"
+        return false to "Tujuan keuangan terlalu panjang (maksimal 500 karakter)"
     }
-    
-    return true to "Valid"
+    return true to ""
 }
 
-// Sanitize string input
 private fun sanitizeString(input: String): String {
-    return input.trim().replace(Regex("<[^>]*>"), "") // Remove HTML tags
+    return input.trim().replace(Regex("[<>\"'&]"), "")
 }

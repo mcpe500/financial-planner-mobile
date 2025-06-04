@@ -1,6 +1,5 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.screen.settings
 
-import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -16,27 +15,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.TokenManager
+import com.example.financialplannerapp.service.LocalTranslator
 import kotlinx.coroutines.launch
-import com.example.financialplannerapp.data.DatabaseManager
-import com.example.financialplannerapp.data.SecurityData
-import com.example.financialplannerapp.data.SecurityDatabaseHelper
-import com.example.financialplannerapp.data.SecuritySettings
-import com.example.financialplannerapp.data.toSecuritySettings
-import com.example.financialplannerapp.data.toSecurityData
-import com.example.financialplannerapp.data.hashPin
+import java.security.MessageDigest
 
 private const val TAG_SECURITY = "SecuritySettingsScreen"
 
@@ -49,16 +41,103 @@ private val SoftGray = Color(0xFFF5F5F5)
 private val WarningOrange = Color(0xFFFF9800)
 private val ErrorRed = Color(0xFFF44336)
 
+// Data class for SecuritySettings
+data class SecuritySettings(
+    val pinHash: String? = null,
+    val isBiometricEnabled: Boolean = false,
+    val isAutoLockEnabled: Boolean = true,
+    val autoLockTimeout: Int = 5,
+    val isPinEnabled: Boolean = false
+)
+
+// Enhanced in-memory storage with persistence simulation
+object SecurityStorage {
+    private val settings = mutableMapOf<String, SecuritySettings>()
+    
+    fun getSettings(userId: String): SecuritySettings {
+        return settings[userId] ?: SecuritySettings()
+    }
+    
+    fun saveSettings(userId: String, securitySettings: SecuritySettings) {
+        settings[userId] = securitySettings
+        Log.d(TAG_SECURITY, "Security settings saved for user: $userId")
+    }
+    
+    fun savePinHash(userId: String, hashedPin: String) {
+        val current = getSettings(userId)
+        settings[userId] = current.copy(pinHash = hashedPin, isPinEnabled = true)
+        Log.d(TAG_SECURITY, "PIN hash saved for user: $userId")
+    }
+    
+    fun removePinHash(userId: String) {
+        val current = getSettings(userId)
+        settings[userId] = current.copy(pinHash = null, isPinEnabled = false)
+        Log.d(TAG_SECURITY, "PIN hash removed for user: $userId")
+    }
+    
+    fun verifyPin(userId: String, inputPin: String): Boolean {
+        val settings = getSettings(userId)
+        val hashedInput = hashPin(inputPin)
+        return settings.pinHash == hashedInput
+    }
+}
+
+// Enhanced PIN hashing function
+fun hashPin(pin: String): String {
+    return try {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val hashBytes = digest.digest(pin.toByteArray())
+        hashBytes.joinToString("") { "%02x".format(it) }
+    } catch (e: Exception) {
+        Log.e(TAG_SECURITY, "Error hashing PIN", e)
+        "hashed_$pin" // Fallback
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SecuritySettingsScreen(navController: NavController) {
+fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenManager? = null) {
     Log.d(TAG_SECURITY, "SecuritySettingsScreen composing...")
     
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
-    // Database helper - using centralized helper with memory-safe context
-    val databaseHelper = remember { SecurityDatabaseHelper.getInstance(context) }
+    // Simple translation function
+    val translate = remember<(String) -> String> {
+        { key ->
+            when(key) {
+                "security" -> "Security"
+                "back" -> "Back"
+                "pin_application" -> "PIN Application"
+                "pin_protect_app" -> "Protect app with PIN"
+                "biometric_auth" -> "Biometric Authentication"
+                "use_fingerprint_face" -> "Use fingerprint or face recognition"
+                "auto_lock" -> "Auto Lock"
+                "lock_when_inactive" -> "Lock app when inactive"
+                "setup_pin" -> "Setup PIN"
+                "disable_pin" -> "Disable PIN"
+                "disable_pin_confirm" -> "Are you sure you want to disable PIN protection?"
+                "yes" -> "Yes"
+                "cancel" -> "Cancel"
+                "too_short" -> "Too Short"
+                "weak" -> "Weak"
+                "medium" -> "Medium"
+                "strong" -> "Strong"
+                "pin_active" -> "PIN Active"
+                "pin_inactive" -> "PIN Inactive"
+                "pin_protected" -> "App is protected with PIN"
+                "pin_not_protected" -> "App is not protected"
+                "biometric_active" -> "Biometric Active"
+                "biometric_inactive" -> "Biometric Inactive"
+                "auto_lock_active" -> "Auto Lock Active"
+                "auto_lock_inactive" -> "Auto Lock Inactive"
+                "pin_strength" -> "PIN Strength:"
+                "security_tips" -> "Security Tips:"
+                else -> key
+            }
+        }
+    }
+    
     val userId = "default_user" // In real app, get from TokenManager
     
     // Security settings state
@@ -72,7 +151,7 @@ fun SecuritySettingsScreen(navController: NavController) {
     
     // Load security settings on startup
     LaunchedEffect(Unit) {
-        securitySettings = databaseHelper.getSecuritySettings(userId)
+        securitySettings = SecurityStorage.getSettings(userId)
     }
 
     Scaffold(
@@ -80,7 +159,7 @@ fun SecuritySettingsScreen(navController: NavController) {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Keamanan",
+                        text = translate("security"),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = DarkGray
@@ -95,7 +174,7 @@ fun SecuritySettingsScreen(navController: NavController) {
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Kembali",
+                            contentDescription = translate("back"),
                             tint = BibitGreen
                         )
                     }
@@ -116,11 +195,12 @@ fun SecuritySettingsScreen(navController: NavController) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header
-            SecurityHeaderCard()
+            SecurityHeaderCard(translate)
             
             // PIN Settings
             PinSecurityCard(
                 securitySettings = securitySettings,
+                translate = translate,
                 onTogglePin = { enabled ->
                     if (enabled) {
                         showPinDialog = true
@@ -134,10 +214,11 @@ fun SecuritySettingsScreen(navController: NavController) {
             // Biometric Settings (simulated)
             BiometricSecurityCard(
                 securitySettings = securitySettings,
+                translate = translate,
                 onToggleBiometric = { enabled ->
                     coroutineScope.launch {
                         val updatedSettings = securitySettings.copy(isBiometricEnabled = enabled)
-                        databaseHelper.saveSecuritySettings(userId, updatedSettings)
+                        SecurityStorage.saveSettings(userId, updatedSettings)
                         securitySettings = updatedSettings
                         Toast.makeText(
                             context,
@@ -151,17 +232,18 @@ fun SecuritySettingsScreen(navController: NavController) {
             // Auto Lock Settings
             AutoLockSettingsCard(
                 securitySettings = securitySettings,
+                translate = translate,
                 onToggleAutoLock = { enabled ->
                     coroutineScope.launch {
                         val updatedSettings = securitySettings.copy(isAutoLockEnabled = enabled)
-                        databaseHelper.saveSecuritySettings(userId, updatedSettings)
+                        SecurityStorage.saveSettings(userId, updatedSettings)
                         securitySettings = updatedSettings
                     }
                 },
                 onTimeoutChange = { timeout ->
                     coroutineScope.launch {
                         val updatedSettings = securitySettings.copy(autoLockTimeout = timeout)
-                        databaseHelper.saveSecuritySettings(userId, updatedSettings)
+                        SecurityStorage.saveSettings(userId, updatedSettings)
                         securitySettings = updatedSettings
                     }
                 }
@@ -175,6 +257,7 @@ fun SecuritySettingsScreen(navController: NavController) {
                 confirmPinInput = confirmPinInput,
                 pinError = pinError,
                 isSettingPin = isSettingPin,
+                translate = translate,
                 onPinInputChange = { pinInput = it },
                 onConfirmPinInputChange = { confirmPinInput = it },
                 onConfirm = {
@@ -188,8 +271,8 @@ fun SecuritySettingsScreen(navController: NavController) {
                         else -> {
                             coroutineScope.launch {
                                 val hashedPin = hashPin(pinInput)
-                                databaseHelper.savePinHash(userId, hashedPin)
-                                securitySettings = databaseHelper.getSecuritySettings(userId)
+                                SecurityStorage.savePinHash(userId, hashedPin)
+                                securitySettings = SecurityStorage.getSettings(userId)
                                 Toast.makeText(context, "PIN berhasil diatur", Toast.LENGTH_SHORT).show()
                                 
                                 // Reset states
@@ -216,27 +299,27 @@ fun SecuritySettingsScreen(navController: NavController) {
         if (showConfirmDisableDialog) {
             AlertDialog(
                 onDismissRequest = { showConfirmDisableDialog = false },
-                title = { Text("Nonaktifkan PIN") },
-                text = { Text("Apakah Anda yakin ingin menonaktifkan PIN? Aplikasi akan menjadi kurang aman.") },
+                title = { Text(translate("disable_pin")) },
+                text = { Text(translate("disable_pin_confirm")) },
                 confirmButton = {
                     TextButton(
                         onClick = {
                             coroutineScope.launch {
-                                databaseHelper.removePinHash(userId)
-                                securitySettings = databaseHelper.getSecuritySettings(userId)
+                                SecurityStorage.removePinHash(userId)
+                                securitySettings = SecurityStorage.getSettings(userId)
                                 showConfirmDisableDialog = false
                                 Toast.makeText(context, "PIN berhasil dinonaktifkan", Toast.LENGTH_SHORT).show()
                             }
                         }
                     ) {
-                        Text("Ya", color = ErrorRed)
+                        Text(translate("yes"), color = ErrorRed)
                     }
                 },
                 dismissButton = {
                     TextButton(
                         onClick = { showConfirmDisableDialog = false }
                     ) {
-                        Text("Batal")
+                        Text(translate("cancel"))
                     }
                 }
             )
@@ -245,7 +328,7 @@ fun SecuritySettingsScreen(navController: NavController) {
 }
 
 @Composable
-private fun SecurityHeaderCard() {
+private fun SecurityHeaderCard(translate: (String) -> String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -283,7 +366,7 @@ private fun SecurityHeaderCard() {
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Security,
-                            contentDescription = "Keamanan",
+                            contentDescription = translate("security"),
                             tint = Color.White,
                             modifier = Modifier.size(28.dp)
                         )
@@ -291,13 +374,13 @@ private fun SecurityHeaderCard() {
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            text = "Keamanan Aplikasi",
+                            text = translate("pin_application"),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = DarkGray
                         )
                         Text(
-                            text = "Lindungi data keuangan Anda",
+                            text = translate("pin_protect_app"),
                             fontSize = 14.sp,
                             color = MediumGray
                         )
@@ -333,6 +416,7 @@ private fun SecurityHeaderCard() {
 @Composable
 private fun PinSecurityCard(
     securitySettings: SecuritySettings,
+    translate: (String) -> String,
     onTogglePin: (Boolean) -> Unit
 ) {
     Card(
@@ -369,13 +453,13 @@ private fun PinSecurityCard(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "PIN Aplikasi",
+                        text = translate("pin_application"),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = DarkGray
                     )
                     Text(
-                        text = "Lindungi aplikasi dengan PIN 4-6 digit",
+                        text = translate("pin_protect_app"),
                         fontSize = 14.sp,
                         color = MediumGray
                     )
@@ -404,7 +488,7 @@ private fun PinSecurityCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (securitySettings.isPinEnabled) "PIN Aktif" else "PIN Tidak Aktif",
+                            text = if (securitySettings.isPinEnabled) translate("pin_active") else translate("pin_inactive"),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = if (securitySettings.isPinEnabled) BibitGreen else MediumGray
@@ -412,14 +496,14 @@ private fun PinSecurityCard(
                     }
                     if (securitySettings.isPinEnabled) {
                         Text(
-                            text = "🛡️ Aplikasi terlindungi dengan PIN",
+                            text = translate("pin_protected"),
                             fontSize = 12.sp,
                             color = BibitGreen,
                             modifier = Modifier.padding(start = 28.dp, top = 4.dp)
                         )
                     } else {
                         Text(
-                            text = "⚠️ Aplikasi tidak memiliki proteksi PIN",
+                            text = translate("pin_not_protected"),
                             fontSize = 12.sp,
                             color = WarningOrange,
                             modifier = Modifier.padding(start = 28.dp, top = 4.dp)
@@ -445,6 +529,7 @@ private fun PinSecurityCard(
 @Composable
 private fun BiometricSecurityCard(
     securitySettings: SecuritySettings,
+    translate: (String) -> String,
     onToggleBiometric: (Boolean) -> Unit
 ) {
     Card(
@@ -481,13 +566,13 @@ private fun BiometricSecurityCard(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Autentikasi Biometrik",
+                        text = translate("biometric_auth"),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = DarkGray
                     )
                     Text(
-                        text = "Gunakan sidik jari atau Face ID",
+                        text = translate("use_fingerprint_face"),
                         fontSize = 14.sp,
                         color = MediumGray
                     )
@@ -516,7 +601,7 @@ private fun BiometricSecurityCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (securitySettings.isBiometricEnabled) "Biometrik Aktif" else "Biometrik Tidak Aktif",
+                            text = if (securitySettings.isBiometricEnabled) translate("biometric_active") else translate("biometric_inactive"),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = if (securitySettings.isBiometricEnabled) BibitGreen else MediumGray
@@ -559,6 +644,7 @@ private fun BiometricSecurityCard(
 @Composable
 private fun AutoLockSettingsCard(
     securitySettings: SecuritySettings,
+    translate: (String) -> String,
     onToggleAutoLock: (Boolean) -> Unit,
     onTimeoutChange: (Int) -> Unit
 ) {
@@ -598,13 +684,13 @@ private fun AutoLockSettingsCard(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Kunci Otomatis",
+                        text = translate("auto_lock"),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = DarkGray
                     )
                     Text(
-                        text = "Kunci aplikasi saat tidak aktif",
+                        text = translate("lock_when_inactive"),
                         fontSize = 14.sp,
                         color = MediumGray
                     )
@@ -633,7 +719,7 @@ private fun AutoLockSettingsCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (securitySettings.isAutoLockEnabled) "Kunci Otomatis Aktif" else "Kunci Otomatis Tidak Aktif",
+                            text = if (securitySettings.isAutoLockEnabled) translate("auto_lock_active") else translate("auto_lock_inactive"),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = if (securitySettings.isAutoLockEnabled) BibitGreen else MediumGray
@@ -747,6 +833,7 @@ private fun PinSetupDialog(
     confirmPinInput: String,
     pinError: String,
     isSettingPin: Boolean,
+    translate: (String) -> String,
     onPinInputChange: (String) -> Unit,
     onConfirmPinInputChange: (String) -> Unit,
     onConfirm: () -> Unit,
@@ -760,13 +847,13 @@ private fun PinSetupDialog(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Security,
-                    contentDescription = "Security",
+                    contentDescription = translate("security"),
                     tint = BibitGreen,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Atur PIN Aplikasi",
+                    text = translate("setup_pin"),
                     fontWeight = FontWeight.Bold,
                     color = DarkGray
                 )
@@ -785,11 +872,11 @@ private fun PinSetupDialog(
                 // PIN Strength Indicator
                 if (pinInput.isNotEmpty()) {
                     val strength = when {
-                        pinInput.length < 4 -> "Terlalu Pendek"
-                        pinInput.length == 4 -> "Lemah"
-                        pinInput.length == 5 -> "Sedang"
-                        pinInput.length >= 6 -> "Kuat"
-                        else -> "Lemah"
+                        pinInput.length < 4 -> translate("too_short")
+                        pinInput.length == 4 -> translate("weak")
+                        pinInput.length == 5 -> translate("medium")
+                        pinInput.length >= 6 -> translate("strong")
+                        else -> translate("weak")
                     }
                     
                     val strengthColor = when {
@@ -819,7 +906,7 @@ private fun PinSetupDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Kekuatan PIN: $strength",
+                            text = translate("pin_strength") + " $strength",
                             fontSize = 12.sp,
                             color = strengthColor,
                             fontWeight = FontWeight.Medium
@@ -919,7 +1006,7 @@ private fun PinSetupDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = "Tips Keamanan:",
+                            text = translate("security_tips"),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = BibitGreen
