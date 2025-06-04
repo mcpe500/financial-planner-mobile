@@ -1,54 +1,56 @@
 package com.example.financialplannerapp.data
 
 import androidx.room.TypeConverter
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import java.util.*
 
-/**
- * Type Converters for Room Database
- * 
- * Handles conversion of complex data types to and from primitive types
- * that can be stored in SQLite database.
- */
 class Converters {
     
-    private val gson = Gson()
+    private val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
     
-    /**
-     * Convert List<String> to JSON string
-     */
+    @TypeConverter
+    fun fromDate(value: Date?): Long? {
+        return value?.time
+    }
+
+    @TypeConverter
+    fun toDate(value: Long?): Date? {
+        return value?.let { Date(it) }
+    }
+
     @TypeConverter
     fun fromStringList(value: List<String>?): String? {
-        return if (value == null) null else gson.toJson(value)
+        if (value == null) return null
+        val listType = Types.newParameterizedType(List::class.java, String::class.java)
+        val adapter = moshi.adapter<List<String>>(listType)
+        return adapter.toJson(value)
     }
-    
-    /**
-     * Convert JSON string to List<String>
-     */
+
     @TypeConverter
     fun toStringList(value: String?): List<String>? {
-        return if (value == null) null else {
-            val listType = object : TypeToken<List<String>>() {}.type
-            gson.fromJson(value, listType)
-        }
+        if (value == null) return null
+        val listType = Types.newParameterizedType(List::class.java, String::class.java)
+        val adapter = moshi.adapter<List<String>>(listType)
+        return adapter.fromJson(value)
     }
-    
-    /**
-     * Convert Map<String, Any> to JSON string
-     */
+
     @TypeConverter
-    fun fromStringMap(value: Map<String, Any>?): String? {
-        return if (value == null) null else gson.toJson(value)
+    fun fromMap(value: Map<String, Any>?): String? {
+        if (value == null) return null
+        val mapType = Types.newParameterizedType(Map::class.java, String::class.java, Any::class.java)
+        val adapter = moshi.adapter<Map<String, Any>>(mapType)
+        return adapter.toJson(value)
     }
-    
-    /**
-     * Convert JSON string to Map<String, Any>
-     */
+
     @TypeConverter
-    fun toStringMap(value: String?): Map<String, Any>? {
-        return if (value == null) null else {
-            val mapType = object : TypeToken<Map<String, Any>>() {}.type
-            gson.fromJson(value, mapType)
-        }
+    fun toMap(value: String?): Map<String, Any>? {
+        if (value == null) return null
+        val mapType = Types.newParameterizedType(Map::class.java, String::class.java, Any::class.java)
+        val adapter = moshi.adapter<Map<String, Any>>(mapType)
+        return adapter.fromJson(value)
     }
 }

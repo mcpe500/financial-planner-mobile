@@ -137,42 +137,37 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
-    // Safe access to translator with fallback
-    val translator = remember {
-        try {
-            LocalTranslator.current
-        } catch (e: Exception) {
-            Log.w(TAG_USER_PROFILE, "Translation service not available, using fallback")
-            object : com.example.financialplannerapp.service.TranslationService {
-                override fun get(key: String): String = when(key) {
-                    "user_profile" -> "User Profile"
-                    "personal_profile" -> "Personal Profile"
-                    "back" -> "Back"
-                    "edit" -> "Edit"
-                    "save" -> "Save"
-                    "cancel" -> "Cancel"
-                    "loading_profile" -> "Loading profile..."
-                    "personal_info" -> "Personal Information"
-                    "professional_info" -> "Professional Information"
-                    "financial_goals_field" -> "Financial Goals"
-                    "name_field" -> "Name"
-                    "email_field" -> "Email"
-                    "phone_field" -> "Phone"
-                    "birth_date_field" -> "Date of Birth"
-                    "occupation_field" -> "Occupation"
-                    "monthly_income_field" -> "Monthly Income"
-                    "email_readonly" -> "Email cannot be changed"
-                    "sync_data" -> "Sync Data"
-                    "last_sync" -> "Last Sync"
-                    "unsaved_changes" -> "Unsaved changes"
-                    "syncing" -> "Syncing..."
-                    "offline_mode" -> "Offline Mode"
-                    "sync_to_server" -> "Sync to Server"
-                    "offline_notice" -> "Data saved locally only"
-                    "error_loading" -> "Error loading profile"
-                    "try_again" -> "Try Again"
-                    else -> key
-                }
+    // Simple translation function
+    val translate = remember<(String) -> String> {
+        { key ->
+            when(key) {
+                "user_profile" -> "User Profile"
+                "personal_profile" -> "Personal Profile"
+                "back" -> "Back"
+                "edit" -> "Edit"
+                "save" -> "Save"
+                "cancel" -> "Cancel"
+                "loading_profile" -> "Loading profile..."
+                "personal_info" -> "Personal Information"
+                "professional_info" -> "Professional Information"
+                "financial_goals_field" -> "Financial Goals"
+                "name_field" -> "Name"
+                "email_field" -> "Email"
+                "phone_field" -> "Phone"
+                "birth_date_field" -> "Date of Birth"
+                "occupation_field" -> "Occupation"
+                "monthly_income_field" -> "Monthly Income"
+                "email_readonly" -> "Email cannot be changed"
+                "sync_data" -> "Sync Data"
+                "last_sync" -> "Last Sync"
+                "unsaved_changes" -> "Unsaved changes"
+                "syncing" -> "Syncing..."
+                "offline_mode" -> "Offline Mode"
+                "sync_to_server" -> "Sync to Server"
+                "offline_notice" -> "Data saved locally only"
+                "error_loading" -> "Error loading profile"
+                "try_again" -> "Try Again"
+                else -> key
             }
         }
     }
@@ -456,7 +451,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
             TopAppBar(
                 title = {
                     Text(
-                        text = translator.get("personal_profile"),
+                        text = translate("personal_profile"),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = DarkGray
@@ -471,7 +466,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = translator.get("back"),
+                            contentDescription = translate("back"),
                             tint = BibitGreen
                         )
                     }
@@ -519,7 +514,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                                 Toast.makeText(context, "Data disimpan. Tekan 'Sinkronkan ke Server' untuk menyimpan ke cloud.", Toast.LENGTH_LONG).show()
                             }
                         ) {
-                            Text(translator.get("save"), color = BibitGreen, fontWeight = FontWeight.Medium)
+                            Text(translate("save"), color = BibitGreen, fontWeight = FontWeight.Medium)
                         }
                         
                         // Cancel button
@@ -536,7 +531,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                                 Log.d(TAG_USER_PROFILE, "Edit mode cancelled")
                             }
                         ) {
-                            Text(translator.get("cancel"), color = MediumGray)
+                            Text(translate("cancel"), color = MediumGray)
                         }
                     } else {
                         // Edit button
@@ -645,71 +640,78 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
             
             // Profile Information Cards
             ProfileInfoCard(
-                title = translator.get("personal_info"),
+                title = translate("personal_info"),
                 icon = Icons.Filled.Person,
                 content = {
                     ProfileTextField(
-                        label = translator.get("name_field"),
+                        label = translate("name_field"),
                         value = if (isEditMode) editName else userProfile.name,
                         isEditMode = isEditMode,
-                        onValueChange = { editName = it }
+                        onValueChange = { editName = it },
+                        translate = translate
                     )
                     
                     ProfileTextField(
-                        label = translator.get("email_field"),
+                        label = translate("email_field"),
                         value = userProfile.email,
                         isEditMode = false, // Email cannot be edited
-                        onValueChange = { }
+                        onValueChange = { },
+                        translate = translate
                     )
                     
                     ProfileTextField(
-                        label = translator.get("phone_field"),
+                        label = translate("phone_field"),
                         value = if (isEditMode) editPhone else userProfile.phone,
                         isEditMode = isEditMode,
-                        onValueChange = { editPhone = it }
+                        onValueChange = { editPhone = it },
+                        translate = translate
                     )
                     
                     ProfileTextField(
-                        label = translator.get("birth_date_field"),
+                        label = translate("birth_date_field"),
                         value = if (isEditMode) editDateOfBirth else userProfile.dateOfBirth,
                         isEditMode = isEditMode,
-                        onValueChange = { editDateOfBirth = it }
+                        onValueChange = { editDateOfBirth = it },
+                        translate = translate
                     )
                 }
             )
             
             // Professional Information Card
             ProfileInfoCard(
-                title = translator.get("professional_info"),
+                title = translate("professional_info"),
                 icon = Icons.Filled.Work,
                 content = {
                     ProfileTextField(
-                        label = translator.get("occupation_field"),
+                        label = translate("occupation_field"),
                         value = if (isEditMode) editOccupation else userProfile.occupation,
                         isEditMode = isEditMode,
-                        onValueChange = { editOccupation = it }
+                        onValueChange = { editOccupation = it },
+                        translate = translate
                     )
                     
                     ProfileTextField(
-                        label = translator.get("monthly_income_field"),
+                        label = translate("monthly_income_field"),
                         value = if (isEditMode) editMonthlyIncome else userProfile.monthlyIncome,
                         isEditMode = isEditMode,
-                        onValueChange = { editMonthlyIncome = it }
+                        onValueChange = { editMonthlyIncome = it },
+                        translate = translate
                     )
                 }
             )
             
             // Financial Goals Card
             ProfileInfoCard(
-                title = translator.get("financial_goals_field"),
+                title = translate("financial_goals_field"),
                 icon = Icons.Filled.TrendingUp,
                 content = {
                     ProfileTextField(
-                        label = translator.get("financial_goals_field"),
+                        label = translate("financial_goals_field"),
                         value = if (isEditMode) editFinancialGoals else userProfile.financialGoals,
                         isEditMode = isEditMode,
                         onValueChange = { editFinancialGoals = it },
-                        maxLines = 4
+                        maxLines = 4,
+                        translate = translate
                     )
                 }
             )
@@ -719,7 +721,8 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                 userProfile = userProfile,
                 isConnected = isConnected,
                 isSyncing = isSyncing,
-                onSyncNow = { performSync() }
+                onSyncNow = { performSync() },
+                translate = translate
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -1038,22 +1041,10 @@ private fun ProfileTextField(
     value: String,
     isEditMode: Boolean,
     onValueChange: (String) -> Unit,
-    maxLines: Int = 1
+    maxLines: Int = 1,
+    translate: (String) -> String
 ) {
-    // Safe access to translator with fallback
-    val translator = remember {
-        try {
-            LocalTranslator.current
-        } catch (e: Exception) {
-            object : com.example.financialplannerapp.service.TranslationService {
-                override fun get(key: String): String = when(key) {
-                    "email_field" -> "Email"
-                    "email_readonly" -> "Email cannot be changed"
-                    else -> key
-                }
-            }
-        }
-    }
+    // Removed local translator definition
     
     Column(
         modifier = Modifier
@@ -1067,7 +1058,7 @@ private fun ProfileTextField(
             modifier = Modifier.padding(bottom = 4.dp)
         )
         
-        if (isEditMode && label != translator.get("email_field")) {
+        if (isEditMode && label != translate("email_field")) {
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
@@ -1089,9 +1080,9 @@ private fun ProfileTextField(
                     .padding(12.dp),
                 maxLines = maxLines
             )
-            if (label == translator.get("email_field")) {
+            if (label == translate("email_field")) {
                 Text(
-                    text = translator.get("email_readonly"),
+                    text = translate("email_readonly"),
                     fontSize = 10.sp,
                     color = MediumGray,
                     modifier = Modifier.padding(top = 2.dp)
@@ -1106,26 +1097,10 @@ private fun SyncStatusCard(
     userProfile: UserProfile,
     isConnected: Boolean,
     isSyncing: Boolean,
-    onSyncNow: () -> Unit
+    onSyncNow: () -> Unit,
+    translate: (String) -> String
 ) {
-    val translator = remember {
-        try {
-            LocalTranslator.current
-        } catch (e: Exception) {
-            object : com.example.financialplannerapp.service.TranslationService {
-                override fun get(key: String): String = when(key) {
-                    "sync_data" -> "Sync Data"
-                    "last_sync" -> "Last Sync"
-                    "unsaved_changes" -> "Unsaved changes"
-                    "syncing" -> "Syncing..."
-                    "offline_mode" -> "Offline Mode"
-                    "sync_to_server" -> "Sync to Server"
-                    "offline_notice" -> "Data saved locally only"
-                    else -> key
-                }
-            }
-        }
-    }
+    // Removed local translator definition
     
     Card(
         modifier = Modifier
@@ -1146,13 +1121,13 @@ private fun SyncStatusCard(
             ) {
                 Icon(
                     imageVector = Icons.Filled.CloudSync,
-                    contentDescription = translator.get("sync_data"),
+                    contentDescription = translate("sync_data"),
                     tint = BibitGreen,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = translator.get("sync_data"),
+                    text = translate("sync_data"),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = DarkGray
@@ -1164,7 +1139,7 @@ private fun SyncStatusCard(
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 Text(
-                    text = translator.get("last_sync"),
+                    text = translate("last_sync"),
                     fontSize = 12.sp,
                     color = MediumGray
                 )
@@ -1182,13 +1157,13 @@ private fun SyncStatusCard(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Warning,
-                            contentDescription = translator.get("unsaved_changes"),
+                            contentDescription = translate("unsaved_changes"),
                             tint = Color(0xFFFF9800),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = translator.get("unsaved_changes"),
+                            text = translate("unsaved_changes"),
                             fontSize = 12.sp,
                             color = Color(0xFFFF9800)
                         )
@@ -1215,7 +1190,7 @@ private fun SyncStatusCard(
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(translator.get("syncing"))
+                    Text(translate("syncing"))
                 } else if (!isConnected) {
                     Icon(
                         imageVector = Icons.Filled.CloudOff,
@@ -1223,7 +1198,7 @@ private fun SyncStatusCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(translator.get("offline_mode"))
+                    Text(translate("offline_mode"))
                 } else {
                     Icon(
                         imageVector = Icons.Filled.CloudUpload,
@@ -1231,14 +1206,14 @@ private fun SyncStatusCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(translator.get("sync_to_server"))
+                    Text(translate("sync_to_server"))
                 }
             }
             
             // Offline notice
             if (!isConnected) {
                 Text(
-                    text = translator.get("offline_notice"),
+                    text = translate("offline_notice"),
                     fontSize = 12.sp,
                     color = MediumGray,
                     modifier = Modifier.padding(top = 8.dp),

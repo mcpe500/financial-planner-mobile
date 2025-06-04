@@ -102,33 +102,38 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
-    // Safe access to translator with fallback
-    val translator = remember {
-        try {
-            LocalTranslator.current
-        } catch (e: Exception) {
-            Log.w(TAG_SECURITY, "Translation service not available, using fallback")
-            object : com.example.financialplannerapp.service.TranslationService {
-                override fun get(key: String): String = when(key) {
-                    "security" -> "Security"
-                    "back" -> "Back"
-                    "pin_application" -> "PIN Application"
-                    "pin_protect_app" -> "Protect app with PIN"
-                    "biometric_auth" -> "Biometric Authentication"
-                    "use_fingerprint_face" -> "Use fingerprint or face recognition"
-                    "auto_lock" -> "Auto Lock"
-                    "lock_when_inactive" -> "Lock app when inactive"
-                    "setup_pin" -> "Setup PIN"
-                    "disable_pin" -> "Disable PIN"
-                    "disable_pin_confirm" -> "Are you sure you want to disable PIN protection?"
-                    "yes" -> "Yes"
-                    "cancel" -> "Cancel"
-                    "too_short" -> "Too Short"
-                    "weak" -> "Weak"
-                    "medium" -> "Medium"
-                    "strong" -> "Strong"
-                    else -> key
-                }
+    // Simple translation function
+    val translate = remember<(String) -> String> {
+        { key ->
+            when(key) {
+                "security" -> "Security"
+                "back" -> "Back"
+                "pin_application" -> "PIN Application"
+                "pin_protect_app" -> "Protect app with PIN"
+                "biometric_auth" -> "Biometric Authentication"
+                "use_fingerprint_face" -> "Use fingerprint or face recognition"
+                "auto_lock" -> "Auto Lock"
+                "lock_when_inactive" -> "Lock app when inactive"
+                "setup_pin" -> "Setup PIN"
+                "disable_pin" -> "Disable PIN"
+                "disable_pin_confirm" -> "Are you sure you want to disable PIN protection?"
+                "yes" -> "Yes"
+                "cancel" -> "Cancel"
+                "too_short" -> "Too Short"
+                "weak" -> "Weak"
+                "medium" -> "Medium"
+                "strong" -> "Strong"
+                "pin_active" -> "PIN Active"
+                "pin_inactive" -> "PIN Inactive"
+                "pin_protected" -> "App is protected with PIN"
+                "pin_not_protected" -> "App is not protected"
+                "biometric_active" -> "Biometric Active"
+                "biometric_inactive" -> "Biometric Inactive"
+                "auto_lock_active" -> "Auto Lock Active"
+                "auto_lock_inactive" -> "Auto Lock Inactive"
+                "pin_strength" -> "PIN Strength:"
+                "security_tips" -> "Security Tips:"
+                else -> key
             }
         }
     }
@@ -154,7 +159,7 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
             TopAppBar(
                 title = {
                     Text(
-                        text = translator.get("security"),
+                        text = translate("security"),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = DarkGray
@@ -169,7 +174,7 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = translator.get("back"),
+                            contentDescription = translate("back"),
                             tint = BibitGreen
                         )
                     }
@@ -190,12 +195,12 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header
-            SecurityHeaderCard(translator)
+            SecurityHeaderCard(translate)
             
             // PIN Settings
             PinSecurityCard(
                 securitySettings = securitySettings,
-                translator = translator,
+                translate = translate,
                 onTogglePin = { enabled ->
                     if (enabled) {
                         showPinDialog = true
@@ -209,7 +214,7 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
             // Biometric Settings (simulated)
             BiometricSecurityCard(
                 securitySettings = securitySettings,
-                translator = translator,
+                translate = translate,
                 onToggleBiometric = { enabled ->
                     coroutineScope.launch {
                         val updatedSettings = securitySettings.copy(isBiometricEnabled = enabled)
@@ -227,7 +232,7 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
             // Auto Lock Settings
             AutoLockSettingsCard(
                 securitySettings = securitySettings,
-                translator = translator,
+                translate = translate,
                 onToggleAutoLock = { enabled ->
                     coroutineScope.launch {
                         val updatedSettings = securitySettings.copy(isAutoLockEnabled = enabled)
@@ -252,7 +257,7 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
                 confirmPinInput = confirmPinInput,
                 pinError = pinError,
                 isSettingPin = isSettingPin,
-                translator = translator,
+                translate = translate,
                 onPinInputChange = { pinInput = it },
                 onConfirmPinInputChange = { confirmPinInput = it },
                 onConfirm = {
@@ -294,8 +299,8 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
         if (showConfirmDisableDialog) {
             AlertDialog(
                 onDismissRequest = { showConfirmDisableDialog = false },
-                title = { Text(translator.get("disable_pin")) },
-                text = { Text(translator.get("disable_pin_confirm")) },
+                title = { Text(translate("disable_pin")) },
+                text = { Text(translate("disable_pin_confirm")) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -307,14 +312,14 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
                             }
                         }
                     ) {
-                        Text(translator.get("yes"), color = ErrorRed)
+                        Text(translate("yes"), color = ErrorRed)
                     }
                 },
                 dismissButton = {
                     TextButton(
                         onClick = { showConfirmDisableDialog = false }
                     ) {
-                        Text(translator.get("cancel"))
+                        Text(translate("cancel"))
                     }
                 }
             )
@@ -323,7 +328,7 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
 }
 
 @Composable
-private fun SecurityHeaderCard(translator: com.example.financialplannerapp.service.TranslationService) {
+private fun SecurityHeaderCard(translate: (String) -> String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -361,7 +366,7 @@ private fun SecurityHeaderCard(translator: com.example.financialplannerapp.servi
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Security,
-                            contentDescription = translator.get("security"),
+                            contentDescription = translate("security"),
                             tint = Color.White,
                             modifier = Modifier.size(28.dp)
                         )
@@ -369,13 +374,13 @@ private fun SecurityHeaderCard(translator: com.example.financialplannerapp.servi
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            text = translator.get("pin_application"),
+                            text = translate("pin_application"),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = DarkGray
                         )
                         Text(
-                            text = translator.get("pin_protect_app"),
+                            text = translate("pin_protect_app"),
                             fontSize = 14.sp,
                             color = MediumGray
                         )
@@ -411,7 +416,7 @@ private fun SecurityHeaderCard(translator: com.example.financialplannerapp.servi
 @Composable
 private fun PinSecurityCard(
     securitySettings: SecuritySettings,
-    translator: com.example.financialplannerapp.service.TranslationService,
+    translate: (String) -> String,
     onTogglePin: (Boolean) -> Unit
 ) {
     Card(
@@ -448,13 +453,13 @@ private fun PinSecurityCard(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = translator.get("pin_application"),
+                        text = translate("pin_application"),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = DarkGray
                     )
                     Text(
-                        text = translator.get("pin_protect_app"),
+                        text = translate("pin_protect_app"),
                         fontSize = 14.sp,
                         color = MediumGray
                     )
@@ -483,7 +488,7 @@ private fun PinSecurityCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (securitySettings.isPinEnabled) translator.get("pin_active") else translator.get("pin_inactive"),
+                            text = if (securitySettings.isPinEnabled) translate("pin_active") else translate("pin_inactive"),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = if (securitySettings.isPinEnabled) BibitGreen else MediumGray
@@ -491,14 +496,14 @@ private fun PinSecurityCard(
                     }
                     if (securitySettings.isPinEnabled) {
                         Text(
-                            text = translator.get("pin_protected"),
+                            text = translate("pin_protected"),
                             fontSize = 12.sp,
                             color = BibitGreen,
                             modifier = Modifier.padding(start = 28.dp, top = 4.dp)
                         )
                     } else {
                         Text(
-                            text = translator.get("pin_not_protected"),
+                            text = translate("pin_not_protected"),
                             fontSize = 12.sp,
                             color = WarningOrange,
                             modifier = Modifier.padding(start = 28.dp, top = 4.dp)
@@ -524,7 +529,7 @@ private fun PinSecurityCard(
 @Composable
 private fun BiometricSecurityCard(
     securitySettings: SecuritySettings,
-    translator: com.example.financialplannerapp.service.TranslationService,
+    translate: (String) -> String,
     onToggleBiometric: (Boolean) -> Unit
 ) {
     Card(
@@ -561,13 +566,13 @@ private fun BiometricSecurityCard(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = translator.get("biometric_auth"),
+                        text = translate("biometric_auth"),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = DarkGray
                     )
                     Text(
-                        text = translator.get("use_fingerprint_face"),
+                        text = translate("use_fingerprint_face"),
                         fontSize = 14.sp,
                         color = MediumGray
                     )
@@ -596,7 +601,7 @@ private fun BiometricSecurityCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (securitySettings.isBiometricEnabled) translator.get("biometric_active") else translator.get("biometric_inactive"),
+                            text = if (securitySettings.isBiometricEnabled) translate("biometric_active") else translate("biometric_inactive"),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = if (securitySettings.isBiometricEnabled) BibitGreen else MediumGray
@@ -639,7 +644,7 @@ private fun BiometricSecurityCard(
 @Composable
 private fun AutoLockSettingsCard(
     securitySettings: SecuritySettings,
-    translator: com.example.financialplannerapp.service.TranslationService,
+    translate: (String) -> String,
     onToggleAutoLock: (Boolean) -> Unit,
     onTimeoutChange: (Int) -> Unit
 ) {
@@ -679,13 +684,13 @@ private fun AutoLockSettingsCard(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = translator.get("auto_lock"),
+                        text = translate("auto_lock"),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = DarkGray
                     )
                     Text(
-                        text = translator.get("lock_when_inactive"),
+                        text = translate("lock_when_inactive"),
                         fontSize = 14.sp,
                         color = MediumGray
                     )
@@ -714,7 +719,7 @@ private fun AutoLockSettingsCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (securitySettings.isAutoLockEnabled) translator.get("auto_lock_active") else translator.get("auto_lock_inactive"),
+                            text = if (securitySettings.isAutoLockEnabled) translate("auto_lock_active") else translate("auto_lock_inactive"),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = if (securitySettings.isAutoLockEnabled) BibitGreen else MediumGray
@@ -828,7 +833,7 @@ private fun PinSetupDialog(
     confirmPinInput: String,
     pinError: String,
     isSettingPin: Boolean,
-    translator: com.example.financialplannerapp.service.TranslationService,
+    translate: (String) -> String,
     onPinInputChange: (String) -> Unit,
     onConfirmPinInputChange: (String) -> Unit,
     onConfirm: () -> Unit,
@@ -842,13 +847,13 @@ private fun PinSetupDialog(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Security,
-                    contentDescription = translator.get("security"),
+                    contentDescription = translate("security"),
                     tint = BibitGreen,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = translator.get("setup_pin"),
+                    text = translate("setup_pin"),
                     fontWeight = FontWeight.Bold,
                     color = DarkGray
                 )
@@ -867,11 +872,11 @@ private fun PinSetupDialog(
                 // PIN Strength Indicator
                 if (pinInput.isNotEmpty()) {
                     val strength = when {
-                        pinInput.length < 4 -> translator.get("too_short")
-                        pinInput.length == 4 -> translator.get("weak")
-                        pinInput.length == 5 -> translator.get("medium")
-                        pinInput.length >= 6 -> translator.get("strong")
-                        else -> translator.get("weak")
+                        pinInput.length < 4 -> translate("too_short")
+                        pinInput.length == 4 -> translate("weak")
+                        pinInput.length == 5 -> translate("medium")
+                        pinInput.length >= 6 -> translate("strong")
+                        else -> translate("weak")
                     }
                     
                     val strengthColor = when {
@@ -901,7 +906,7 @@ private fun PinSetupDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = translator.get("pin_strength") + " $strength",
+                            text = translate("pin_strength") + " $strength",
                             fontSize = 12.sp,
                             color = strengthColor,
                             fontWeight = FontWeight.Medium
@@ -1001,7 +1006,7 @@ private fun PinSetupDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = translator.get("security_tips"),
+                            text = translate("security_tips"),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = BibitGreen
