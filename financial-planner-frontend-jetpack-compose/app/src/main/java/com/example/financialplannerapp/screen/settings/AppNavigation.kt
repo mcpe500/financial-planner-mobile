@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.screen.settings
 
 import android.util.Log
 import androidx.compose.runtime.Composable
@@ -8,6 +8,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import com.example.financialplannerapp.TokenManager
+import com.example.financialplannerapp.screen.dashboard.DashboardScreen
+import com.example.financialplannerapp.screen.passcode.PasscodeScreen
+import com.example.financialplannerapp.screen.auth.LoginScreen
 
 @Composable
 fun AppNavigation(
