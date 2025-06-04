@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.screen.passcode
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

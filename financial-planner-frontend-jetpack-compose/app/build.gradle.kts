@@ -75,9 +75,9 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
-    // Retrofit & Gson
+    // Retrofit & Moshi
     implementation(libs.squareup.retrofit)
-    implementation(libs.squareup.retrofit.converter.gson)
+    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
     implementation(libs.squareup.okhttp3.logging.interceptor)
 
     // Coroutines
@@ -92,12 +92,14 @@ dependencies {
 
     // Retrofit for network calls
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    // Gson for JSON serialization
-    implementation("com.google.code.gson:gson:2.10.1")
+    // Moshi for JSON serialization
+    implementation("com.squareup.moshi:moshi:1.15.0")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
 
     // Google Sign-In
     implementation(libs.google.android.gms.play.services.auth)

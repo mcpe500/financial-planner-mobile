@@ -1,10 +1,12 @@
 package com.example.financialplannerapp.api
 
 import com.example.financialplannerapp.config.Config
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
@@ -13,6 +15,11 @@ object RetrofitClient {
     private const val CONNECT_TIMEOUT = 30L
     private const val READ_TIMEOUT = 30L
     private const val WRITE_TIMEOUT = 30L
+    
+    // Moshi instance
+    private val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
     
     // OkHttp client with timeouts and logging
     private val okHttpClient: OkHttpClient by lazy {
@@ -33,7 +40,7 @@ object RetrofitClient {
         Retrofit.Builder()
             .baseUrl(Config.BASE_URL + "/")
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
     }
     

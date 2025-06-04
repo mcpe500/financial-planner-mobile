@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.screen.auth
 
 import android.app.Activity
 import android.content.Context
@@ -36,8 +36,6 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
-import com.example.financialplannerapp.api.LoginRequest
 import com.example.financialplannerapp.api.LoginResponse
 import com.example.financialplannerapp.config.Config
 

@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.screen.settings
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
