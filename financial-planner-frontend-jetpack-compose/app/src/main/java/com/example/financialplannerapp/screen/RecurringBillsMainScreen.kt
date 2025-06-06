@@ -234,7 +234,7 @@ fun RecurringBillsMainScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp)
                 ) {
-                    items(BillFilter.values()) { filter ->
+                    items(BillFilter.entries.toTypedArray()) { filter ->
                         FilterChip(
                             onClick = { selectedFilter = filter },
                             label = {

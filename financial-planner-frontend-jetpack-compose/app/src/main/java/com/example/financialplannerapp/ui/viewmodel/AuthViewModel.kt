@@ -15,9 +15,9 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         }
     }
 
-    fun register(email: String, password: String) {
+    fun register(name: String, email: String, password: String) {
         viewModelScope.launch {
-            authRepository.register(RegisterRequest(email, password))
+            authRepository.register(RegisterRequest(name, email, password))
         }
     }
 
