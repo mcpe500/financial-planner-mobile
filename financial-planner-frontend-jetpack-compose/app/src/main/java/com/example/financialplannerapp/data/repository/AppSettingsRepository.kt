@@ -2,8 +2,8 @@ package com.example.financialplannerapp.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import com.example.financialplannerapp.data.dao.AppSettingsDao
-import com.example.financialplannerapp.data.model.AppSettings
+import com.example.financialplannerapp.data.local.dao.AppSettingsDao
+import com.example.financialplannerapp.data.local.model.AppSettingsEntity
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,9 +11,9 @@ import javax.inject.Singleton
  * Repository interface for App Settings
  */
 interface AppSettingsRepository {
-    fun getSettings(): Flow<AppSettings?>
-    suspend fun getSettingsOnce(): AppSettings?
-    suspend fun saveSettings(settings: AppSettings)
+    fun getSettings(): Flow<AppSettingsEntity?>
+    suspend fun getSettingsOnce(): AppSettingsEntity?
+    suspend fun saveSettings(settings: AppSettingsEntity)
     suspend fun updateTheme(theme: String)
     suspend fun updateLanguage(language: String)
     suspend fun updateCurrency(currency: String)
@@ -36,21 +36,21 @@ class AppSettingsRepositoryImpl @Inject constructor(
     /**
      * Get app settings as Flow for reactive updates
      */
-    override fun getSettings(): Flow<AppSettings?> {
+    override fun getSettings(): Flow<AppSettingsEntity?> {
         return dao.getSettings()
     }
     
     /**
      * Get app settings once (immediate access)
      */
-    override suspend fun getSettingsOnce(): AppSettings? {
+    override suspend fun getSettingsOnce(): AppSettingsEntity? {
         return dao.getSettingsOnce()
     }
     
     /**
      * Save app settings (insert or update)
      */
-    override suspend fun saveSettings(settings: AppSettings) {
+    override suspend fun saveSettings(settings: AppSettingsEntity) {
         dao.insertSettings(settings.copy(updatedAt = System.currentTimeMillis()))
     }
     
@@ -95,8 +95,8 @@ class AppSettingsRepositoryImpl @Inject constructor(
     /**
      * Get default settings
      */
-    private fun getDefaultSettings(): AppSettings {
-        return AppSettings(
+    private fun getDefaultSettings(): AppSettingsEntity {
+        return AppSettingsEntity(
             id = 0,
             theme = "system",
             language = "id",

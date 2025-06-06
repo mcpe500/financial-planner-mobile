@@ -2,7 +2,7 @@ package com.example.financialplannerapp.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.financialplannerapp.data.model.SecuritySettings
+import com.example.financialplannerapp.data.local.model.SecurityEntity
 import com.example.financialplannerapp.data.repository.SecurityRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,8 +16,8 @@ class SecurityViewModel @Inject constructor(
     private val securityRepository: SecurityRepository
 ) : ViewModel() {
 
-    private val _securitySettings = MutableStateFlow<SecuritySettings?>(null)
-    val securitySettings: StateFlow<SecuritySettings?> = _securitySettings.asStateFlow()
+    private val _securitySettings = MutableStateFlow<SecurityEntity?>(null)
+    val securitySettings: StateFlow<SecurityEntity?> = _securitySettings.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -44,7 +44,7 @@ class SecurityViewModel @Inject constructor(
         }
     }
 
-    fun updateSecuritySettings(settings: SecuritySettings) {
+    fun updateSecuritySettings(settings: SecurityEntity) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -61,7 +61,7 @@ class SecurityViewModel @Inject constructor(
         }
     }
     
-    fun updatePinHash(pinHash: String?, currentSettings: SecuritySettings) {
+    fun updatePinHash(pinHash: String?, currentSettings: SecurityEntity) {
         val newSettings = currentSettings.copy(pinHash = pinHash)
         updateSecuritySettings(newSettings)
     }

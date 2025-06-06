@@ -30,13 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.financialplannerapp.TokenManager
-import com.example.financialplannerapp.api.RetrofitClient
+import com.example.financialplannerapp.data.remote.RetrofitClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import com.example.financialplannerapp.api.LoginResponse
+import com.example.financialplannerapp.data.model.LoginResponse
 import com.example.financialplannerapp.config.Config
 
 private const val TAG_LOGIN_SCREEN = "LoginScreen"

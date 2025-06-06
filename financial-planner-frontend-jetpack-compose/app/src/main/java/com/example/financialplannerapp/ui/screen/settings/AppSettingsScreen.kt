@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.settings
 
 import android.widget.Toast
 import com.example.financialplannerapp.service.ReactiveSettingsService
@@ -19,8 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
-import com.example.financialplannerapp.utils.Translations
-import com.example.financialplannerapp.utils.translate
+import com.example.financialplannerapp.data.Translations
+import com.example.financialplannerapp.data.translate
 import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
 import com.example.financialplannerapp.service.LocalSettingsService
 
@@ -43,7 +43,7 @@ fun AppSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(translate(Translations.Key.AppSettings)) },
+                title = { Text(text = translate(Translations.Key.AppSettings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -163,11 +163,11 @@ private fun ThemeSelectionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = translate(Translations.Key.ThemeSetting),
+                text = translate(Translations.Key.ThemeSetting).toString(),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = translate(Translations.Key.ThemeSettingDesc),
+                text = translate(Translations.Key.ThemeSettingDesc).toString(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -195,9 +195,9 @@ private fun ThemeSelectionCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = when (themeCode) {
-                            "light" -> translate(Translations.Key.ThemeLight)
-                            "dark" -> translate(Translations.Key.ThemeDark)
-                            "system" -> translate(Translations.Key.ThemeSystem)
+                            "light" -> translate(Translations.Key.ThemeLight).toString()
+                            "dark" -> translate(Translations.Key.ThemeDark).toString()
+                            "system" -> translate(Translations.Key.ThemeSystem).toString()
                             else -> themeName
                         },
                         style = MaterialTheme.typography.bodyMedium
@@ -231,11 +231,11 @@ private fun LanguageSelectionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = translate(Translations.Key.LanguageSetting),
+                text = translate(Translations.Key.LanguageSetting).toString(),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = translate(Translations.Key.LanguageSettingDesc),
+                text = translate(Translations.Key.LanguageSettingDesc).toString(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -303,11 +303,11 @@ private fun CurrencySelectionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = translate(Translations.Key.CurrencySetting),
+                text = translate(Translations.Key.CurrencySetting).toString(),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = translate(Translations.Key.CurrencySettingDesc),
+                text = translate(Translations.Key.CurrencySettingDesc).toString(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -368,11 +368,11 @@ private fun NotificationSettingsCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = translate(Translations.Key.NotificationsSetting),
+                    text = translate(Translations.Key.NotificationsSetting).toString(),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = translate(Translations.Key.NotificationsSettingDesc),
+                    text = translate(Translations.Key.NotificationsSettingDesc).toString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

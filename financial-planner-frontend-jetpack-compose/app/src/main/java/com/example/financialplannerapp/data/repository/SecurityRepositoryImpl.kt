@@ -1,7 +1,7 @@
 package com.example.financialplannerapp.data.repository
 
 import com.example.financialplannerapp.data.local.dao.SecuritySettingsDao
-import com.example.financialplannerapp.data.local.model.SecuritySettingsEntity
+import com.example.financialplannerapp.data.local.model.SecurityEntity
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -11,27 +11,25 @@ class SecurityRepositoryImpl @Inject constructor(
     private val securitySettingsDao: SecuritySettingsDao
 ) : SecurityRepository {
 
-    override suspend fun getSecuritySettingsByUserId(userId: String): SecuritySettingsEntity? {
+    override suspend fun getSecuritySettingsByUserId(userId: String): SecurityEntity? {
         return securitySettingsDao.getSecuritySettingsByUserId(userId)
     }
 
-    override fun getSecuritySettingsByUserIdFlow(userId: String): Flow<SecuritySettingsEntity?> {
+    override fun getSecuritySettingsByUserIdFlow(userId: String): Flow<SecurityEntity?> {
         return securitySettingsDao.getSecuritySettingsByUserIdFlow(userId)
-    }
-
-    override fun getAllSecuritySettings(): Flow<List<SecuritySettingsEntity>> {
+    }    override fun getAllSecuritySettings(): Flow<List<SecurityEntity>> {
         return securitySettingsDao.getAllSecuritySettings()
     }
 
-    override suspend fun insertSecuritySettings(securitySettings: SecuritySettingsEntity): Long {
+    override suspend fun insertSecuritySettings(securitySettings: SecurityEntity): Long {
         return securitySettingsDao.insertSecuritySettings(securitySettings)
     }
 
-    override suspend fun updateSecuritySettings(securitySettings: SecuritySettingsEntity) {
+    override suspend fun updateSecuritySettings(securitySettings: SecurityEntity) {
         securitySettingsDao.updateSecuritySettings(securitySettings.copy(updatedAt = System.currentTimeMillis()))
     }
 
-    override suspend fun deleteSecuritySettings(securitySettings: SecuritySettingsEntity) {
+    override suspend fun deleteSecuritySettings(securitySettings: SecurityEntity) {
         securitySettingsDao.deleteSecuritySettings(securitySettings)
     }
 

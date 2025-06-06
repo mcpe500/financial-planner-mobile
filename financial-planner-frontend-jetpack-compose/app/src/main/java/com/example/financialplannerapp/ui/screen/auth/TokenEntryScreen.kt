@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.financialplannerapp.TokenManager
-import com.example.financialplannerapp.api.RetrofitClient
-import com.example.financialplannerapp.api.LoginResponse
+import com.example.financialplannerapp.data.remote.RetrofitClient
+import com.example.financialplannerapp.data.model.LoginResponse
 import kotlinx.coroutines.launch
 
 private const val TAG_TOKEN_ENTRY = "TokenEntryScreen"

@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.bill
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.data.model.RecurringBill
+import com.example.financialplannerapp.data.model.RepeatCycle
 
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -27,7 +29,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddRecurringBillScreen(
-    billId: NavHostController? = null,
+    navController: NavHostController? = null,
     onNavigateBack: () -> Unit = {},
     onSave: (RecurringBill) -> Unit = {}
 ) {
@@ -93,7 +95,7 @@ fun AddRecurringBillScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (billId == null) "Tambah Tagihan" else "Edit Tagihan",
+                        text = "Tambah Tagihan Berulang",
                         fontWeight = FontWeight.Bold,
                         color = BibitDarkGreen
                     )
@@ -112,7 +114,7 @@ fun AddRecurringBillScreen(
                         onClick = {
                             if (validateForm()) {
                                 val bill = RecurringBill(
-                                    id = (billId ?: UUID.randomUUID().toString()) as String,
+                                    id = UUID.randomUUID().toString(),
                                     name = billName,
                                     estimatedAmount = estimatedAmount.replace(",", "").replace(".", "").toDouble(),
                                     dueDate = selectedDate,
@@ -298,7 +300,7 @@ fun AddRecurringBillScreen(
                         expanded = showCycleDropdown,
                         onDismissRequest = { showCycleDropdown = false }
                     ) {
-                        RepeatCycle.values().forEach { cycle ->
+                        RepeatCycle.entries.forEach { cycle ->
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -494,9 +496,8 @@ fun AddRecurringBillScreen(
     }
 }
 
-
 @Preview(showBackground = true)
 @Composable
 fun AddRecurringBillScreenPreview() {
-    AddRecurringBillScreen(rememberNavController())
+    AddRecurringBillScreen()
 }

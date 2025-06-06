@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.api
+package com.example.financialplannerapp.data.remote
 
 import com.example.financialplannerapp.config.Config
 import com.squareup.moshi.Moshi

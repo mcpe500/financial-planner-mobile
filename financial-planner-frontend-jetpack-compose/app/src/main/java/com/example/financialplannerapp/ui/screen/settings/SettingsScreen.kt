@@ -1,8 +1,8 @@
-package com.example.financialplannerapp.screen.settings
+package com.example.financialplannerapp.ui.screen.settings
 
 import android.util.Log
-import com.example.financialplannerapp.utils.Translations
-import com.example.financialplannerapp.utils.translate
+import com.example.financialplannerapp.data.local.Translations
+import com.example.financialplannerapp.data.local.translate
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,51 +49,50 @@ fun SettingsScreen(navController: NavController) {
 
     val settingCategories = listOf(
         SettingItem(
-            title = translate(Translations.Key.PersonalProfile),
-            subtitle = translate(Translations.Key.Profile),
+            title = translate(Translations.PersonalProfile),
+            subtitle = translate(Translations.Profile),
             icon = Icons.Filled.Person,
             route = "userProfileSettings"
         ),
         SettingItem(
-            title = translate(Translations.Key.Security),
-            subtitle = translate(Translations.Key.Security),
+            title = translate(Translations.Security),
+            subtitle = translate(Translations.Security),
             icon = Icons.Filled.Security,
             route = "securitySettings"
         ),
         SettingItem(
-            title = translate(Translations.Key.AppSettings),
-            subtitle = translate(Translations.Key.AppInfo),
+            title = translate(Translations.AppSettings),
+            subtitle = translate(Translations.AppInfo),
             icon = Icons.Filled.Settings,
             route = "appSettings"
         ),
         SettingItem(
-            title = translate(Translations.Key.DataSync),
-            subtitle = translate(Translations.Key.DataSyncDesc),
+            title = translate(Translations.DataSync),
+            subtitle = translate(Translations.DataSyncDesc),
             icon = Icons.Filled.Sync,
             route = "dataSyncSettings",
             isOnlineRequired = true
         ),
         SettingItem(
-            title = translate(Translations.Key.BackupRestore),
-            subtitle = translate(Translations.Key.BackupRestoreDesc),
+            title = translate(Translations.BackupRestore),
+            subtitle = translate(Translations.BackupRestoreDesc),
             icon = Icons.Filled.CloudUpload,
             route = "backupRestoreSettings"
         ),
         SettingItem(
-            title = translate(Translations.Key.HelpCenter),
-            subtitle = translate(Translations.Key.HelpCenterDesc),
+            title = translate(Translations.HelpCenter),
+            subtitle = translate(Translations.HelpCenterDesc),
             icon = Icons.Filled.HelpOutline,
             route = "helpCenterSettings"
         ),
         SettingItem(
-            title = translate(Translations.Key.ContactSupport),
-            subtitle = translate(Translations.Key.ContactSupportDesc),
+            title = translate(Translations.ContactSupport),
+            subtitle = translate(Translations.ContactSupportDesc),
             icon = Icons.Filled.ContactSupport,
             route = "contactSupportSettings",
             isOnlineRequired = true
         )
     )
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -114,7 +113,7 @@ fun SettingsScreen(navController: NavController) {
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = translate(Translations.Key.Back),
+                            contentDescription = translate(Translations.Back),
                             tint = BibitGreen
                         )
                     }

@@ -18,84 +18,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.financialplannerapp.data.model.RecurringBill
+import com.example.financialplannerapp.data.model.BillPayment
+import com.example.financialplannerapp.data.model.RepeatCycle
+import com.example.financialplannerapp.data.model.BillStatus
+import com.example.financialplannerapp.data.model.BillFilter
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
-
-// Data Classes
-data class RecurringBill(
-    val id: String,
-    val name: String,
-    val estimatedAmount: Double,
-    val dueDate: Date,
-    val repeatCycle: RepeatCycle,
-    val notes: String = "",
-    val isReminderEnabled: Boolean = true,
-    val reminderTime: String = "09:00",
-    val reminderDaysBefore: Int = 1,
-    val payments: List<BillPayment> = emptyList(),
-    val isActive: Boolean = true
-) {
-    val nextDueDate: Date get() = calculateNextDueDate()
-    val isOverdue: Boolean get() = Date().after(nextDueDate) && !isRecentlyPaid()
-    val daysToDue: Int get() = ((nextDueDate.time - Date().time) / (1000 * 60 * 60 * 24)).toInt()
-    val status: BillStatus get() = when {
-        isRecentlyPaid() -> BillStatus.PAID
-        isOverdue -> BillStatus.OVERDUE
-        daysToDue <= 7 -> BillStatus.DUE_SOON
-        else -> BillStatus.UPCOMING
-    }
-
-    private fun calculateNextDueDate(): Date {
-        val calendar = Calendar.getInstance()
-        calendar.time = dueDate
-        when (repeatCycle) {
-            RepeatCycle.WEEKLY -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
-            RepeatCycle.MONTHLY -> calendar.add(Calendar.MONTH, 1)
-            RepeatCycle.QUARTERLY -> calendar.add(Calendar.MONTH, 3)
-            RepeatCycle.YEARLY -> calendar.add(Calendar.YEAR, 1)
-            RepeatCycle.CUSTOM -> calendar.add(Calendar.DAY_OF_YEAR, 30)
-        }
-        return calendar.time
-    }
-
-    private fun isRecentlyPaid(): Boolean {
-        val lastPayment = payments.maxByOrNull { it.date }
-        return lastPayment?.let {
-            val daysSincePayment = ((Date().time - it.date.time) / (1000 * 60 * 60 * 24)).toInt()
-            daysSincePayment <= 5
-        } ?: false
-    }
-}
-
-data class BillPayment(
-    val id: String,
-    val amount: Double,
-    val date: Date,
-    val notes: String = ""
-)
-
-enum class RepeatCycle(val label: String, val icon: String) {
-    WEEKLY("Mingguan", "📅"),
-    MONTHLY("Bulanan", "🗓️"),
-    QUARTERLY("3 Bulan", "📊"),
-    YEARLY("Tahunan", "🎯"),
-    CUSTOM("Custom", "⚙️")
-}
-
-enum class BillStatus(val label: String, val color: Color) {
-    PAID("Lunas", Color(0xFF38A169)),
-    OVERDUE("Terlambat", Color(0xFFE53E3E)),
-    DUE_SOON("Jatuh Tempo", Color(0xFFFF9800)),
-    UPCOMING("Mendatang", Color(0xFF2196F3))
-}
-
-enum class BillFilter(val label: String) {
-    ALL("Semua"),
-    UPCOMING("Mendatang"),
-    PAID("Lunas"),
-    UNPAID("Belum Bayar")
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -203,7 +133,7 @@ fun RecurringBillsMainScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {  },
+                onClick = onNavigateToAdd,
                 containerColor = BibitGreen,
                 contentColor = Color.White
             ) {

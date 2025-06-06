@@ -118,6 +118,10 @@ dependencies {
     ksp("com.google.dagger:hilt-compiler:2.51.1")
     implementation(libs.androidx.hilt.navigation.compose)
 
+    // DataStore
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("androidx.datastore:datastore-core:1.0.0")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -3,11 +3,11 @@ package com.example.financialplannerapp.di
 import android.content.Context
 import androidx.room.Room
 import com.example.financialplannerapp.core.datastore.DataStoreHelper
-import com.example.financialplannerapp.core.network.RetrofitClient
-import com.example.financialplannerapp.data.AppDatabase
-import com.example.financialplannerapp.data.dao.AppSettingsDao
-import com.example.financialplannerapp.data.dao.SecurityDao
-import com.example.financialplannerapp.data.dao.UserProfileDao
+import com.example.financialplannerapp.data.remote.RetrofitClient
+import com.example.financialplannerapp.data.local.AppDatabase
+import com.example.financialplannerapp.data.local.dao.AppSettingsDao
+import com.example.financialplannerapp.data.local.dao.UserProfileDao
+import com.example.financialplannerapp.data.local.dao.SecuritySettingsDao
 import com.example.financialplannerapp.data.remote.ApiService
 import com.example.financialplannerapp.data.repository.AppSettingsRepository
 import com.example.financialplannerapp.data.repository.AppSettingsRepositoryImpl
@@ -28,7 +28,8 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object DatabaseModule {    @Provides
+object DatabaseModule {    
+    @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(
@@ -46,11 +47,9 @@ object DatabaseModule {    @Provides
     @Provides
     fun provideAppSettingsDao(database: AppDatabase): AppSettingsDao {
         return database.appSettingsDao()
-    }
-
-    @Provides
-    fun provideSecurityDao(database: AppDatabase): SecurityDao {
-        return database.securityDao()
+    }    @Provides
+    fun provideSecuritySettingsDao(database: AppDatabase): SecuritySettingsDao {
+        return database.securitySettingsDao()
     }
 }
 
@@ -85,26 +84,26 @@ object RepositoryModule {
         dataStoreHelper: DataStoreHelper
     ): AuthRepository {
         return AuthRepositoryImpl(apiService, dataStoreHelper)
-    }    @Provides
+    }    
+    @Provides
     @Singleton
     fun provideAppSettingsRepository(
         appSettingsDao: AppSettingsDao
     ): AppSettingsRepository {
         return AppSettingsRepositoryImpl(appSettingsDao)
-    }
-
-    @Provides
+    }    @Provides
     @Singleton
     fun provideSecurityRepository(
-        securityDao: SecurityDao
+        securitySettingsDao: SecuritySettingsDao
     ): SecurityRepository {
-        return SecurityRepositoryImpl(securityDao)
+        return SecurityRepositoryImpl(securitySettingsDao)
     }
 }
 
 @Module
 @InstallIn(SingletonComponent::class)
-object ServiceModule {    @Provides
+object ServiceModule {    
+    @Provides
     @Singleton
     fun provideDataStoreHelper(@ApplicationContext context: Context): DataStoreHelper {
         return DataStoreHelper(context)

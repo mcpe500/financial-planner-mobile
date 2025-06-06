@@ -117,6 +117,15 @@ class DataStoreHelper @Inject constructor(
     }
 
     /**
+     * Clear authentication token only
+     */
+    suspend fun clearAuthToken() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(AUTH_TOKEN_KEY)
+        }
+    }
+
+    /**
      * Clear all authentication data
      */
     suspend fun clearAuthData() {

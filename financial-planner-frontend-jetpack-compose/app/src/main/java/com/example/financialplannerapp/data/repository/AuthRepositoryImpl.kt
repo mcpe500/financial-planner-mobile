@@ -17,12 +17,13 @@ class AuthRepositoryImpl @Inject constructor(
     private val dataStoreHelper: DataStoreHelper
 ) : AuthRepository {
 
-    override suspend fun login(loginRequest: LoginRequest): Result<LoginResponse> {
-        return try {
+    override suspend fun login(loginRequest: LoginRequest): Result<LoginResponse> {        return try {
             val response = apiService.login(loginRequest)
             if (response.isSuccessful && response.body() != null) {
                 val loginResponse = response.body()!!
-                saveAuthToken(loginResponse.token)
+                loginResponse.token?.let { token ->
+                    saveAuthToken(token)
+                }
                 Result.success(loginResponse)
             } else {
                 Result.failure(Exception("Login failed: ${response.message()}"))
@@ -52,17 +53,19 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    override suspend fun refreshToken(): Result<String> {
+    }    override suspend fun refreshToken(): Result<String> {
         return try {
             val currentToken = getAuthToken().first()
             if (currentToken != null) {
                 val response = apiService.refreshToken("Bearer $currentToken")
                 if (response.isSuccessful && response.body() != null) {
                     val newToken = response.body()!!.token
-                    saveAuthToken(newToken)
-                    Result.success(newToken)
+                    if (newToken != null) {
+                        saveAuthToken(newToken)
+                        Result.success(newToken)
+                    } else {
+                        Result.failure(Exception("Token refresh failed: No token in response"))
+                    }
                 } else {
                     Result.failure(Exception("Token refresh failed"))
                 }

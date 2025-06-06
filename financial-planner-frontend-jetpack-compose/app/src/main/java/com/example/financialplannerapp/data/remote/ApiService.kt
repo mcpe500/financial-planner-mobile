@@ -1,8 +1,12 @@
 package com.example.financialplannerapp.data.remote
 
+import com.example.financialplannerapp.data.model.LoginRequest
+import com.example.financialplannerapp.data.model.LoginResponse
+import com.example.financialplannerapp.data.model.RegisterRequest
+import com.example.financialplannerapp.data.model.RegisterResponse
+import com.example.financialplannerapp.data.model.UserData
 import com.example.financialplannerapp.data.requests.UserProfileUpdateRequest
 import com.example.financialplannerapp.data.responses.ApiResponse
-import kotlinx.serialization.Serializable
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -38,58 +42,22 @@ interface ApiService {
     ): Response<LoginResponse>
     
     @POST("api/auth/logout")
-    suspend fun logout(@Header("Authorization") authHeader: String): Response<LogoutResponse>
+    suspend fun logout(@Header("Authorization") authHeader: String): Response<com.example.financialplannerapp.data.remote.LogoutResponse>
+
+    @POST("api/auth/refresh")
+    suspend fun refreshToken(@Header("Authorization") authHeader: String): Response<LoginResponse>
+
+    // Category endpoints
+    @GET("api/categories")
+    suspend fun getCategories(): Response<List<com.example.financialplannerapp.data.model.CategoryData>>
+    
+    @POST("api/categories/upload")
+    suspend fun uploadCategories(@Body categories: List<com.example.financialplannerapp.data.model.CategoryData>): Response<Unit>
+    
+    // Transaction endpoints
+    @GET("api/transactions/{userId}")
+    suspend fun getUserTransactions(@Path("userId") userId: String): Response<List<com.example.financialplannerapp.data.model.TransactionData>>
+    
+    @POST("api/transactions/upload")
+    suspend fun uploadTransactions(@Body transactions: List<com.example.financialplannerapp.data.model.TransactionData>): Response<Unit>
 }
-
-// Data classes for authentication
-@Serializable
-data class LoginRequest(
-    val email: String,
-    val password: String
-)
-
-@Serializable
-data class LoginResponse(
-    val success: Boolean,
-    val message: String,
-    val token: String? = null,
-    val user: UserData? = null
-)
-
-@Serializable
-data class RegisterRequest(
-    val name: String,
-    val email: String,
-    val password: String
-)
-
-@Serializable
-data class RegisterResponse(
-    val success: Boolean,
-    val message: String,
-    val token: String? = null,
-    val user: UserData? = null
-)
-
-@Serializable
-data class UserData(
-    val id: String,
-    val name: String,
-    val email: String
-)
-
-// Data classes from AuthService.kt
-data class UserResponse(
-    val user: User
-)
-
-data class User(
-    val id: String,
-    val email: String?,
-    val name: String?,
-    val role: String? = null
-)
-
-data class LogoutResponse(
-    val message: String
-)

@@ -16,7 +16,7 @@ interface AppSettingsDao {
     /**
      * Get app settings as Flow for reactive updates
      */
-    @Query("SELECT * FROM app_settings WHERE id = 0 LIMIT 极1")
+    @Query("SELECT * FROM app_settings WHERE id = 0 LIMIT 1")
     fun getSettings(): Flow<AppSettingsEntity?>
     
     /**

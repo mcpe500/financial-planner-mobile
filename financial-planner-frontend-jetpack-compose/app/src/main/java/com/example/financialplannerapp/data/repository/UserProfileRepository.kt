@@ -1,7 +1,7 @@
 package com.example.financialplannerapp.data.repository
 
-import com.example.financialplannerapp.data.dao.UserProfileDao
-import com.example.financialplannerapp.data.model.UserProfile
+import com.example.financialplannerapp.data.local.dao.UserProfileDao
+import com.example.financialplannerapp.data.local.model.UserProfileEntity
 import com.example.financialplannerapp.data.remote.ApiService
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -13,14 +13,14 @@ import javax.inject.Singleton
  * Defines contract for user profile data operations
  */
 interface UserProfileRepository {
-    suspend fun insertUserProfile(userProfile: UserProfile): Long
-    suspend fun updateUserProfile(userProfile: UserProfile)
-    suspend fun deleteUserProfile(userProfile: UserProfile)
-    fun getUserProfileById(id: Long): Flow<UserProfile?>
-    fun getUserProfileByFirebaseUid(firebaseUid: String): Flow<UserProfile?>
-    fun getAllUserProfiles(): Flow<List<UserProfile>>
-    fun getModifiedUserProfiles(): Flow<List<UserProfile>>
-    suspend fun getProfilesNeedingSync(): List<UserProfile>
+    suspend fun insertUserProfile(userProfile: UserProfileEntity): Long
+    suspend fun updateUserProfile(userProfile: UserProfileEntity)
+    suspend fun deleteUserProfile(userProfile: UserProfileEntity)
+    fun getUserProfileById(id: Long): Flow<UserProfileEntity?>
+    fun getUserProfileByFirebaseUid(firebaseUid: String): Flow<UserProfileEntity?>
+    fun getAllUserProfiles(): Flow<List<UserProfileEntity>>
+    fun getModifiedUserProfiles(): Flow<List<UserProfileEntity>>
+    suspend fun getProfilesNeedingSync(): List<UserProfileEntity>
     suspend fun deleteAllUserProfiles()
 }
 
@@ -30,35 +30,35 @@ class UserProfileRepositoryImpl @Inject constructor(
     private val apiService: ApiService
 ) : UserProfileRepository {
 
-    override suspend fun insertUserProfile(userProfile: UserProfile): Long {
+    override suspend fun insertUserProfile(userProfile: UserProfileEntity): Long {
         return userProfileDao.insertUserProfile(userProfile)
     }
 
-    override suspend fun updateUserProfile(userProfile: UserProfile) {
+    override suspend fun updateUserProfile(userProfile: UserProfileEntity) {
         userProfileDao.updateUserProfile(userProfile)
     }
 
-    override suspend fun deleteUserProfile(userProfile: UserProfile) {
+    override suspend fun deleteUserProfile(userProfile: UserProfileEntity) {
         userProfileDao.deleteUserProfile(userProfile)
     }
 
-    override fun getUserProfileById(id: Long): Flow<UserProfile?> {
+    override fun getUserProfileById(id: Long): Flow<UserProfileEntity?> {
         return userProfileDao.getUserProfileById(id)
     }
 
-    override fun getUserProfileByFirebaseUid(firebaseUid: String): Flow<UserProfile?> {
+    override fun getUserProfileByFirebaseUid(firebaseUid: String): Flow<UserProfileEntity?> {
         return userProfileDao.getUserProfileByFirebaseUid(firebaseUid)
     }
 
-    override fun getAllUserProfiles(): Flow<List<UserProfile>> {
+    override fun getAllUserProfiles(): Flow<List<UserProfileEntity>> {
         return userProfileDao.getAllUserProfiles()
     }
 
-    override fun getModifiedUserProfiles(): Flow<List<UserProfile>> {
+    override fun getModifiedUserProfiles(): Flow<List<UserProfileEntity>> {
         return userProfileDao.getModifiedUserProfiles()
     }
     
-    override suspend fun getProfilesNeedingSync(): List<UserProfile> {
+    override suspend fun getProfilesNeedingSync(): List<UserProfileEntity> {
         return userProfileDao.getProfilesNeedingSync()
     }
 
