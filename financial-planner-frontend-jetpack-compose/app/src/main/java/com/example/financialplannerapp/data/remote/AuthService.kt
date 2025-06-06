@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.api
+package com.example.financialplannerapp.data.remote
 
 import retrofit2.Response
 import retrofit2.http.GET

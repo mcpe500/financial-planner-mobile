@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.data.local.model
+package com.example.financialplannerapp.data.model
 
 import android.os.Parcelable
 import androidx.room.ColumnInfo
@@ -8,7 +8,7 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 @Entity(tableName = "user_profile")
-data class UserProfileEntity(
+data class UserProfile(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
     val firebaseUid: String? = null, // For Firebase sync

@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.utils
+package com.example.financialplannerapp.core.util
 
 import java.security.MessageDigest
 
