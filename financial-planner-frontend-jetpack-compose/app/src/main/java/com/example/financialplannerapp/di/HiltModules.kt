@@ -19,19 +19,10 @@ import com.example.financialplannerapp.data.repository.UserProfileRepository
 import com.example.financialplannerapp.data.repository.UserProfileRepositoryImpl
 import com.example.financialplannerapp.service.ThemeService
 import com.example.financialplannerapp.data.model.TranslationProvider
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
+import com.example.financialplannerapp.service.TranslationServiceImpl
 
-@Module
-@InstallIn(SingletonComponent::class)
-object DatabaseModule {    
-    @Provides
-    @Singleton
-    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+object DatabaseModule {
+    fun provideAppDatabase(context: Context): AppDatabase {
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
@@ -39,38 +30,26 @@ object DatabaseModule {
         ).build()
     }
 
-    @Provides
     fun provideUserProfileDao(database: AppDatabase): UserProfileDao {
         return database.userProfileDao()
     }
 
-    @Provides
     fun provideAppSettingsDao(database: AppDatabase): AppSettingsDao {
         return database.appSettingsDao()
-    }    
-    @Provides
+    }
+
     fun provideSecuritySettingsDao(database: AppDatabase): SecuritySettingsDao {
         return database.securitySettingsDao()
     }
 }
 
-@Module
-@InstallIn(SingletonComponent::class)
 object NetworkModule {
-
-    @Provides
-    @Singleton
     fun provideApiService(): ApiService {
         return RetrofitClient.apiService
     }
 }
 
-@Module
-@InstallIn(SingletonComponent::class)
 object RepositoryModule {
-
-    @Provides
-    @Singleton
     fun provideUserProfileRepository(
         userProfileDao: UserProfileDao,
         apiService: ApiService
@@ -78,23 +57,19 @@ object RepositoryModule {
         return UserProfileRepositoryImpl(userProfileDao, apiService)
     }
 
-    @Provides
-    @Singleton
     fun provideAuthRepository(
         apiService: ApiService,
         dataStoreHelper: DataStoreHelper
     ): AuthRepository {
         return AuthRepositoryImpl(apiService, dataStoreHelper)
-    }    
-    @Provides
-    @Singleton
+    }
+
     fun provideAppSettingsRepository(
         appSettingsDao: AppSettingsDao
     ): AppSettingsRepository {
         return AppSettingsRepositoryImpl(appSettingsDao)
-    }    
-    @Provides
-    @Singleton
+    }
+
     fun provideSecurityRepository(
         securitySettingsDao: SecuritySettingsDao
     ): SecurityRepository {
@@ -102,46 +77,15 @@ object RepositoryModule {
     }
 }
 
-@Module
-@InstallIn(SingletonComponent::class)
-object ServiceModule {    
-    @Provides
-    @Singleton
-    fun provideDataStoreHelper(@ApplicationContext context: Context): DataStoreHelper {
-        return DataStoreHelper(context)
-    }
-
-    @Provides
-    @Singleton
-    fun provideThemeService(): ThemeService {
-        return ThemeService.getInstance()
-    }
-
-    @Provides
-    @Singleton
-    fun provideTranslationService(): TranslationService {
-        return TranslationService.getInstance()
-    }
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
 object AppServicesModule {
-
-    @Provides
-    @Singleton
-    fun provideDataStoreHelper(@ApplicationContext context: Context): DataStoreHelper {
+    fun provideDataStoreHelper(context: Context): DataStoreHelper {
         return DataStoreHelper(context)
     }
 
-    @Provides
-    @Singleton
-    fun provideTranslationService(@ApplicationContext context: Context): TranslationProvider {
-        return com.example.financialplannerapp.service.TranslationServiceImpl()
+    fun provideTranslationService(context: Context): TranslationProvider {
+        return TranslationServiceImpl(context)
     }
 
-    @Provides
-    @Singleton
     fun provideThemeService(dataStoreHelper: DataStoreHelper): ThemeService {
         return ThemeService(dataStoreHelper)
     }

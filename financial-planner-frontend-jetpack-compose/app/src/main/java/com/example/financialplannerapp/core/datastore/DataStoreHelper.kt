@@ -8,8 +8,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "financial_planner_prefs")
 
@@ -19,8 +17,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  * Provides a reactive and type-safe way to store key-value pairs.
  * Used for authentication tokens and other app-wide settings.
  */
-@Singleton
-class DataStoreHelper @Inject constructor(
+class DataStoreHelper constructor(
     private val context: Context
 ) {
     companion object {
