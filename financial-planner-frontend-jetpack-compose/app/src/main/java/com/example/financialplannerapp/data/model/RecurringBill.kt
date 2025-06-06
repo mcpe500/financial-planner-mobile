@@ -4,22 +4,23 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 import java.util.Date
 import java.util.Calendar
+import java.util.UUID
 
 @Parcelize
 data class RecurringBill(
-    val id: String = "",
-    val name: String = "",
-    val estimatedAmount: Double = 0.0,
-    val dueDate: Date = Date(),
-    val repeatCycle: RepeatCycle = RepeatCycle.MONTHLY,
-    val notes: String = "",
-    val isReminderEnabled: Boolean = true,
-    val reminderTime: String = "09:00",
-    val reminderDaysBefore: Int = 1,
-    val payments: List<BillPayment> = emptyList(),
-    val isActive: Boolean = true,
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val id: String = UUID.randomUUID().toString(),
+    var name: String,
+    var estimatedAmount: Double,
+    var dueDate: Date, // Represents the initial due date or the next due date if already started
+    var repeatCycle: RepeatCycle,
+    var category: String? = null, // Optional: e.g., "Utilities", "Subscription", "Loan"
+    var notes: String = "",
+    var isActive: Boolean = true, // To easily deactivate a recurring bill without deleting
+    var payments: List<BillPayment> = emptyList(), // History of payments for this bill
+    var autoPay: Boolean = false, // If the bill is set to be paid automatically
+    var notificationEnabled: Boolean = true, // If notifications are enabled for this bill
+    var lastPaymentDate: Date? = null, // Date of the last payment made
+    var creationDate: Date = Date() // Date when the recurring bill was created
 ) : Parcelable {
     val nextDueDate: Date get() = calculateNextDueDate()
     val isOverdue: Boolean get() = Date().after(nextDueDate) && !isRecentlyPaid()
@@ -54,10 +55,10 @@ data class RecurringBill(
 }
 
 @Parcelize
-enum class RepeatCycle(val displayName: String, val icon: String, val label: String) : Parcelable {
-    DAILY("Harian", "🗓️", "Setiap Hari"),
-    WEEKLY("Mingguan", "📅", "Setiap Minggu"),
-    MONTHLY("Bulanan", "📆", "Setiap Bulan"),
-    QUARTERLY("Per 3 Bulan", "🗂️", "Setiap 3 Bulan"),
-    YEARLY("Tahunan", "📊", "Setiap Tahun")
-}
+data class BillPayment(
+    val id: String = UUID.randomUUID().toString(),
+    val amountPaid: Double,
+    val paymentDate: Date,
+    val paymentMethod: String? = null, // Optional: e.g., "Credit Card", "Bank Transfer"
+    val transactionId: String? = null // Optional: For tracking payment
+) : Parcelable
