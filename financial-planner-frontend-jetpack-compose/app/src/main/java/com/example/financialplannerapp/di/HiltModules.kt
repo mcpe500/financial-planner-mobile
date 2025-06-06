@@ -18,7 +18,7 @@ import com.example.financialplannerapp.data.repository.SecurityRepositoryImpl
 import com.example.financialplannerapp.data.repository.UserProfileRepository
 import com.example.financialplannerapp.data.repository.UserProfileRepositoryImpl
 import com.example.financialplannerapp.service.ThemeService
-import com.example.financialplannerapp.service.TranslationService
+import com.example.financialplannerapp.data.model.TranslationProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,7 +47,8 @@ object DatabaseModule {
     @Provides
     fun provideAppSettingsDao(database: AppDatabase): AppSettingsDao {
         return database.appSettingsDao()
-    }    @Provides
+    }    
+    @Provides
     fun provideSecuritySettingsDao(database: AppDatabase): SecuritySettingsDao {
         return database.securitySettingsDao()
     }
@@ -91,7 +92,8 @@ object RepositoryModule {
         appSettingsDao: AppSettingsDao
     ): AppSettingsRepository {
         return AppSettingsRepositoryImpl(appSettingsDao)
-    }    @Provides
+    }    
+    @Provides
     @Singleton
     fun provideSecurityRepository(
         securitySettingsDao: SecuritySettingsDao
@@ -119,5 +121,28 @@ object ServiceModule {
     @Singleton
     fun provideTranslationService(): TranslationService {
         return TranslationService.getInstance()
+    }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object AppServicesModule {
+
+    @Provides
+    @Singleton
+    fun provideDataStoreHelper(@ApplicationContext context: Context): DataStoreHelper {
+        return DataStoreHelper(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTranslationService(@ApplicationContext context: Context): TranslationProvider {
+        return com.example.financialplannerapp.service.TranslationServiceImpl()
+    }
+
+    @Provides
+    @Singleton
+    fun provideThemeService(dataStoreHelper: DataStoreHelper): ThemeService {
+        return ThemeService(dataStoreHelper)
     }
 }

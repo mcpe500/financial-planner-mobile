@@ -12,7 +12,7 @@ data class RecurringBill(
     var name: String,
     var estimatedAmount: Double,
     var dueDate: Date, // Represents the initial due date or the next due date if already started
-    var repeatCycle: RepeatCycle,
+    var repeatCycle: String, // Changed to String to remove RepeatCycle enum dependency
     var category: String? = null, // Optional: e.g., "Utilities", "Subscription", "Loan"
     var notes: String = "",
     var isActive: Boolean = true, // To easily deactivate a recurring bill without deleting
@@ -36,11 +36,11 @@ data class RecurringBill(
         val calendar = Calendar.getInstance()
         calendar.time = dueDate
         when (repeatCycle) {
-            RepeatCycle.WEEKLY -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
-            RepeatCycle.MONTHLY -> calendar.add(Calendar.MONTH, 1)
-            RepeatCycle.QUARTERLY -> calendar.add(Calendar.MONTH, 3)
-            RepeatCycle.YEARLY -> calendar.add(Calendar.YEAR, 1)
-            RepeatCycle.DAILY -> calendar.add(Calendar.DAY_OF_YEAR, 1)
+            "WEEKLY" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
+            "MONTHLY" -> calendar.add(Calendar.MONTH, 1)
+            "QUARTERLY" -> calendar.add(Calendar.MONTH, 3)
+            "YEARLY" -> calendar.add(Calendar.YEAR, 1)
+            "DAILY" -> calendar.add(Calendar.DAY_OF_YEAR, 1)
         }
         return calendar.time
     }

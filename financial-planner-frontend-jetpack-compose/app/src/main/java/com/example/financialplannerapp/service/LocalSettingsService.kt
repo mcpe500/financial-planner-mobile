@@ -8,6 +8,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.financialplannerapp.data.AppSettings
 import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
+import com.example.financialplannerapp.data.local.model.AppSettingsEntity
+import com.example.financialplannerapp.data.toAppSettings
+import com.example.financialplannerapp.data.toAppSettingsEntity
 
 /**
  * Local Settings Service for Compose
@@ -37,13 +40,13 @@ class LocalSettingsService {
         serviceScope.launch {
             try {
                 // Load existing settings from database
-                val savedSettings = dbHelper.getAppSettings("default_user")
-                _currentSettings.value = savedSettings
+                val savedSettingsEntity: AppSettingsEntity? = dbHelper.getAppSettings("default_user")
+                _currentSettings.value = savedSettingsEntity?.toAppSettings() ?: AppSettings()
                 
                 // Listen for database changes
-                dbHelper.getAppSettingsFlow("default_user").collect { settings ->
-                    settings?.let {
-                        _currentSettings.value = it
+                dbHelper.getAppSettingsFlow("default_user").collect { settingsEntity ->
+                    settingsEntity?.let {
+                        _currentSettings.value = it.toAppSettings()
                     }
                 }
             } catch (e: Exception) {
@@ -62,21 +65,21 @@ class LocalSettingsService {
     ) {
         serviceScope.launch {
             try {
-                val currentSettings = _currentSettings.value
-                val newSettings = transform(currentSettings)
+                val currentSettingsValue = _currentSettings.value
+                val newSettingsValue = transform(currentSettingsValue)
                 
                 // Update local state immediately for UI responsiveness
-                _currentSettings.value = newSettings
+                _currentSettings.value = newSettingsValue
                 
                 // Persist to database
-                dbHelper.saveAppSettings("default_user", newSettings)
+                dbHelper.saveAppSettings("default_user", newSettingsValue.toAppSettingsEntity())
                 
                 // Update individual services based on changes
-                if (currentSettings.theme != newSettings.theme) {
+                if (currentSettingsValue.theme != newSettingsValue.theme) {
                     // Theme change logic could go here
                 }
                 
-                if (currentSettings.language != newSettings.language) {
+                if (currentSettingsValue.language != newSettingsValue.language) {
                     // Language change logic could go here
                     // Note: TranslationService.getInstance() might not be available
                     // This can be handled at the UI level instead
