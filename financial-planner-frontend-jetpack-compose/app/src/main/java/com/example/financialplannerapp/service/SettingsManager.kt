@@ -1,7 +1,5 @@
 package com.example.financialplannerapp.service
 
-import com.example.financialplannerapp.service.TranslationService
-
 import android.content.Context
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
@@ -13,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.example.financialplannerapp.data.AppSettings
 import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
+import com.example.financialplannerapp.data.toAppSettings
 
 /**
  * Settings Manager
@@ -22,8 +21,7 @@ import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
  */
 class SettingsManager private constructor(
     private val context: Context,
-    private val themeService: ThemeService,
-    private val translationService: TranslationService
+    private val themeService: ThemeService
 ) {
     private val databaseHelper = AppSettingsDatabaseHelper.getInstance(context)
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -37,14 +35,12 @@ class SettingsManager private constructor(
         
         fun getInstance(
             context: Context,
-            themeService: ThemeService = ThemeService.getInstance(),
-            translationService: TranslationService = TranslationService.getInstance()
+            themeService: ThemeService = ThemeService.getInstance()
         ): SettingsManager {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: SettingsManager(
                     context.applicationContext,
-                    themeService,
-                    translationService
+                    themeService
                 ).also { INSTANCE = it }
             }
         }
@@ -62,18 +58,17 @@ class SettingsManager private constructor(
      */
     private suspend fun loadSettings() {
         try {
-            val settings = databaseHelper.getAppSettings("default_user")
+            val settingsEntity = databaseHelper.getAppSettings("default_user")
+            val settings = settingsEntity.toAppSettings()
             _currentSettings.value = settings
             
             // Apply settings to services
             themeService.setTheme(settings.theme)
-            translationService.setLanguage(settings.language)
         } catch (e: Exception) {
             // Use default settings if loading fails
             val defaultSettings = AppSettings()
             _currentSettings.value = defaultSettings
             themeService.setTheme(defaultSettings.theme)
-            translationService.setLanguage(defaultSettings.language)
         }
     }
     
@@ -82,7 +77,8 @@ class SettingsManager private constructor(
      */
     suspend fun getCurrentSettings(): AppSettings {
         return try {
-            databaseHelper.getAppSettings("default_user")
+            val settingsEntity = databaseHelper.getAppSettings("default_user")
+            settingsEntity.toAppSettings()
         } catch (e: Exception) {
             AppSettings()
         }
@@ -100,7 +96,6 @@ class SettingsManager private constructor(
      * Set language and persist to database
      */
     suspend fun setLanguage(language: String) {
-        translationService.setLanguage(language)
         updateSetting { it.copy(language = language) }
     }
     
@@ -123,7 +118,8 @@ class SettingsManager private constructor(
      */
     private suspend fun updateSetting(transform: (AppSettings) -> AppSettings) {
         try {
-            val currentSettings = databaseHelper.getAppSettings("default_user")
+            val currentSettingsEntity = databaseHelper.getAppSettings("default_user")
+            val currentSettings = currentSettingsEntity.toAppSettings()
             val updatedSettings = transform(currentSettings)
             databaseHelper.saveAppSettings("default_user", updatedSettings)
             _currentSettings.value = updatedSettings

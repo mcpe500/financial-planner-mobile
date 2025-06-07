@@ -2,6 +2,7 @@ package com.example.financialplannerapp.service
 
 import android.content.Context
 import androidx.compose.runtime.*
+import androidx.compose.runtime.compositionLocalOf
 import com.example.financialplannerapp.data.model.LanguageOption
 import com.example.financialplannerapp.data.model.TranslationProvider
 import com.example.financialplannerapp.data.model.TranslationState
@@ -137,7 +138,8 @@ class TranslationServiceImpl(
     }
 }
 
-val LocalTranslationProvider = compositionLocalOf<TranslationProvider> {
+// Translation provider for Compose
+val LocalTranslationService = compositionLocalOf<TranslationProvider> {
     error("No TranslationProvider provided")
 }
 
@@ -147,7 +149,7 @@ fun ProvideTranslations(
     content: @Composable () -> Unit
 ) {
     CompositionLocalProvider(
-        LocalTranslationProvider provides translationProvider,
+        LocalTranslationService provides translationProvider,
         content = content
     )
 }
@@ -155,13 +157,13 @@ fun ProvideTranslations(
 // Composable helper to get a translated string
 @Composable
 fun translate(key: Translations, vararg args: Any): String {
-    val translator = LocalTranslationProvider.current
+    val translator = LocalTranslationService.current
     return translator.translate(key, *args)
 }
 
 // Overload for string keys if needed, though enum is preferred for type safety
 @Composable
 fun translate(key: String, vararg args: Any): String {
-    val translator = LocalTranslationProvider.current
+    val translator = LocalTranslationService.current
     return translator.translate(key, *args)
 }
