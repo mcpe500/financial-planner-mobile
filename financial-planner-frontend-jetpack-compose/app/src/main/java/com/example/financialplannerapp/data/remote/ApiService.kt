@@ -5,6 +5,8 @@ import com.example.financialplannerapp.data.model.LoginResponse
 import com.example.financialplannerapp.data.model.RegisterRequest
 import com.example.financialplannerapp.data.model.RegisterResponse
 import com.example.financialplannerapp.data.model.UserData
+import com.example.financialplannerapp.data.model.ReceiptOCRRequest
+import com.example.financialplannerapp.data.model.ReceiptOCRResponse
 import com.example.financialplannerapp.data.requests.UserProfileUpdateRequest
 import com.example.financialplannerapp.data.responses.ApiResponse
 import retrofit2.Response
@@ -60,4 +62,11 @@ interface ApiService {
     
     @POST("api/transactions/upload")
     suspend fun uploadTransactions(@Body transactions: List<com.example.financialplannerapp.data.model.TransactionData>): Response<Unit>
+    
+    // Receipt OCR endpoints
+    @POST("api/receipts/process")
+    suspend fun processReceiptOCR(
+        @Header("Authorization") authHeader: String,
+        @Body request: ReceiptOCRRequest
+    ): Response<ReceiptOCRResponse>
 }

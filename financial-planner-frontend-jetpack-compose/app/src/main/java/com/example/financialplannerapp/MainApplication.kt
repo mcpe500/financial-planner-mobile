@@ -67,6 +67,11 @@ class AppContainer(private val applicationContext: Context) {
         ).build()
     }
 
+    // TokenManager
+    val tokenManager: TokenManager by lazy {
+        TokenManager(applicationContext)
+    }
+
     // API Service
     private val apiService = RetrofitClient.apiService
 
@@ -122,5 +127,10 @@ class AppContainer(private val applicationContext: Context) {
     }
     val appSettingsRepository: AppSettingsRepository by lazy {
         AppSettingsRepositoryImpl(appSettingsDao)
+    }
+    
+    // Receipt Service
+    val receiptService: com.example.financialplannerapp.data.service.ReceiptService by lazy {
+        com.example.financialplannerapp.data.service.ReceiptService(apiService, tokenManager, applicationContext)
     }
 }

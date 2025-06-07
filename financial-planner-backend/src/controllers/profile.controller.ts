@@ -3,11 +3,7 @@ import database from '../services/database.service';
 import { UserProfileUpdatePayload } from '../types/profile.types';
 import { UserType } from '../types/user.types';
 import { convertDateFormat, convertDateToDisplay, isValidDate, isValidPhoneNumber } from '../helpers/dates.helper';
-
-// Define AuthRequest interface to match the auth middleware
-interface AuthRequest extends Request {
-  user?: UserType;
-}
+import { AuthRequest } from '../types/request.types';
 
 // Sanitize input to prevent XSS attacks
 const sanitizeString = (input: string): string => {
