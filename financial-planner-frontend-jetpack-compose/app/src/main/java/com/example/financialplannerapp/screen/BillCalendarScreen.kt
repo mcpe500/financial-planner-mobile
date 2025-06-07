@@ -30,6 +30,8 @@ import java.util.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.example.financialplannerapp.service.LocalAppContainer
+import com.example.financialplannerapp.ui.viewmodel.CalendarViewModelFactory
 
 data class CalendarUiState(
     val currentMonth: String = "",
@@ -40,7 +42,8 @@ data class CalendarUiState(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun BillCalendarScreen(navController: NavHostController) {
-    val calendarViewModel: CalendarViewModel = viewModel()
+    val appContainer = LocalAppContainer.current
+    val calendarViewModel: CalendarViewModel = viewModel(factory = CalendarViewModelFactory())
     val calendarUiState by calendarViewModel.uiState.collectAsState()
 
     Scaffold(
@@ -159,7 +162,7 @@ fun CalendarDayView(day: CalendarDay, onDateSelected: (CalendarDay) -> Unit) {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun rememberCalendarState(): CalendarViewModel {
-    return viewModel()
+    return viewModel(factory = CalendarViewModelFactory())
 }
 
 @RequiresApi(Build.VERSION_CODES.O)

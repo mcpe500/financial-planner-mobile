@@ -3,8 +3,11 @@ package com.example.financialplannerapp
 import android.app.Application
 import android.content.Context
 import androidx.room.Room
+import com.example.financialplannerapp.core.datastore.DataStoreHelper
 import com.example.financialplannerapp.data.SecurityDatabaseHelper
 import com.example.financialplannerapp.data.UserProfileDatabaseHelper
+import com.example.financialplannerapp.data.local.AppDatabase
+import com.example.financialplannerapp.data.remote.RetrofitClient
 import com.example.financialplannerapp.data.repository.AppSettingsRepository
 import com.example.financialplannerapp.data.repository.AppSettingsRepositoryImpl
 import com.example.financialplannerapp.data.repository.AuthRepository
@@ -22,7 +25,6 @@ import com.example.financialplannerapp.data.repository.UserProfileRoomRepository
 import com.example.financialplannerapp.service.LocalSettingsService
 import com.example.financialplannerapp.service.TranslationProvider
 import com.example.financialplannerapp.service.TranslationServiceImpl
-import com.example.financialplannerapp.data.network.RetrofitInstance
 
 class MainApplication : Application() {
 
@@ -36,6 +38,11 @@ class MainApplication : Application() {
 
 class AppContainer(private val applicationContext: Context) {
 
+    // DataStore helper
+    private val dataStoreHelper: DataStoreHelper by lazy {
+        DataStoreHelper(applicationContext)
+    }
+
     // Database
     private val appDatabase: AppDatabase by lazy {
         Room.databaseBuilder(
@@ -44,14 +51,12 @@ class AppContainer(private val applicationContext: Context) {
         ).build()
     }
 
-    // DAOs from AppDatabase
+    // DAOs from AppDatabase - only use DAOs that actually exist
     private val transactionDao by lazy { appDatabase.transactionDao() }
     private val categoryDao by lazy { appDatabase.categoryDao() }
-    private val recurringBillDao by lazy { appDatabase.recurringBillDao() }
-    private val budgetDao by lazy { appDatabase.budgetDao() }
-    private val goalDao by lazy { appDatabase.goalDao() }
     private val appSettingsDao by lazy { appDatabase.appSettingsDao() }
-    private val userDao by lazy { appDatabase.userDao() }
+    private val userProfileDao by lazy { appDatabase.userProfileDao() }
+    private val securitySettingsDao by lazy { appDatabase.securitySettingsDao() }
 
     // Services
     val translationProvider: TranslationProvider by lazy {
@@ -60,11 +65,9 @@ class AppContainer(private val applicationContext: Context) {
 
     val localSettingsService: LocalSettingsService by lazy {
         LocalSettingsService(appSettingsDao, translationProvider)
-    }
-
-    // Repositories
+    }    // Repositories
     val authRepository: AuthRepository by lazy {
-        AuthRepositoryImpl(RetrofitInstance.authApiService)
+        AuthRepositoryImpl(RetrofitClient.apiService, dataStoreHelper)
     }
 
     val categoryRepository: CategoryRepository by lazy {
@@ -83,7 +86,7 @@ class AppContainer(private val applicationContext: Context) {
     }
 
     val userProfileRoomRepository: UserProfileRoomRepository by lazy {
-        UserProfileRoomRepositoryImpl(userDao)
+        UserProfileRoomRepositoryImpl(userProfileDao)
     }
 
     private val securityDatabaseHelper: SecurityDatabaseHelper by lazy {

@@ -27,7 +27,7 @@ class UserProfileViewModel constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                userProfileRepository.getUserProfile(userId).collect { profile: UserProfileEntity? ->
+                userProfileRepository.getUserProfileByFirebaseUid(userId).collect { profile: UserProfileEntity? ->
                     _userProfile.value = profile
                 }
             } catch (e: Exception) {
