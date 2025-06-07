@@ -1,5 +1,7 @@
 package com.example.financialplannerapp.data
 
+import com.example.financialplannerapp.data.local.model.AppSettingsEntity
+
 /**
  * App Settings Data Class
  * 
@@ -14,3 +16,33 @@ data class AppSettings(
     val syncOnWifiOnly: Boolean = false,
     val autoBackupEnabled: Boolean = true
 )
+
+// Mapper functions
+fun AppSettingsEntity.toAppSettings(): AppSettings {
+    return AppSettings(
+        theme = this.theme,
+        language = this.language,
+        currency = this.currency,
+        notificationsEnabled = this.notificationsEnabled,
+        syncOnWifiOnly = this.syncOnWifiOnly,
+        autoBackupEnabled = this.autoBackupEnabled
+    )
+}
+
+fun AppSettings.toAppSettingsEntity(
+    id: Int = 0, // Default ID for the single settings record
+    createdAt: Long = System.currentTimeMillis(),
+    updatedAt: Long = System.currentTimeMillis()
+): AppSettingsEntity {
+    return AppSettingsEntity(
+        id = id,
+        theme = this.theme,
+        language = this.language,
+        currency = this.currency,
+        notificationsEnabled = this.notificationsEnabled,
+        syncOnWifiOnly = this.syncOnWifiOnly,
+        autoBackupEnabled = this.autoBackupEnabled,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
+}

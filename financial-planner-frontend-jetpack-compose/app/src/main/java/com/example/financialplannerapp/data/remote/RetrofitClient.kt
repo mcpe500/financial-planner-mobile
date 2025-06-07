@@ -1,0 +1,56 @@
+package com.example.financialplannerapp.data.remote
+
+import com.example.financialplannerapp.config.Config
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
+import java.util.concurrent.TimeUnit
+
+object RetrofitClient {
+    
+    // Timeout constants
+    private const val CONNECT_TIMEOUT = 30L
+    private const val READ_TIMEOUT = 30L
+    private const val WRITE_TIMEOUT = 30L
+    
+    // Moshi instance
+    private val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+    
+    // OkHttp client with timeouts and logging
+    private val okHttpClient: OkHttpClient by lazy {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        
+        OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+            .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
+            .addInterceptor(loggingInterceptor)
+            .build()
+    }
+    
+    // Retrofit instance
+    val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(Config.BASE_URL + "/")
+            .client(okHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+    }
+    
+    // API service instance
+    val apiService: ApiService by lazy {
+        retrofit.create(ApiService::class.java)
+    }
+    
+    // Auth service alias for backward compatibility
+    val authService: ApiService by lazy {
+        apiService
+    }
+}

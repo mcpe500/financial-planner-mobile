@@ -1,19 +1,17 @@
 package com.example.financialplannerapp.data
 
 import android.content.Context
-import com.example.financialplannerapp.data.model.SecuritySettings
+import com.example.financialplannerapp.data.local.AppDatabase
+import com.example.financialplannerapp.data.local.model.SecurityEntity
 import kotlinx.coroutines.flow.Flow
 import java.security.MessageDigest
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Helper class for SecuritySettings operations using Room database
  * This replaces the old SQLiteOpenHelper approach
  */
 
-@Singleton
-class SecurityDatabaseHelper @Inject constructor(
+class SecurityDatabaseHelper constructor(
     private val context: Context
 ) {
 
@@ -22,35 +20,35 @@ class SecurityDatabaseHelper @Inject constructor(
     }
 
     private val securityDao by lazy {
-        database.securityDao()
+        database.securitySettingsDao()
     }
 
-    fun getSecuritySettings(): Flow<SecuritySettings?> {
-        return securityDao.getSecuritySettings()
+    fun getSecuritySettings(): Flow<SecurityEntity?> {
+        return securityDao.getSecuritySettingsByUserIdFlow("default_user")
     }
 
-    suspend fun updateSecuritySettings(settings: SecuritySettings) {
-        securityDao.insertOrUpdateSecuritySettings(settings)
+    suspend fun updateSecuritySettings(settings: SecurityEntity) {
+        securityDao.insertSecuritySettings(settings)
     }
 
-    suspend fun updatePinHash(pinHash: String?) {
-        securityDao.updatePinHash(pinHash)
-    }
-
-    suspend fun getPinHash(): String? {
-        return securityDao.getPinHash()
+    suspend fun updatePinEnabled(enabled: Boolean) {
+        securityDao.updatePinEnabled("default_user", enabled)
     }
 
     suspend fun updateBiometricEnabled(enabled: Boolean) {
-        securityDao.updateBiometricEnabled(enabled)
+        securityDao.updateBiometricEnabled("default_user", enabled)
     }
 
     suspend fun updateAutoLockEnabled(enabled: Boolean) {
-        securityDao.updateAutoLockEnabled(enabled)
+        securityDao.updateAutoLockEnabled("default_user", enabled)
+    }
+
+    suspend fun updateSessionTimeout(timeout: Int) {
+        securityDao.updateSessionTimeout("default_user", timeout)
     }
 
     suspend fun updateAutoLockTimeout(timeoutSeconds: Int) {
-        securityDao.updateAutoLockTimeout(timeoutSeconds)
+        securityDao.updateAutoLockTimeout("default_user", timeoutSeconds)
     }
 
     fun hashPin(pin: String): String {

@@ -4,6 +4,8 @@ import android.content.Context
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.example.financialplannerapp.data.repository.AppSettingsRepository
+import com.example.financialplannerapp.data.repository.AppSettingsRepositoryImpl
+import com.example.financialplannerapp.data.local.model.AppSettingsEntity
 
 /**
  * App Settings Database Helper
@@ -14,7 +16,7 @@ import com.example.financialplannerapp.data.repository.AppSettingsRepository
 class AppSettingsDatabaseHelper private constructor(context: Context) {
     
     private val database = DatabaseManager.getDatabase(context)
-    private val repository = AppSettingsRepository(database.appSettingsDao())
+    private val repository: AppSettingsRepository = AppSettingsRepositoryImpl(database.appSettingsDao())
     
     companion object {
         @Volatile
@@ -32,10 +34,11 @@ class AppSettingsDatabaseHelper private constructor(context: Context) {
       /**
      * Get app settings for a user (using default implementation for now)
      */
-    suspend fun getAppSettings(userId: String): AppSettings {
+    suspend fun getAppSettings(userId: String): AppSettingsEntity {
         val roomSettings = repository.getSettingsOnce()
         return if (roomSettings != null) {
-            AppSettings(
+            AppSettingsEntity(
+                id = roomSettings.id,
                 theme = roomSettings.theme,
                 language = roomSettings.language,
                 currency = roomSettings.currency,
@@ -51,9 +54,9 @@ class AppSettingsDatabaseHelper private constructor(context: Context) {
     /**
      * Save app settings for a user
      */
-    suspend fun saveAppSettings(userId: String, settings: AppSettings) {
-        val roomSettings = com.example.financialplannerapp.data.model.AppSettings(
-            id = 0,
+    suspend fun saveAppSettings(userId: String, settings: AppSettingsEntity) {
+        val roomSettings = AppSettingsEntity(
+            id = settings.id,
             theme = settings.theme,
             language = settings.language,
             currency = settings.currency,
@@ -68,16 +71,18 @@ class AppSettingsDatabaseHelper private constructor(context: Context) {
     /**
      * Get app settings as Flow for reactive updates
      */
-    fun getAppSettingsFlow(userId: String): Flow<AppSettings?> {
+    fun getAppSettingsFlow(userId: String): Flow<AppSettingsEntity?> {
         return repository.getSettings().map { roomSettings ->
             roomSettings?.let {
-                AppSettings(
+                AppSettingsEntity(
+                    id = it.id,
                     theme = it.theme,
                     language = it.language,
                     currency = it.currency,
                     notificationsEnabled = it.notificationsEnabled,
                     syncOnWifiOnly = it.syncOnWifiOnly,
-                    autoBackupEnabled = it.autoBackupEnabled
+                    autoBackupEnabled = it.autoBackupEnabled,
+                    updatedAt = it.updatedAt
                 )
             }
         }
@@ -121,14 +126,16 @@ class AppSettingsDatabaseHelper private constructor(context: Context) {
     /**
      * Get default settings
      */
-    private fun getDefaultSettings(): AppSettings {
-        return AppSettings(
+    private fun getDefaultSettings(): AppSettingsEntity {
+        return AppSettingsEntity(
+            id = 0,
             theme = "system",
             language = "id",
             currency = "IDR",
             notificationsEnabled = true,
             syncOnWifiOnly = false,
-            autoBackupEnabled = true
+            autoBackupEnabled = true,
+            updatedAt = System.currentTimeMillis()
         )
     }
 }

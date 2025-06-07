@@ -1,44 +1,64 @@
 package com.example.financialplannerapp.service
 
 import androidx.compose.runtime.*
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.collectAsState
-import com.example.financialplannerapp.utils.TranslationProvider
-import com.example.financialplannerapp.utils.ThemeProvider
-import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
+import androidx.compose.foundation.isSystemInDarkTheme
+import com.example.financialplannerapp.ui.theme.FinancialPlannerAppTheme
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.AppContainer
+import com.example.financialplannerapp.data.model.TranslationProvider
+
+// CompositionLocal declarations
+val LocalAppContainer = compositionLocalOf<AppContainer> {
+    error("No AppContainer provided")
+}
 
 val LocalReactiveSettingsService = compositionLocalOf<ReactiveSettingsService> {
     error("No ReactiveSettingsService provided")
 }
 
-/**
- * App Provider - Main provider that wraps the entire app with database-backed settings
- */
+val LocalTranslationProvider = compositionLocalOf<TranslationProvider> { 
+    error("No TranslationProvider provided") 
+}
+
 @Composable
 fun AppProvider(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    val dbHelper = remember { AppSettingsDatabaseHelper.getInstance(context) }
-    val settingsService = remember { ReactiveSettingsService.getInstance() }
     
-    // Initialize settings service
-    LaunchedEffect(Unit) {
-        settingsService.initialize(dbHelper)
-    }
+    // Obtain AppContainer from Application
+    val appContainer = (context.applicationContext as MainApplication).appContainer
     
-    // Collect current settings
+    // Use services from AppContainer that are properly initialized
+    val settingsService = appContainer.reactiveSettingsService
+    val translationService = appContainer.translationProvider
+
+    // Collect current settings and translation state
     val currentSettings by settingsService.currentSettings.collectAsState()
-    
-    // Apply theme and translation providers with reactive settings
+    val translationState by translationService.translationStateFlow.collectAsState()
+
+    // Effect to update translation service language when settings change
+    LaunchedEffect(currentSettings.language) {
+        translationService.changeLanguage(currentSettings.language)
+    }
+
+    // Provide services and theme down the tree
     CompositionLocalProvider(
+        LocalAppContainer provides appContainer,
         LocalReactiveSettingsService provides settingsService,
+        LocalTranslationProvider provides translationService
     ) {
-        ThemeProvider(theme = currentSettings.theme) {
-            TranslationProvider(language = currentSettings.language) {
-                content()
-            }
+        // Determine the theme based on settings using string values
+        val useDarkTheme = when (currentSettings.theme) {
+            "dark" -> true
+            "light" -> false
+            "system" -> isSystemInDarkTheme() // Let system decide
+            else -> isSystemInDarkTheme() // Default to system
+        }
+
+        FinancialPlannerAppTheme(darkTheme = useDarkTheme) {
+            content()
         }
     }
 }

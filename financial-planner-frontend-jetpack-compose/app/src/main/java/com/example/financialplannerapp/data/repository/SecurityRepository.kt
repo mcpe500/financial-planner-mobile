@@ -1,49 +1,21 @@
 package com.example.financialplannerapp.data.repository
 
-import com.example.financialplannerapp.data.dao.SecurityDao
-import com.example.financialplannerapp.data.model.SecuritySettings
+import com.example.financialplannerapp.data.local.model.SecurityEntity
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 interface SecurityRepository {
-    fun getSecuritySettings(): Flow<SecuritySettings?>
-    suspend fun insertOrUpdateSecuritySettings(settings: SecuritySettings)
-    suspend fun updatePinHash(pinHash: String?)
-    suspend fun getPinHash(): String?
-    suspend fun updateBiometricEnabled(isBiometricEnabled: Boolean)
-    suspend fun updateAutoLockEnabled(isAutoLockEnabled: Boolean)
-    suspend fun updateAutoLockTimeout(timeoutSeconds: Int)
-}
-
-@Singleton
-class SecurityRepositoryImpl @Inject constructor(
-    private val securityDao: SecurityDao
-) : SecurityRepository {
-
-    override fun getSecuritySettings(): Flow<SecuritySettings?> = securityDao.getSecuritySettings()
-
-    override suspend fun insertOrUpdateSecuritySettings(settings: SecuritySettings) {
-        securityDao.insertOrUpdateSecuritySettings(settings)
-    }
-
-    override suspend fun updatePinHash(pinHash: String?) {
-        securityDao.updatePinHash(pinHash)
-    }
-
-    override suspend fun getPinHash(): String? {
-        return securityDao.getPinHash()
-    }
-
-    override suspend fun updateBiometricEnabled(isBiometricEnabled: Boolean) {
-        securityDao.updateBiometricEnabled(isBiometricEnabled)
-    }
-
-    override suspend fun updateAutoLockEnabled(isAutoLockEnabled: Boolean) {
-        securityDao.updateAutoLockEnabled(isAutoLockEnabled)
-    }
-
-    override suspend fun updateAutoLockTimeout(timeoutSeconds: Int) {
-        securityDao.updateAutoLockTimeout(timeoutSeconds)
-    }
+    suspend fun getSecuritySettingsByUserId(userId: String): SecurityEntity?
+    fun getSecuritySettingsByUserIdFlow(userId: String): Flow<SecurityEntity?>
+    fun getAllSecuritySettings(): Flow<List<SecurityEntity>>
+    suspend fun insertSecuritySettings(securitySettings: SecurityEntity): Long
+    suspend fun updateSecuritySettings(securitySettings: SecurityEntity)
+    suspend fun deleteSecuritySettings(securitySettings: SecurityEntity)
+    suspend fun deleteSecuritySettingsByUserId(userId: String)
+    suspend fun updatePinEnabled(userId: String, enabled: Boolean)
+    suspend fun updateBiometricEnabled(userId: String, enabled: Boolean)
+    suspend fun updateSessionTimeout(userId: String, timeout: Int)
+    suspend fun updateAutoLockEnabled(userId: String, enabled: Boolean)
+    suspend fun updateFailedLoginAttempts(userId: String, count: Int, timestamp: Long)
+    suspend fun updateAccountLocked(userId: String, locked: Boolean)
+    suspend fun resetFailedLoginAttempts(userId: String)
 }

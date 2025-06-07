@@ -2,8 +2,9 @@ package com.example.financialplannerapp.data
 
 import android.content.Context
 import androidx.room.Room
-import com.example.financialplannerapp.data.dao.SecurityDao
-import com.example.financialplannerapp.data.dao.UserProfileDao
+import com.example.financialplannerapp.data.local.AppDatabase
+import com.example.financialplannerapp.data.local.dao.SecuritySettingsDao
+import com.example.financialplannerapp.data.local.dao.UserProfileDao
 
 /**
  * Database Manager - Simplified without Dagger/Hilt
@@ -32,7 +33,7 @@ object DatabaseManager {
         return getDatabase(context).userProfileDao()
     }
 
-    fun getSecurityDao(context: Context): SecurityDao {
-        return getDatabase(context).securityDao()
+    fun getSecurityDao(context: Context): SecuritySettingsDao {
+        return getDatabase(context).securitySettingsDao()
     }
 }

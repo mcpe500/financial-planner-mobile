@@ -14,9 +14,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
-import com.example.financialplannerapp.navigation.AppNavigation
 import com.example.financialplannerapp.service.AppProvider
+import com.example.financialplannerapp.ui.navigation.AppNavigation
+import com.example.financialplannerapp.ui.viewmodel.AuthViewModel
+import com.example.financialplannerapp.ui.viewmodel.AuthViewModelFactory
 
 class MainActivity : ComponentActivity() {
     private lateinit var tokenManager: TokenManager
@@ -57,6 +61,12 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun AppContent() {
         val navController = rememberNavController()
+        // Obtain application instance and container
+        val application = LocalContext.current.applicationContext as MainApplication
+        val authViewModel: AuthViewModel = viewModel(
+            factory = AuthViewModelFactory(application.appContainer.authRepository)
+        )
+        // similarly obtain other ViewModels using their factories and repositories
         
         // Determine start destination based on login state
         val startDestination = if (tokenManager.getToken() != null || tokenManager.isNoAccountMode()) {

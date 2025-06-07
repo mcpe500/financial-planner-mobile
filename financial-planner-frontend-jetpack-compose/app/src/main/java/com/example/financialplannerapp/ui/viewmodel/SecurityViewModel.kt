@@ -2,22 +2,19 @@ package com.example.financialplannerapp.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.financialplannerapp.data.model.SecuritySettings
+import com.example.financialplannerapp.data.local.model.SecurityEntity
 import com.example.financialplannerapp.data.repository.SecurityRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class SecurityViewModel @Inject constructor(
+class SecurityViewModel constructor(
     private val securityRepository: SecurityRepository
 ) : ViewModel() {
 
-    private val _securitySettings = MutableStateFlow<SecuritySettings?>(null)
-    val securitySettings: StateFlow<SecuritySettings?> = _securitySettings.asStateFlow()
+    private val _securitySettings = MutableStateFlow<SecurityEntity?>(null)
+    val securitySettings: StateFlow<SecurityEntity?> = _securitySettings.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -29,12 +26,12 @@ class SecurityViewModel @Inject constructor(
         loadSecuritySettings()
     }
 
-    fun loadSecuritySettings(userId: String = "1") { // Assuming a default or single user context for app-wide settings
+    fun loadSecuritySettings(userId: String = "default_user") {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                securityRepository.getSecuritySettings().collect {
-                    _securitySettings.value = it ?: SecuritySettings() // Provide a default if null
+                securityRepository.getSecuritySettingsByUserIdFlow(userId).collect {
+                    _securitySettings.value = it
                 }
             } catch (e: Exception) {
                 _error.value = "Failed to load security settings: ${e.message}"
@@ -44,13 +41,13 @@ class SecurityViewModel @Inject constructor(
         }
     }
 
-    fun updateSecuritySettings(settings: SecuritySettings) {
+    fun updateSecuritySettings(settings: SecurityEntity) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                securityRepository.insertOrUpdateSecuritySettings(settings)
+                securityRepository.updateSecuritySettings(settings)
                 // Refresh the settings flow after update
-                securityRepository.getSecuritySettings().collect {
+                securityRepository.getSecuritySettingsByUserIdFlow(settings.userId).collect {
                      _securitySettings.value = it
                 }
             } catch (e: Exception) {
@@ -61,7 +58,7 @@ class SecurityViewModel @Inject constructor(
         }
     }
     
-    fun updatePinHash(pinHash: String?, currentSettings: SecuritySettings) {
+    fun updatePinHash(pinHash: String?, currentSettings: SecurityEntity) {
         val newSettings = currentSettings.copy(pinHash = pinHash)
         updateSecuritySettings(newSettings)
     }

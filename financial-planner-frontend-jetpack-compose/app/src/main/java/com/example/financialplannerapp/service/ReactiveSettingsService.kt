@@ -4,6 +4,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import com.example.financialplannerapp.data.AppSettings
 import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
+import com.example.financialplannerapp.data.toAppSettings
+import com.example.financialplannerapp.data.toAppSettingsEntity
 
 /**
  * Reactive Settings Service
@@ -56,8 +58,8 @@ class ReactiveSettingsService private constructor() {
     private suspend fun loadSettings() {
         dbHelper?.let { helper ->
             try {
-                val settings = helper.getAppSettings("default_user") // Using default user ID
-                _currentSettings.value = settings
+                val settingsEntity = helper.getAppSettings("default_user") // Using default user ID
+                _currentSettings.value = settingsEntity.toAppSettings()
             } catch (e: Exception) {
                 // If loading fails, use defaults and save them
                 _currentSettings.value = defaultSettings
@@ -98,7 +100,7 @@ class ReactiveSettingsService private constructor() {
         settings: AppSettings
     ) {
         try {
-            databaseHelper.saveAppSettings("default_user", settings)
+            databaseHelper.saveAppSettings("default_user", settings.toAppSettingsEntity())
         } catch (e: Exception) {
             // Log error but don't crash
             e.printStackTrace()
@@ -164,6 +166,42 @@ class ReactiveSettingsService private constructor() {
      * Get current currency
      */
     fun getCurrentCurrency(): String = _currentSettings.value.currency
+    
+    /**
+     * Set theme - suspend method for ViewModel use
+     */
+    suspend fun setTheme(theme: String) {
+        dbHelper?.let { helper ->
+            updateTheme(helper, theme)
+        }
+    }
+    
+    /**
+     * Set language - suspend method for ViewModel use
+     */
+    suspend fun setLanguage(languageCode: String) {
+        dbHelper?.let { helper ->
+            updateLanguage(helper, languageCode)
+        }
+    }
+    
+    /**
+     * Set currency - suspend method for ViewModel use
+     */
+    suspend fun setCurrency(currency: String) {
+        dbHelper?.let { helper ->
+            updateCurrency(helper, currency)
+        }
+    }
+    
+    /**
+     * Set notifications - suspend method for ViewModel use
+     */
+    suspend fun setNotifications(enabled: Boolean) {
+        dbHelper?.let { helper ->
+            updateNotifications(helper, enabled)
+        }
+    }
     
     /**
      * Cleanup resources

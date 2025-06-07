@@ -3,9 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-parcelize")
-    id("com.google.devtools.ksp")
+    id("com.google.devtools.ksp") // Keep KSP for Room and Moshi
     kotlin("plugin.serialization")
-    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -113,10 +112,9 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
 
-    // Hilt - FIXED: Added missing compiler dependency
-    implementation("com.google.dagger:hilt-android:2.51.1")
-    ksp("com.google.dagger:hilt-compiler:2.51.1")
-    implementation(libs.androidx.hilt.navigation.compose)
+    // DataStore
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("androidx.datastore:datastore-core:1.0.0")
 
     // Testing
     testImplementation(libs.junit)
