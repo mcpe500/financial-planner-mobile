@@ -3,8 +3,6 @@ package com.example.financialplannerapp
 import android.app.Application
 import android.content.Context
 import androidx.room.Room
-import com.example.financialplannerapp.core.datastore.DataStoreHelper
-import com.example.financialplannerapp.data.SecurityDatabaseHelper
 import com.example.financialplannerapp.data.UserProfileDatabaseHelper
 import com.example.financialplannerapp.data.local.AppDatabase
 import com.example.financialplannerapp.data.remote.RetrofitClient
@@ -20,10 +18,10 @@ import com.example.financialplannerapp.data.repository.TransactionRepository
 import com.example.financialplannerapp.data.repository.TransactionRepositoryImpl
 import com.example.financialplannerapp.data.repository.UserProfileRepository
 import com.example.financialplannerapp.data.repository.UserProfileRepositoryImpl
-import com.example.financialplannerapp.data.repository.UserProfileRoomRepository
 import com.example.financialplannerapp.data.repository.UserProfileRoomRepositoryImpl
 import com.example.financialplannerapp.service.LocalSettingsService
-import com.example.financialplannerapp.service.TranslationProvider
+import com.example.financialplannerapp.data.model.TranslationProvider
+import com.example.financialplannerapp.data.repository.UserProfileRoomRepository
 import com.example.financialplannerapp.service.TranslationServiceImpl
 
 class MainApplication : Application() {
@@ -38,11 +36,6 @@ class MainApplication : Application() {
 
 class AppContainer(private val applicationContext: Context) {
 
-    // DataStore helper
-    private val dataStoreHelper: DataStoreHelper by lazy {
-        DataStoreHelper(applicationContext)
-    }
-
     // Database
     private val appDatabase: AppDatabase by lazy {
         Room.databaseBuilder(
@@ -50,6 +43,9 @@ class AppContainer(private val applicationContext: Context) {
             AppDatabase::class.java, "financial_planner_db"
         ).build()
     }
+
+    // API Service
+    private val apiService = RetrofitClient.apiService
 
     // DAOs from AppDatabase - only use DAOs that actually exist
     private val transactionDao by lazy { appDatabase.transactionDao() }
@@ -60,42 +56,39 @@ class AppContainer(private val applicationContext: Context) {
 
     // Services
     val translationProvider: TranslationProvider by lazy {
-        TranslationServiceImpl()
+        TranslationServiceImpl(applicationContext)
     }
 
     val localSettingsService: LocalSettingsService by lazy {
-        LocalSettingsService(appSettingsDao, translationProvider)
-    }    // Repositories
+        LocalSettingsService.getInstance()
+    }
+
+    // Repositories
     val authRepository: AuthRepository by lazy {
-        AuthRepositoryImpl(RetrofitClient.apiService, dataStoreHelper)
+        AuthRepositoryImpl(apiService, com.example.financialplannerapp.core.datastore.DataStoreHelper(applicationContext))
     }
 
     val categoryRepository: CategoryRepository by lazy {
-        CategoryRepositoryImpl(categoryDao)
+        CategoryRepositoryImpl(categoryDao, apiService)
     }
 
     val transactionRepository: TransactionRepository by lazy {
-        TransactionRepositoryImpl(transactionDao)
+        TransactionRepositoryImpl(transactionDao, apiService)
     }
 
     private val userProfileDatabaseHelper: UserProfileDatabaseHelper by lazy {
         UserProfileDatabaseHelper(applicationContext)
     }
     val userProfileRepository: UserProfileRepository by lazy {
-        UserProfileRepositoryImpl(userProfileDatabaseHelper)
+        UserProfileRepositoryImpl(userProfileDao, apiService)
     }
 
     val userProfileRoomRepository: UserProfileRoomRepository by lazy {
         UserProfileRoomRepositoryImpl(userProfileDao)
     }
-
-    private val securityDatabaseHelper: SecurityDatabaseHelper by lazy {
-        SecurityDatabaseHelper(applicationContext)
-    }
     val securityRepository: SecurityRepository by lazy {
-        SecurityRepositoryImpl(securityDatabaseHelper)
+        SecurityRepositoryImpl(securitySettingsDao)
     }
-
     val appSettingsRepository: AppSettingsRepository by lazy {
         AppSettingsRepositoryImpl(appSettingsDao)
     }

@@ -1,49 +1,21 @@
 package com.example.financialplannerapp.data.repository
 
-import com.example.financialplannerapp.data.local.dao.UserProfileDao
 import com.example.financialplannerapp.data.local.model.UserProfileEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 
-// This repository implements the existing UserProfileRepository interface
-class UserProfileRoomRepositoryImpl constructor(
-    private val userProfileDao: UserProfileDao
-) : UserProfileRepository {
-
-    override suspend fun insertUserProfile(userProfile: UserProfileEntity): Long {
-        return userProfileDao.insertUserProfile(userProfile)
-    }
-
-    override suspend fun updateUserProfile(userProfile: UserProfileEntity) {
-        userProfileDao.updateUserProfile(userProfile)
-    }
-
-    override suspend fun deleteUserProfile(userProfile: UserProfileEntity) {
-        userProfileDao.deleteUserProfile(userProfile)
-    }
-
-    override fun getUserProfileById(id: Long): Flow<UserProfileEntity?> {
-        return userProfileDao.getUserProfileById(id)
-    }
-
-    override fun getUserProfileByFirebaseUid(firebaseUid: String): Flow<UserProfileEntity?> {
-        return userProfileDao.getUserProfileByFirebaseUid(firebaseUid)
-    }
-
-    // Changed from getAllProfiles to getAllUserProfiles to match interface
-    override fun getAllUserProfiles(): Flow<List<UserProfileEntity>> {
-        return userProfileDao.getAllUserProfiles()
-    }
-
-    override fun getModifiedUserProfiles(): Flow<List<UserProfileEntity>> {
-        return userProfileDao.getModifiedUserProfiles()
-    }
-
-    override suspend fun getProfilesNeedingSync(): List<UserProfileEntity> {
-        return userProfileDao.getProfilesNeedingSync()
-    }
-
-    override suspend fun deleteAllUserProfiles() {
-        userProfileDao.deleteAllUserProfiles()
-    }
+/**
+ * UserProfileRoomRepository Interface
+ * 
+ * Defines contract for UserProfile operations using Room database
+ */
+interface UserProfileRoomRepository {
+    suspend fun insertUserProfile(userProfile: UserProfileEntity): Long
+    suspend fun updateUserProfile(userProfile: UserProfileEntity)
+    suspend fun deleteUserProfile(userProfile: UserProfileEntity)
+    fun getUserProfileById(id: Long): Flow<UserProfileEntity?>
+    fun getUserProfileByFirebaseUid(firebaseUid: String): Flow<UserProfileEntity?>
+    fun getAllUserProfiles(): Flow<List<UserProfileEntity>>
+    fun getModifiedUserProfiles(): Flow<List<UserProfileEntity>>
+    suspend fun getProfilesNeedingSync(): List<UserProfileEntity>
+    suspend fun deleteAllUserProfiles()
 }
