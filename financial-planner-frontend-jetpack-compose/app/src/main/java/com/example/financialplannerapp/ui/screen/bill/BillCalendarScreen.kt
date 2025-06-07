@@ -54,7 +54,7 @@ fun BillCalendarScreen(
                     set(Calendar.DAY_OF_MONTH, 5)
                     set(Calendar.MONTH, currentMonth.get(Calendar.MONTH))
                 }.time,
-                repeatCycle = RepeatCycle.MONTHLY
+                repeatCycle = "MONTHLY"
             ),
             RecurringBill(
                 id = "2",
@@ -64,7 +64,7 @@ fun BillCalendarScreen(
                     set(Calendar.DAY_OF_MONTH, 10)
                     set(Calendar.MONTH, currentMonth.get(Calendar.MONTH))
                 }.time,
-                repeatCycle = RepeatCycle.MONTHLY
+                repeatCycle = "MONTHLY"
             ),
             RecurringBill(
                 id = "3",
@@ -74,7 +74,7 @@ fun BillCalendarScreen(
                     set(Calendar.DAY_OF_MONTH, 15)
                     set(Calendar.MONTH, currentMonth.get(Calendar.MONTH))
                 }.time,
-                repeatCycle = RepeatCycle.MONTHLY
+                repeatCycle = "MONTHLY"
             ),
             RecurringBill(
                 id = "4",
@@ -84,7 +84,7 @@ fun BillCalendarScreen(
                     set(Calendar.DAY_OF_MONTH, 20)
                     set(Calendar.MONTH, currentMonth.get(Calendar.MONTH))
                 }.time,
-                repeatCycle = RepeatCycle.MONTHLY
+                repeatCycle = "MONTHLY"
             ),
             RecurringBill(
                 id = "5",
@@ -94,7 +94,7 @@ fun BillCalendarScreen(
                     set(Calendar.DAY_OF_MONTH, 25)
                     set(Calendar.MONTH, currentMonth.get(Calendar.MONTH))
                 }.time,
-                repeatCycle = RepeatCycle.MONTHLY
+                repeatCycle = "MONTHLY"
             )
         )
     }

@@ -46,7 +46,7 @@ fun RecurringBillsMainScreen(
                 name = "Listrik PLN",
                 estimatedAmount = 450000.0,
                 dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 5) }.time,
-                repeatCycle = RepeatCycle.MONTHLY,
+                repeatCycle = "MONTHLY",
                 notes = "Tagihan listrik rumah",
                 payments = listOf(
                     BillPayment("p1", 420000.0, Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -25) }.time)
@@ -57,7 +57,7 @@ fun RecurringBillsMainScreen(
                 name = "Internet IndiHome",
                 estimatedAmount = 350000.0,
                 dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -2) }.time,
-                repeatCycle = RepeatCycle.MONTHLY,
+                repeatCycle = "MONTHLY",
                 notes = "Paket 50 Mbps"
             ),
             RecurringBill(
@@ -65,7 +65,7 @@ fun RecurringBillsMainScreen(
                 name = "BPJS Kesehatan",
                 estimatedAmount = 150000.0,
                 dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 12) }.time,
-                repeatCycle = RepeatCycle.MONTHLY,
+                repeatCycle = "MONTHLY",
                 notes = "Keluarga 4 orang"
             ),
             RecurringBill(
@@ -73,7 +73,7 @@ fun RecurringBillsMainScreen(
                 name = "Asuransi Mobil",
                 estimatedAmount = 2500000.0,
                 dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 45) }.time,
-                repeatCycle = RepeatCycle.YEARLY,
+                repeatCycle = "YEARLY",
                 notes = "Asuransi comprehensive"
             ),
             RecurringBill(
@@ -81,7 +81,7 @@ fun RecurringBillsMainScreen(
                 name = "Netflix Subscription",
                 estimatedAmount = 169000.0,
                 dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 8) }.time,
-                repeatCycle = RepeatCycle.MONTHLY,
+                repeatCycle = "MONTHLY",
                 notes = "Premium plan",
                 payments = listOf(
                     BillPayment("p2", 169000.0, Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -22) }.time)
@@ -435,7 +435,7 @@ fun BillCard(
                         color = if (bill.status == BillStatus.PAID) Color(0xFF999999) else Color(0xFF666666)
                     )
                     Text(
-                        text = "${bill.repeatCycle.icon} ${bill.repeatCycle.label}",
+                        text = "${getRepeatCycleIcon(bill.repeatCycle)} ${getRepeatCycleLabel(bill.repeatCycle)}",
                         fontSize = 12.sp,
                         color = if (bill.status == BillStatus.PAID) Color(0xFF999999) else Color(0xFF666666)
                     )
@@ -533,5 +533,28 @@ fun BillCard(
                 }
             }
         }
+    }
+}
+
+// Helper functions to get RepeatCycle properties from string
+private fun getRepeatCycleIcon(repeatCycle: String): String {
+    return when (repeatCycle) {
+        "DAILY" -> "📅"
+        "WEEKLY" -> "📅"
+        "MONTHLY" -> "📅"
+        "YEARLY" -> "📅"
+        "CUSTOM" -> "⚙️"
+        else -> "📅"
+    }
+}
+
+private fun getRepeatCycleLabel(repeatCycle: String): String {
+    return when (repeatCycle) {
+        "DAILY" -> "Daily"
+        "WEEKLY" -> "Weekly"
+        "MONTHLY" -> "Monthly"
+        "YEARLY" -> "Yearly"
+        "CUSTOM" -> "Custom"
+        else -> "Unknown"
     }
 }
