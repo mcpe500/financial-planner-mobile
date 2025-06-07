@@ -62,8 +62,7 @@ fun AppSettingsScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Theme Settings
+        ) {            // Theme Settings
             ThemeSelectionCard(
                 currentTheme = currentSettings.theme,
                 onThemeSelected = { theme ->
@@ -71,27 +70,31 @@ fun AppSettingsScreen(
                         settings.copy(theme = theme)
                     }
                     
+                    // Get translations outside of coroutine
+                    val themeName = when (theme) {
+                        "light" -> translate(Translations.Key.ThemeLight)
+                        "dark" -> translate(Translations.Key.ThemeDark)
+                        "system" -> translate(Translations.Key.ThemeSystem)
+                        else -> theme
+                    }
+                    val themeSettingText = translate(Translations.Key.ThemeSetting)
+                    
                     scope.launch {
-                        val themeName = when (theme) {
-                            "light" -> translate(Translations.Key.ThemeLight)
-                            "dark" -> translate(Translations.Key.ThemeDark)
-                            "system" -> translate(Translations.Key.ThemeSystem)
-                            else -> theme
-                        }
-                        val message = "${translate(Translations.Key.ThemeSetting)} changed to $themeName"
+                        val message = "$themeSettingText changed to $themeName"
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
                 }
             )
-            
-            // Language Settings  
+              // Language Settings  
             LanguageSelectionCard(
                 currentLanguage = currentSettings.language,
                 onLanguageSelected = { language ->
                     settingsService.updateSettings(dbHelper) { settings ->
                         settings.copy(language = language)
                     }
-                    // Translation updates automatically via LocalTranslationProvider
+                    // Get translations outside of coroutine
+                    val languageChangedText = translate(Translations.Key.LanguageChangedTo)
+                    
                     scope.launch {
                         kotlinx.coroutines.delay(100)
                         val languageName = when (language) {
@@ -100,7 +103,7 @@ fun AppSettingsScreen(
                             "zh" -> "中文"
                             else -> language
                         }
-                        Toast.makeText(context, translate(Translations.Key.LanguageChangedTo) + " changed to $languageName", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "$languageChangedText changed to $languageName", Toast.LENGTH_SHORT).show()
                     }
                 }
             )

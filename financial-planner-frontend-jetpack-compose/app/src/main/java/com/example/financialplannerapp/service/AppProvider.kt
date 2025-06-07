@@ -2,6 +2,7 @@ package com.example.financialplannerapp.service
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.example.financialplannerapp.ui.theme.FinancialPlannerAppTheme
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.AppContainer
@@ -53,8 +54,8 @@ fun AppProvider(
         val useDarkTheme = when (currentSettings.theme) {
             "dark" -> true
             "light" -> false
-            "system" -> null // Let system decide
-            else -> null // Default to system
+            "system" -> isSystemInDarkTheme() // Let system decide
+            else -> isSystemInDarkTheme() // Default to system
         }
 
         FinancialPlannerAppTheme(darkTheme = useDarkTheme) {

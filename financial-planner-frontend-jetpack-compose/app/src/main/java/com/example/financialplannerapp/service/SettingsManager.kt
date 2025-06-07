@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import com.example.financialplannerapp.data.AppSettings
 import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
 import com.example.financialplannerapp.data.toAppSettings
+import com.example.financialplannerapp.data.toAppSettingsEntity
 
 /**
  * Settings Manager
@@ -121,7 +122,7 @@ class SettingsManager private constructor(
             val currentSettingsEntity = databaseHelper.getAppSettings("default_user")
             val currentSettings = currentSettingsEntity.toAppSettings()
             val updatedSettings = transform(currentSettings)
-            databaseHelper.saveAppSettings("default_user", updatedSettings)
+            databaseHelper.saveAppSettings("default_user", updatedSettings.toAppSettingsEntity())
             _currentSettings.value = updatedSettings
         } catch (e: Exception) {
             // Handle error gracefully
