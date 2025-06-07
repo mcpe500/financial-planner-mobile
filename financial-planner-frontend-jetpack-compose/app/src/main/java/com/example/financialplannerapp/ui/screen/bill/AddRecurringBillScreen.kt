@@ -118,11 +118,8 @@ fun AddRecurringBillScreen(
                                     name = billName,
                                     estimatedAmount = estimatedAmount.replace(",", "").replace(".", "").toDouble(),
                                     dueDate = selectedDate,
-                                    repeatCycle = selectedCycle,
-                                    notes = notes,
-                                    isReminderEnabled = isReminderEnabled,
-                                    reminderTime = reminderTime,
-                                    reminderDaysBefore = reminderDaysBefore
+                                    repeatCycle = selectedCycle.label,
+                                    notes = notes
                                 )
                                 onSave(bill)
                                 onNavigateBack()
