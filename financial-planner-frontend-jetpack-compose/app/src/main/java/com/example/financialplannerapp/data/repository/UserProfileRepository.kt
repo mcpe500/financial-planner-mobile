@@ -4,8 +4,6 @@ import com.example.financialplannerapp.data.local.dao.UserProfileDao
 import com.example.financialplannerapp.data.local.model.UserProfileEntity
 import com.example.financialplannerapp.data.remote.ApiService
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * User Profile Repository Interface
@@ -24,8 +22,7 @@ interface UserProfileRepository {
     suspend fun deleteAllUserProfiles()
 }
 
-@Singleton
-class UserProfileRepositoryImpl @Inject constructor(
+class UserProfileRepositoryImpl constructor(
     private val userProfileDao: UserProfileDao,
     private val apiService: ApiService
 ) : UserProfileRepository {

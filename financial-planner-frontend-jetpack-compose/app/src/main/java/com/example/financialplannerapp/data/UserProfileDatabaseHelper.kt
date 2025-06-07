@@ -5,14 +5,12 @@ import com.example.financialplannerapp.data.local.AppDatabase
 import com.example.financialplannerapp.data.local.model.UserProfileEntity
 import com.example.financialplannerapp.data.repository.UserProfileRepository
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-import javax.inject.Singleton
+
 /**
  * Helper class for UserProfile operations using Room database
  * This replaces the old SQLiteOpenHelper approach
  */
-@Singleton
-class UserProfileDatabaseHelper @Inject constructor(
+class UserProfileDatabaseHelper constructor(
     private val context: Context
 ) {
 

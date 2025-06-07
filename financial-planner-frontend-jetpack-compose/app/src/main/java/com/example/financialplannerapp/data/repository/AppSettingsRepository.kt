@@ -4,8 +4,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.example.financialplannerapp.data.local.dao.AppSettingsDao
 import com.example.financialplannerapp.data.local.model.AppSettingsEntity
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Repository interface for App Settings
@@ -28,8 +26,7 @@ interface AppSettingsRepository {
  * Provides a clean API for accessing app settings data.
  * Handles data mapping and business logic for settings operations.
  */
-@Singleton
-class AppSettingsRepositoryImpl @Inject constructor(
+class AppSettingsRepositoryImpl constructor(
     private val dao: AppSettingsDao
 ) : AppSettingsRepository {
     

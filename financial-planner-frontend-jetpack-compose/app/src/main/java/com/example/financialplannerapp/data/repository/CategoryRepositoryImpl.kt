@@ -5,11 +5,8 @@ import com.example.financialplannerapp.data.local.model.CategoryEntity
 import com.example.financialplannerapp.data.model.CategoryData
 import com.example.financialplannerapp.data.remote.ApiService
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class CategoryRepositoryImpl @Inject constructor(
+class CategoryRepositoryImpl constructor(
     private val categoryDao: CategoryDao,
     private val apiService: ApiService
 ) : CategoryRepository {

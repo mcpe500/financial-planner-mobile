@@ -5,16 +5,13 @@ import com.example.financialplannerapp.data.local.AppDatabase
 import com.example.financialplannerapp.data.local.model.SecurityEntity
 import kotlinx.coroutines.flow.Flow
 import java.security.MessageDigest
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Helper class for SecuritySettings operations using Room database
  * This replaces the old SQLiteOpenHelper approach
  */
 
-@Singleton
-class SecurityDatabaseHelper @Inject constructor(
+class SecurityDatabaseHelper constructor(
     private val context: Context
 ) {
 

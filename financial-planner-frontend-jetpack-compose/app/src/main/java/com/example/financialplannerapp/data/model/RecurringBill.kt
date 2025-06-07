@@ -53,12 +53,3 @@ data class RecurringBill(
         } ?: false
     }
 }
-
-@Parcelize
-data class BillPayment(
-    val id: String = UUID.randomUUID().toString(),
-    val amountPaid: Double,
-    val paymentDate: Date,
-    val paymentMethod: String? = null, // Optional: e.g., "Credit Card", "Bank Transfer"
-    val transactionId: String? = null // Optional: For tracking payment
-) : Parcelable

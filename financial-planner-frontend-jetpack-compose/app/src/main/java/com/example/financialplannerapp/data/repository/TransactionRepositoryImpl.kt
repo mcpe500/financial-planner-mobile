@@ -6,11 +6,8 @@ import com.example.financialplannerapp.data.model.TransactionData
 import com.example.financialplannerapp.data.remote.ApiService
 import kotlinx.coroutines.flow.Flow
 import java.util.Date
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class TransactionRepositoryImpl @Inject constructor(
+class TransactionRepositoryImpl constructor(
     private val transactionDao: TransactionDao,
     private val apiService: ApiService
 ) : TransactionRepository {

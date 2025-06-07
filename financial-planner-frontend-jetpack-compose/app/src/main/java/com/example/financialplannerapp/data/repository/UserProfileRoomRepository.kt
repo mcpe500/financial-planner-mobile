@@ -4,12 +4,9 @@ import com.example.financialplannerapp.data.local.dao.UserProfileDao
 import com.example.financialplannerapp.data.local.model.UserProfileEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import javax.inject.Inject
-import javax.inject.Singleton
 
 // This repository implements the existing UserProfileRepository interface
-@Singleton
-class UserProfileRoomRepositoryImpl @Inject constructor(
+class UserProfileRoomRepositoryImpl constructor(
     private val userProfileDao: UserProfileDao
 ) : UserProfileRepository {
 

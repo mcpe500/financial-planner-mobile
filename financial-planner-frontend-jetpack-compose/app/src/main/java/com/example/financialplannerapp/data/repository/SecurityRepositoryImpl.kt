@@ -3,11 +3,8 @@ package com.example.financialplannerapp.data.repository
 import com.example.financialplannerapp.data.local.dao.SecuritySettingsDao
 import com.example.financialplannerapp.data.local.model.SecurityEntity
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class SecurityRepositoryImpl @Inject constructor(
+class SecurityRepositoryImpl constructor(
     private val securitySettingsDao: SecuritySettingsDao
 ) : SecurityRepository {
 
@@ -17,7 +14,9 @@ class SecurityRepositoryImpl @Inject constructor(
 
     override fun getSecuritySettingsByUserIdFlow(userId: String): Flow<SecurityEntity?> {
         return securitySettingsDao.getSecuritySettingsByUserIdFlow(userId)
-    }    override fun getAllSecuritySettings(): Flow<List<SecurityEntity>> {
+    }
+
+    override fun getAllSecuritySettings(): Flow<List<SecurityEntity>> {
         return securitySettingsDao.getAllSecuritySettings()
     }
 

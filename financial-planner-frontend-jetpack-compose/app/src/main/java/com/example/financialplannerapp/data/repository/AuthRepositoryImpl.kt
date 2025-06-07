@@ -8,16 +8,14 @@ import com.example.financialplannerapp.data.model.RegisterResponse
 import com.example.financialplannerapp.data.remote.ApiService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class AuthRepositoryImpl @Inject constructor(
+class AuthRepositoryImpl constructor(
     private val apiService: ApiService,
     private val dataStoreHelper: DataStoreHelper
 ) : AuthRepository {
 
-    override suspend fun login(loginRequest: LoginRequest): Result<LoginResponse> {        return try {
+    override suspend fun login(loginRequest: LoginRequest): Result<LoginResponse> {        
+        return try {
             val response = apiService.login(loginRequest)
             if (response.isSuccessful && response.body() != null) {
                 val loginResponse = response.body()!!
@@ -53,7 +51,9 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }    override suspend fun refreshToken(): Result<String> {
+    }
+
+    override suspend fun refreshToken(): Result<String> {
         return try {
             val currentToken = getAuthToken().first()
             if (currentToken != null) {

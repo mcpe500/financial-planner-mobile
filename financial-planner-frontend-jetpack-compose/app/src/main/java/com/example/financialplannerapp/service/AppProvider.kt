@@ -1,19 +1,29 @@
 package com.example.financialplannerapp.service
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import com.example.financialplannerapp.data.model.Theme // Assuming Theme is an enum or similar
 import com.example.financialplannerapp.ui.theme.FinancialPlannerAppTheme // Your app's theme composable
+import com.example.financialplannerapp.service.TranslationProvider
 
 val LocalReactiveSettingsService = compositionLocalOf<ReactiveSettingsService> {
     error("No ReactiveSettingsService provided")
 }
+
+// CompositionLocal for translation provider
+val LocalTranslationProvider = staticCompositionLocalOf<TranslationProvider> { error("No TranslationProvider provided") }
+
+// Provide AppContainer for dependency injection
+val LocalAppContainer = staticCompositionLocalOf<AppContainer> { error("No AppContainer provided") }
 
 @Composable
 fun AppProvider(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
+    // Obtain AppContainer from Application
+    val appContainer = (context.applicationContext as MainApplication).appContainer
     // Assuming ReactiveSettingsService.getInstance() doesn't need dbHelper directly for initialization anymore,
     // or it's handled internally. If dbHelper is still needed, it should be passed.
     val settingsService = remember { ReactiveSettingsService.getInstance(context) }
@@ -32,6 +42,7 @@ fun AppProvider(
 
     // Provide services and theme down the tree
     CompositionLocalProvider(
+        LocalAppContainer provides appContainer,
         LocalReactiveSettingsService provides settingsService,
         LocalTranslationProvider provides translationService
     ) {
