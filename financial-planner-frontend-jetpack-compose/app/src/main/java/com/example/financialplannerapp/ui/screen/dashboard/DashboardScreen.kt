@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen.dashboard
+package com.example.financialplannerapp.ui.screen.dashboard
 
 import android.util.Log
 import androidx.compose.foundation.Canvas

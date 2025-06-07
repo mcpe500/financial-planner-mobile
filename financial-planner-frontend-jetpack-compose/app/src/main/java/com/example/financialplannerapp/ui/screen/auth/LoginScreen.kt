@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen.auth
+package com.example.financialplannerapp.ui.screen.auth
 
 import android.app.Activity
 import android.content.Context
@@ -325,7 +325,7 @@ private fun verifyTokenAndNavigate(
                 
                 if (response.isSuccessful) {
                     // Token is valid, save user info and navigate to dashboard
-                    response.body()?.let { userResponse: LoginResponse ->
+                    response.body()?.let { userResponse ->
                         userResponse.user?.let { user ->
                             tokenManager.saveUserInfo(user.id, user.email, user.name)
                             Log.d(TAG_LOGIN_SCREEN, "Token verified successfully for user: ${user.name}")

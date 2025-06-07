@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.auth
 
 import android.util.Log
 import android.widget.Toast
@@ -111,7 +111,7 @@ private fun verifyAndSaveToken(
                 
                 if (response.isSuccessful) {
                     // Token is valid, save user info
-                    response.body()?.let { userResponse: LoginResponse ->
+                    response.body()?.let { userResponse ->
                         userResponse.user?.let { user ->
                             tokenManager.saveUserInfo(user.id, user.email, user.name)
                             tokenManager.setNoAccountMode(false)

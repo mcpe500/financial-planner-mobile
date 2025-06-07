@@ -1,20 +1,20 @@
-package com.example.financialplannerapp.navigation
+package com.example.financialplannerapp.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.financialplannerapp.TokenManager
-import com.example.financialplannerapp.screen.*
-import com.example.financialplannerapp.screen.auth.LoginScreen
-import com.example.financialplannerapp.screen.dashboard.DashboardScreen
-import com.example.financialplannerapp.screen.settings.BackupRestoreSettingsScreen
-import com.example.financialplannerapp.screen.settings.ContactSupportScreen
-import com.example.financialplannerapp.screen.settings.DataSyncSettingsScreen
-import com.example.financialplannerapp.screen.settings.HelpCenterScreen
-import com.example.financialplannerapp.screen.settings.SecuritySettingsScreen
-import com.example.financialplannerapp.screen.settings.SettingsScreen
-import com.example.financialplannerapp.screen.settings.UserProfileSettingsScreen
+import com.example.financialplannerapp.ui.screen.auth.LoginScreen
+import com.example.financialplannerapp.ui.screen.dashboard.DashboardScreen
+import com.example.financialplannerapp.ui.screen.settings.AppSettingsScreen
+import com.example.financialplannerapp.ui.screen.settings.BackupRestoreSettingsScreen
+import com.example.financialplannerapp.ui.screen.settings.ContactSupportScreen
+import com.example.financialplannerapp.ui.screen.settings.DataSyncSettingsScreen
+import com.example.financialplannerapp.ui.screen.settings.HelpCenterScreen
+import com.example.financialplannerapp.ui.screen.settings.SecuritySettingsScreen
+import com.example.financialplannerapp.ui.screen.settings.SettingsScreen
+import com.example.financialplannerapp.ui.screen.settings.UserProfileSettingsScreen
 
 @Composable
 fun AppNavigation(
