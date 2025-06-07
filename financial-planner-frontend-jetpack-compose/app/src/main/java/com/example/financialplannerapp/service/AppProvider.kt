@@ -31,9 +31,9 @@ fun AppProvider(
     // Obtain AppContainer from Application
     val appContainer = (context.applicationContext as MainApplication).appContainer
     
-    // Initialize services using correct methods from the codebase
-    val settingsService = remember { ReactiveSettingsService.getInstance() }
-    val translationService = remember { TranslationServiceImpl.getInstance(context) }
+    // Use services from AppContainer that are properly initialized
+    val settingsService = appContainer.reactiveSettingsService
+    val translationService = appContainer.translationProvider
 
     // Collect current settings and translation state
     val currentSettings by settingsService.currentSettings.collectAsState()

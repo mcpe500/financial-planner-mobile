@@ -23,6 +23,9 @@ import com.example.financialplannerapp.core.util.Translations
 import com.example.financialplannerapp.core.util.translate
 import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
 import com.example.financialplannerapp.service.LocalSettingsService
+import com.example.financialplannerapp.service.LocalReactiveSettingsService
+import com.example.financialplannerapp.service.LocalAppContainer
+import com.example.financialplannerapp.service.LocalTranslationProvider
 
 /**
  * App Settings Screen with Reactive Settings Service
@@ -31,24 +34,27 @@ import com.example.financialplannerapp.service.LocalSettingsService
 @Composable
 fun AppSettingsScreen(
     onNavigateBack: () -> Unit = {}
-) {
-    val context = LocalContext.current
+) {    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val dbHelper = remember { AppSettingsDatabaseHelper.getInstance(context) }
-    val settingsService = ReactiveSettingsService.getInstance()
+    
+    // Use services from AppProvider which are properly initialized
+    val appContainer = LocalAppContainer.current
+    val settingsService = LocalReactiveSettingsService.current
+    val translationService = LocalTranslationProvider.current
+    val dbHelper = appContainer.appSettingsDatabaseHelper
     
     // Collect current settings from reactive service
-    val currentSettings by settingsService.currentSettings.collectAsState(initial = AppSettings())
+    val currentSettings by settingsService.currentSettings.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = translate(Translations.Key.AppSettings)) },
+                title = { Text(text = translationService.translate("app_settings")) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = translate(Translations.Key.Back)
+                            contentDescription = translationService.translate("back")
                         )
                     }
                 }
@@ -61,13 +67,12 @@ fun AppSettingsScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)        ) {
-            // Get translations at composable level
-            val themeLightText = translate(Translations.Key.ThemeLight)
-            val themeDarkText = translate(Translations.Key.ThemeDark)
-            val themeSystemText = translate(Translations.Key.ThemeSystem)
-            val themeSettingText = translate(Translations.Key.ThemeSetting)
-            val languageChangedText = translate(Translations.Key.LanguageChangedTo)
+            verticalArrangement = Arrangement.spacedBy(16.dp)        ) {            // Get translations from translation service
+            val themeLightText = translationService.translate("theme_light")
+            val themeDarkText = translationService.translate("theme_dark")
+            val themeSystemText = translationService.translate("theme_system")
+            val themeSettingText = translationService.translate("theme_setting")
+            val languageChangedText = translationService.translate("language_changed_to")
             
             // Theme Settings
             ThemeSelectionCard(
@@ -87,10 +92,10 @@ fun AppSettingsScreen(
                         val message = "$themeSettingText changed to $themeName"
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
-                }
+                },
+                translationService = translationService
             )
-              
-            // Language Settings  
+                // Language Settings  
             LanguageSelectionCard(
                 currentLanguage = currentSettings.language,
                 onLanguageSelected = { language ->
@@ -99,38 +104,37 @@ fun AppSettingsScreen(
                     }
                     
                     scope.launch {
-                        kotlinx.coroutines.delay(100)
                         val languageName = when (language) {
                             "id" -> "Bahasa Indonesia"
                             "en" -> "English"
-                            "zh" -> "中文"
+                            "es" -> "Español"
                             else -> language
                         }
                         Toast.makeText(context, "$languageChangedText $languageName", Toast.LENGTH_SHORT).show()
                     }
-                }
+                },
+                translationService = translationService
             )
-            
-            // Currency Settings
+              // Currency Settings
             CurrencySelectionCard(
                 currentCurrency = currentSettings.currency,
                 onCurrencySelected = { currency ->
                     settingsService.updateSettings(dbHelper) { settings ->
                         settings.copy(currency = currency)
                     }
-                    
-                    scope.launch {
+                      scope.launch {
                         val currencyName = when (currency) {
-                            "IDR" -> "Indonesian Rupiah"
-                            "USD" -> "US Dollar"
-                            "EUR" -> "Euro"
-                            "JPY" -> "Japanese Yen"
+                            "IDR" -> translationService.translate("currency_idr")
+                            "USD" -> translationService.translate("currency_usd")
+                            "EUR" -> translationService.translate("currency_eur")
+                            "JPY" -> translationService.translate("currency_jpy")
                             else -> currency
                         }
-                        val message = "Currency changed to $currencyName"
+                        val message = "${translationService.translate("currency_changed_to")} $currencyName"
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
-                }
+                },
+                translationService = translationService
             )
             
             // Notification Settings
@@ -140,16 +144,16 @@ fun AppSettingsScreen(
                     settingsService.updateSettings(dbHelper) { settings ->
                         settings.copy(notificationsEnabled = enabled)
                     }
-                    
-                    scope.launch {
+                      scope.launch {
                         val message = if (enabled) {
-                            "Notifications enabled"
+                            translationService.translate("notifications_enabled")
                         } else {
-                            "Notifications disabled"
+                            translationService.translate("notifications_disabled")
                         }
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
-                }
+                },
+                translationService = translationService
             )
         }
     }
@@ -158,7 +162,8 @@ fun AppSettingsScreen(
 @Composable
 private fun ThemeSelectionCard(
     currentTheme: String,
-    onThemeSelected: (String) -> Unit
+    onThemeSelected: (String) -> Unit,
+    translationService: com.example.financialplannerapp.data.model.TranslationProvider
 ) {
     Card(
         modifier = Modifier
@@ -167,11 +172,11 @@ private fun ThemeSelectionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = translate(Translations.Key.ThemeSetting),
+                text = translationService.translate("theme_setting"),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = translate(Translations.Key.ThemeSettingDesc),
+                text = translationService.translate("theme_setting_desc"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -199,9 +204,9 @@ private fun ThemeSelectionCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = when (themeCode) {
-                            "light" -> translate(Translations.Key.ThemeLight)
-                            "dark" -> translate(Translations.Key.ThemeDark)
-                            "system" -> translate(Translations.Key.ThemeSystem)
+                            "light" -> translationService.translate("theme_light")
+                            "dark" -> translationService.translate("theme_dark")
+                            "system" -> translationService.translate("theme_system")
                             else -> themeName
                         },
                         style = MaterialTheme.typography.bodyMedium
@@ -216,14 +221,15 @@ private fun ThemeSelectionCard(
 @Composable
 private fun LanguageSelectionCard(
     currentLanguage: String,
-    onLanguageSelected: (String) -> Unit
+    onLanguageSelected: (String) -> Unit,
+    translationService: com.example.financialplannerapp.data.model.TranslationProvider
 ) {
     var expanded by remember { mutableStateOf(false) }
     
     val languages = listOf(
         "id" to "Bahasa Indonesia",
         "en" to "English", 
-        "zh" to "中文"
+        "es" to "Español"
     )
     
     val currentLanguageName = languages.find { it.first == currentLanguage }?.second ?: "Select Language"
@@ -235,11 +241,11 @@ private fun LanguageSelectionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = translate(Translations.Key.LanguageSetting),
+                text = translationService.translate("language_setting"),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = translate(Translations.Key.LanguageSettingDesc),
+                text = translationService.translate("language_setting_desc"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -285,20 +291,31 @@ private fun LanguageSelectionCard(
 @Composable
 private fun CurrencySelectionCard(
     currentCurrency: String,
-    onCurrencySelected: (String) -> Unit
+    onCurrencySelected: (String) -> Unit,
+    translationService: com.example.financialplannerapp.data.model.TranslationProvider
 ) {
     var expanded by remember { mutableStateOf(false) }
-    
-    val currencies = remember {
+      val currencies = remember {
         listOf(
-            "IDR" to "Indonesian Rupiah (IDR)",
-            "USD" to "US Dollar (USD)",
-            "EUR" to "Euro (EUR)",
-            "JPY" to "Japanese Yen (JPY)"
+            "IDR" to "IDR",
+            "USD" to "USD",
+            "EUR" to "EUR",
+            "JPY" to "JPY"
         )
     }
     
-    val currentCurrencyName = currencies.find { it.first == currentCurrency }?.second ?: "Select Currency"
+    // Get localized currency name based on current selection
+    val getCurrencyDisplayName = { code: String ->
+        when (code) {
+            "IDR" -> "${translationService.translate("currency_idr")} (IDR)"
+            "USD" -> "${translationService.translate("currency_usd")} (USD)"
+            "EUR" -> "${translationService.translate("currency_eur")} (EUR)"
+            "JPY" -> "${translationService.translate("currency_jpy")} (JPY)"
+            else -> code
+        }
+    }
+    
+    val currentCurrencyName = getCurrencyDisplayName(currentCurrency)
     
     Card(
         modifier = Modifier
@@ -307,11 +324,11 @@ private fun CurrencySelectionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = translate(Translations.Key.CurrencySetting),
+                text = translationService.translate("currency_setting"),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = translate(Translations.Key.CurrencySettingDesc),
+                text = translationService.translate("currency_setting_desc"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -330,14 +347,13 @@ private fun CurrencySelectionCard(
                         .menuAnchor()
                         .fillMaxWidth()
                 )
-                
-                ExposedDropdownMenu(
+                  ExposedDropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    currencies.forEach { (code, name) ->
+                    currencies.forEach { (code, _) ->
                         DropdownMenuItem(
-                            text = { Text(name) },
+                            text = { Text(getCurrencyDisplayName(code)) },
                             onClick = {
                                 onCurrencySelected(code)
                                 expanded = false
@@ -356,7 +372,8 @@ private fun CurrencySelectionCard(
 @Composable
 private fun NotificationSettingsCard(
     enabled: Boolean,
-    onToggle: (Boolean) -> Unit
+    onToggle: (Boolean) -> Unit,
+    translationService: com.example.financialplannerapp.data.model.TranslationProvider
 ) {
     Card(
         modifier = Modifier
@@ -372,11 +389,11 @@ private fun NotificationSettingsCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = translate(Translations.Key.NotificationsSetting),
+                    text = translationService.translate("notifications_setting"),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = translate(Translations.Key.NotificationsSettingDesc),
+                    text = translationService.translate("notifications_setting_desc"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

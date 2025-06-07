@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.financialplannerapp.TokenManager
+import com.example.financialplannerapp.core.util.formatCurrency
+import com.example.financialplannerapp.core.util.toCurrency
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -301,12 +303,12 @@ private fun IncomeExpensesChart(
                 LegendItem(
                     color = BibitGreen,
                     label = "Income",
-                    amount = "$${income.toInt()}"
+                    amount = income
                 )
                 LegendItem(
                     color = Color(0xFFFF7043),
                     label = "Expenses",
-                    amount = "$${expenses.toInt()}"
+                    amount = expenses
                 )
             }
         }
@@ -317,7 +319,7 @@ private fun IncomeExpensesChart(
 private fun LegendItem(
     color: Color,
     label: String,
-    amount: String
+    amount: Double
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically
@@ -335,7 +337,7 @@ private fun LegendItem(
                 color = MediumGray
             )
             Text(
-                text = amount,
+                text = amount.toCurrency(),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = DarkGray
@@ -420,9 +422,9 @@ private fun BudgetSummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                BudgetItem("Total", "$${totalBudget.toInt()}", DarkGray)
-                BudgetItem("Spent", "$${spent.toInt()}", Color(0xFFFF7043))
-                BudgetItem("Remaining", "$${remaining.toInt()}", BibitGreen)
+                BudgetItem("Total", totalBudget, DarkGray)
+                BudgetItem("Spent", spent, Color(0xFFFF7043))
+                BudgetItem("Remaining", remaining, BibitGreen)
             }
         }
     }
@@ -431,7 +433,7 @@ private fun BudgetSummaryCard(
 @Composable
 private fun BudgetItem(
     label: String,
-    amount: String,
+    amount: Double,
     color: Color
 ) {
     Column(
@@ -443,7 +445,7 @@ private fun BudgetItem(
             color = MediumGray
         )
         Text(
-            text = amount,
+            text = amount.toCurrency(),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = color,
@@ -454,6 +456,8 @@ private fun BudgetItem(
 
 @Composable
 private fun AccountBalanceCard() {
+    val totalBalance = 12847.56
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -472,7 +476,7 @@ private fun AccountBalanceCard() {
                 color = Color.White.copy(alpha = 0.8f)
             )
             Text(
-                text = "$12,847.56",
+                text = totalBalance.toCurrency(),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,

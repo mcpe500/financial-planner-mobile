@@ -40,8 +40,28 @@ private val englishTranslations = mapOf(
     Translations.Cancel.name to "Cancel",
     Translations.Back.name to "Back",
     Translations.BillCalendarTitle.name to "Bill Calendar",
-    Translations.MissingTranslation.name to "Translation not found"
-    // Add all other English translations here
+    Translations.MissingTranslation.name to "Translation not found",
+    // Settings screen translations
+    "app_settings" to "App Settings",
+    "theme_setting" to "Theme",
+    "theme_setting_desc" to "Choose app theme",
+    "theme_light" to "Light",
+    "theme_dark" to "Dark",
+    "theme_system" to "System",
+    "language_setting" to "Language",
+    "language_setting_desc" to "Change app language",
+    "select_language" to "Select Language",
+    "language_changed_to" to "Language changed to",
+    "currency_setting" to "Currency",
+    "currency_setting_desc" to "Choose default currency",
+    "select_currency" to "Select Currency",
+    "currency_idr" to "Indonesian Rupiah",
+    "currency_usd" to "US Dollar",
+    "currency_eur" to "Euro",
+    "currency_jpy" to "Japanese Yen",
+    "currency_changed_to" to "Currency changed to",
+    "notifications_setting" to "Notifications",
+    "notifications_setting_desc" to "Enable or disable notifications"
 )
 
 private val spanishTranslations = mapOf(
@@ -70,13 +90,86 @@ private val spanishTranslations = mapOf(
     Translations.Cancel.name to "Cancelar",
     Translations.Back.name to "Atrás",
     Translations.BillCalendarTitle.name to "Calendario de Facturas",
-    Translations.MissingTranslation.name to "Traducción no encontrada"
-    // Add all other Spanish translations here
+    Translations.MissingTranslation.name to "Traducción no encontrada",
+    // Settings screen translations
+    "app_settings" to "Configuración de App",
+    "theme_setting" to "Tema",
+    "theme_setting_desc" to "Elegir tema de la aplicación",
+    "theme_light" to "Claro",
+    "theme_dark" to "Oscuro",
+    "theme_system" to "Sistema",
+    "language_setting" to "Idioma",
+    "language_setting_desc" to "Cambiar idioma de la aplicación",
+    "select_language" to "Seleccionar Idioma",
+    "language_changed_to" to "Idioma cambiado a",
+    "currency_setting" to "Moneda",
+    "currency_setting_desc" to "Elegir moneda predeterminada",
+    "select_currency" to "Seleccionar Moneda",
+    "currency_idr" to "Rupia Indonesia",
+    "currency_usd" to "Dólar Estadounidense",
+    "currency_eur" to "Euro",
+    "currency_jpy" to "Yen Japonés",
+    "currency_changed_to" to "Moneda cambiada a",
+    "notifications_setting" to "Notificaciones",
+    "notifications_setting_desc" to "Activar o desactivar notificaciones"
+)
+
+private val indonesianTranslations = mapOf(
+    Translations.AppName.name to "Perencana Keuangan",
+    Translations.Settings.name to "Pengaturan", 
+    Translations.SettingsTitle.name to "Pengaturan Aplikasi",
+    Translations.AppSettings.name to "Pengaturan App",
+    Translations.LanguageSetting.name to "Bahasa",
+    Translations.LanguageSettingDesc.name to "Ubah bahasa aplikasi",
+    Translations.ThemeSetting.name to "Tema",
+    Translations.ThemeSettingDesc.name to "Ubah tema aplikasi",
+    Translations.ThemeLight.name to "Terang",
+    Translations.ThemeDark.name to "Gelap",
+    Translations.ThemeSystem.name to "Sistem",
+    Translations.LoginButton.name to "Masuk",
+    Translations.UsernameLabel.name to "Nama Pengguna",
+    Translations.PasswordLabel.name to "Kata Sandi",
+    Translations.AddRecurringBillTitle.name to "Tambah Tagihan Berulang",
+    Translations.BillNameLabel.name to "Nama Tagihan",
+    Translations.EstimatedAmountLabel.name to "Perkiraan Jumlah",
+    Translations.DueDateLabel.name to "Tanggal Jatuh Tempo",
+    Translations.RepeatCycleLabel.name to "Siklus Berulang",
+    Translations.CategoryLabel.name to "Kategori",
+    Translations.NotesLabel.name to "Catatan",
+    Translations.Save.name to "Simpan",
+    Translations.Cancel.name to "Batal",
+    Translations.Back.name to "Kembali",
+    Translations.BillCalendarTitle.name to "Kalender Tagihan",
+    Translations.MissingTranslation.name to "Terjemahan tidak ditemukan",
+    // Settings screen translations
+    "app_settings" to "Pengaturan Aplikasi",
+    "theme_setting" to "Tema",
+    "theme_setting_desc" to "Pilih tema aplikasi",
+    "theme_light" to "Terang",
+    "theme_dark" to "Gelap",
+    "theme_system" to "Sistem",
+    "language_setting" to "Bahasa",
+    "language_setting_desc" to "Ubah bahasa aplikasi",
+    "select_language" to "Pilih Bahasa",
+    "language_changed_to" to "Bahasa diubah ke",
+    "currency_setting" to "Mata Uang",
+    "currency_setting_desc" to "Pilih mata uang default",
+    "select_currency" to "Pilih Mata Uang",
+    "currency_idr" to "Rupiah Indonesia",
+    "currency_usd" to "Dolar AS",
+    "currency_eur" to "Euro",
+    "currency_jpy" to "Yen Jepang",
+    "currency_changed_to" to "Mata uang diubah ke",
+    "notifications_setting" to "Notifikasi",
+    "notifications_setting_desc" to "Aktifkan atau nonaktifkan notifikasi",
+    "notifications_enabled" to "Notifikasi diaktifkan",
+    "notifications_disabled" to "Notifikasi dinonaktifkan"
 )
 
 private val allTranslations: Map<String, Map<String, String>> = mapOf(
     "en" to englishTranslations,
-    "es" to spanishTranslations
+    "es" to spanishTranslations,
+    "id" to indonesianTranslations
 )
 
 class TranslationServiceImpl(

@@ -19,22 +19,7 @@ import com.example.financialplannerapp.screen.settings.SecuritySettingsScreen
 import com.example.financialplannerapp.screen.settings.DataSyncSettingsScreen
 import com.example.financialplannerapp.screen.settings.BackupRestoreSettingsScreen
 import com.example.financialplannerapp.screen.settings.ContactSupportScreen
-
-// Placeholder for missing Help Center implementation
-@Composable
-fun HelpCenterScreen(navController: NavHostController) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Help Center Screen")
-        Text("Coming Soon...")
-        Button(onClick = { navController.popBackStack() }) {
-            Text("Go Back")
-        }
-    }
-}
+import com.example.financialplannerapp.screen.settings.HelpCenterScreen
 
 @Composable
 fun AppNavigation(

@@ -2,28 +2,10 @@ package com.example.financialplannerapp.core.util
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.collectAsState // Corrected import
 
 /**
- * Translation System            // User Profile Settings
-            "name_field" to "Nama Lengkap",
-            "email_field" to "Email",
-            "phone_field" to "Nomor Telepon",
-            "birth_date_field" to "Tanggal Lahir",
-            "occupation_field" to "Pekerjaan",
-            "monthly_income_field" to "Pendapatan Bulanan (IDR)",
-            "financial_goals_field" to "Tujuan Keuangan",
-            "personal_info" to "Informasi Personal",
-            "professional_info" to "Informasi Profesional",
-            "sync_data" to "Sinkronisasi Data",
-            "last_sync" to "Sinkronisasi Terakhir:",
-            "sync_to_server" to "Sinkronkan ke Server",
-            "syncing" to "Menyinkronkan...",
-            "offline_mode" to "Offline - Tidak dapat sinkronisasi",
-            "offline_notice" to "💾 Data disimpan secara lokal dan akan disinkronkan saat online",
-            "check_connection" to "Cek Koneksi",
-            "edit_profile" to "Edit Profil",
-            "email_readonly" to "Email tidak dapat diubah",
-            "unsaved_changes" to "Ada perubahan yang belum disinkronkan",or Financial Planner App
+ * Translation System for Financial Planner App
  * 
  * Provides complete translations for Indonesian, English, and Chinese languages.
  * Includes reactive translation updates when language changes.
@@ -197,7 +179,28 @@ object Translations {
             "too_short" to "Terlalu Pendek",
             "weak" to "Lemah",
             "medium" to "Sedang",
-            "strong" to "Kuat"
+            "strong" to "Kuat",
+            
+            // User Profile Settings
+            "name_field" to "Nama Lengkap",
+            "email_field" to "Email",
+            "phone_field" to "Nomor Telepon",
+            "birth_date_field" to "Tanggal Lahir",
+            "occupation_field" to "Pekerjaan",
+            "monthly_income_field" to "Pendapatan Bulanan (IDR)",
+            "financial_goals_field" to "Tujuan Keuangan",
+            "personal_info" to "Informasi Personal",
+            "professional_info" to "Informasi Profesional",
+            "sync_data" to "Sinkronisasi Data",
+            "last_sync" to "Sinkronisasi Terakhir:",
+            "sync_to_server" to "Sinkronkan ke Server",
+            "syncing" to "Menyinkronkan...",
+            "offline_mode" to "Offline - Tidak dapat sinkronisasi",
+            "offline_notice" to "💾 Data disimpan secara lokal dan akan disinkronkan saat online",
+            "check_connection" to "Cek Koneksi",
+            "edit_profile" to "Edit Profil",
+            "email_readonly" to "Email tidak dapat diubah",
+            "unsaved_changes" to "Ada perubahan yang belum disinkronkan"
         ),
         
         "en" to mapOf( // English
@@ -473,20 +476,28 @@ fun TranslationProvider(
 
 /**
  * Translation Hook - Use this to get translations in Composables
+ * Now uses reactive translation service for live updates
  */
 @Composable
 fun translate(key: Translations.Key): String {
     val currentLanguage = LocalLanguage.current
-    return Translations.get(key, currentLanguage)
+    val translationProvider = com.example.financialplannerapp.service.LocalTranslationProvider.current
+    val translationState by translationProvider.translationStateFlow.collectAsState()
+    
+    return translationState?.translationsMap?.get(key.value) ?: Translations.get(key, currentLanguage)
 }
 
 /**
  * Translation Hook - Use this for string keys
+ * Now uses reactive translation service for live updates
  */
 @Composable
 fun translate(key: String): String {
     val currentLanguage = LocalLanguage.current
-    return Translations.get(key, currentLanguage)
+    val translationProvider = com.example.financialplannerapp.service.LocalTranslationProvider.current
+    val translationState by translationProvider.translationStateFlow.collectAsState()
+
+    return translationState?.translationsMap?.get(key) ?: Translations.get(key, currentLanguage)
 }
 
 /**

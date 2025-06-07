@@ -23,14 +23,41 @@ import com.example.financialplannerapp.service.LocalSettingsService
 import com.example.financialplannerapp.data.model.TranslationProvider
 import com.example.financialplannerapp.data.repository.UserProfileRoomRepository
 import com.example.financialplannerapp.service.TranslationServiceImpl
+import com.example.financialplannerapp.service.ReactiveSettingsService
+import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class MainApplication : Application() {
 
     lateinit var appContainer: AppContainer
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate() {
         super.onCreate()
         appContainer = AppContainer(this)
+        
+        // Initialize services with database helpers
+        initializeServices()
+    }
+    
+    private fun initializeServices() {
+        applicationScope.launch {
+            try {
+                // Initialize database helper
+                val settingsHelper = AppSettingsDatabaseHelper.getInstance(this@MainApplication)
+                
+                // Initialize reactive settings service
+                val settingsService = ReactiveSettingsService.getInstance()
+                settingsService.initialize(settingsHelper)
+                
+                // Translation service is already properly initialized in AppProvider
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
 
@@ -52,15 +79,22 @@ class AppContainer(private val applicationContext: Context) {
     private val categoryDao by lazy { appDatabase.categoryDao() }
     private val appSettingsDao by lazy { appDatabase.appSettingsDao() }
     private val userProfileDao by lazy { appDatabase.userProfileDao() }
-    private val securitySettingsDao by lazy { appDatabase.securitySettingsDao() }
-
-    // Services
+    private val securitySettingsDao by lazy { appDatabase.securitySettingsDao() }    // Services
     val translationProvider: TranslationProvider by lazy {
         TranslationServiceImpl(applicationContext)
     }
 
     val localSettingsService: LocalSettingsService by lazy {
         LocalSettingsService.getInstance()
+    }
+    
+    // Database helpers
+    val appSettingsDatabaseHelper: AppSettingsDatabaseHelper by lazy {
+        AppSettingsDatabaseHelper.getInstance(applicationContext)
+    }
+    
+    val reactiveSettingsService: ReactiveSettingsService by lazy {
+        ReactiveSettingsService.getInstance()
     }
 
     // Repositories
