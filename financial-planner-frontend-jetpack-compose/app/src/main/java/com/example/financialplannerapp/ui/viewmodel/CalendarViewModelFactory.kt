@@ -2,7 +2,7 @@ package com.example.financialplannerapp.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.financialplannerapp.screen.CalendarViewModel
+import com.example.financialplannerapp.ui.screen.bill.CalendarViewModel
 
 class CalendarViewModelFactory : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")

@@ -26,12 +26,12 @@ class SecurityViewModel constructor(
         loadSecuritySettings()
     }
 
-    fun loadSecuritySettings(userId: String = "1") { // Assuming a default or single user context for app-wide settings
+    fun loadSecuritySettings(userId: String = "default_user") {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                securityRepository.getSecuritySettings().collect {
-                    _securitySettings.value = it ?: SecuritySettings() // Provide a default if null
+                securityRepository.getSecuritySettingsByUserIdFlow(userId).collect {
+                    _securitySettings.value = it
                 }
             } catch (e: Exception) {
                 _error.value = "Failed to load security settings: ${e.message}"
@@ -45,9 +45,9 @@ class SecurityViewModel constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                securityRepository.insertOrUpdateSecuritySettings(settings)
+                securityRepository.updateSecuritySettings(settings)
                 // Refresh the settings flow after update
-                securityRepository.getSecuritySettings().collect {
+                securityRepository.getSecuritySettingsByUserIdFlow(settings.userId).collect {
                      _securitySettings.value = it
                 }
             } catch (e: Exception) {

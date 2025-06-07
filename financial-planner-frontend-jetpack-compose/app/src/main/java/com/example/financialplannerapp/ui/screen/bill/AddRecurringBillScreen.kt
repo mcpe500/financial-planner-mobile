@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.bill
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

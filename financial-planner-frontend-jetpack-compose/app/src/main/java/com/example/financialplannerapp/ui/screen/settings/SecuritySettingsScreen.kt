@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.financialplannerapp.TokenManager
-import com.example.financialplannerapp.service.LocalTranslator
 import kotlinx.coroutines.launch
 import java.security.MessageDigest
 

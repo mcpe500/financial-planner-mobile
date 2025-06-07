@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.bill
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.financialplannerapp.data.model.RecurringBill
+import com.example.financialplannerapp.data.model.RepeatCycle
+import com.example.financialplannerapp.data.model.BillStatus
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*

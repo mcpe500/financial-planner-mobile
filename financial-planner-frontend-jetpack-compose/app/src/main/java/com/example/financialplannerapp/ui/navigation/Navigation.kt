@@ -1,13 +1,14 @@
-package com.example.financialplannerapp
+package com.example.financialplannerapp.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.financialplannerapp.screen.auth.LoginScreen
-import com.example.financialplannerapp.screen.dashboard.DashboardScreen
-import com.example.financialplannerapp.screen.passcode.PasscodeScreen
+import com.example.financialplannerapp.ui.screen.auth.LoginScreen
+import com.example.financialplannerapp.ui.screen.dashboard.DashboardScreen
+import com.example.financialplannerapp.ui.screen.passcode.PasscodeScreen
+import com.example.financialplannerapp.TokenManager
 
 private const val TAG_LOGIN_SCREEN = "LoginScreen"
 

@@ -19,8 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
-import com.example.financialplannerapp.data.model.Translations
-import com.example.financialplannerapp.service.translate
+import com.example.financialplannerapp.core.util.Translations
+import com.example.financialplannerapp.core.util.translate
 import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
 import com.example.financialplannerapp.service.LocalSettingsService
 
@@ -43,12 +43,12 @@ fun AppSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = translate(Translations.AppSettings)) },
+                title = { Text(text = translate(Translations.Key.AppSettings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = translate(Translations.Back)
+                            contentDescription = translate(Translations.Key.Back)
                         )
                     }
                 }
@@ -73,12 +73,12 @@ fun AppSettingsScreen(
                     
                     scope.launch {
                         val themeName = when (theme) {
-                            "light" -> translate(Translations.ThemeLight)
-                            "dark" -> translate(Translations.ThemeDark)
-                            "system" -> translate(Translations.ThemeSystem)
+                            "light" -> translate(Translations.Key.ThemeLight)
+                            "dark" -> translate(Translations.Key.ThemeDark)
+                            "system" -> translate(Translations.Key.ThemeSystem)
                             else -> theme
                         }
-                        val message = "${translate(Translations.ThemeSetting)} changed to $themeName"
+                        val message = "${translate(Translations.Key.ThemeSetting)} changed to $themeName"
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -100,7 +100,7 @@ fun AppSettingsScreen(
                             "zh" -> "中文"
                             else -> language
                         }
-                        Toast.makeText(context, translate(Translations.LanguageSetting) + " changed to $languageName", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, translate(Translations.Key.LanguageChangedTo) + " changed to $languageName", Toast.LENGTH_SHORT).show()
                     }
                 }
             )
@@ -161,11 +161,11 @@ private fun ThemeSelectionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = translate(Translations.ThemeSetting).toString(),
+                text = translate(Translations.Key.ThemeSetting),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = translate(Translations.ThemeSettingDesc).toString(),
+                text = translate(Translations.Key.ThemeSettingDesc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -193,9 +193,9 @@ private fun ThemeSelectionCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = when (themeCode) {
-                            "light" -> translate(Translations.ThemeLight).toString()
-                            "dark" -> translate(Translations.ThemeDark).toString()
-                            "system" -> translate(Translations.ThemeSystem).toString()
+                            "light" -> translate(Translations.Key.ThemeLight)
+                            "dark" -> translate(Translations.Key.ThemeDark)
+                            "system" -> translate(Translations.Key.ThemeSystem)
                             else -> themeName
                         },
                         style = MaterialTheme.typography.bodyMedium
@@ -229,11 +229,11 @@ private fun LanguageSelectionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = translate(Translations.LanguageSetting).toString(),
+                text = translate(Translations.Key.LanguageSetting),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = translate(Translations.LanguageSettingDesc).toString(),
+                text = translate(Translations.Key.LanguageSettingDesc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -301,11 +301,11 @@ private fun CurrencySelectionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = translate(Translations.CurrencySetting).toString(),
+                text = translate(Translations.Key.CurrencySetting),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = translate(Translations.CurrencySettingDesc).toString(),
+                text = translate(Translations.Key.CurrencySettingDesc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -366,11 +366,11 @@ private fun NotificationSettingsCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = translate(Translations.NotificationsSetting).toString(),
+                    text = translate(Translations.Key.NotificationsSetting),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = translate(Translations.NotificationsSettingDesc).toString(),
+                    text = translate(Translations.Key.NotificationsSettingDesc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

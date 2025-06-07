@@ -27,7 +27,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.config.Config
-import com.example.financialplannerapp.service.LocalTranslator
+import com.example.financialplannerapp.service.LocalTranslationProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
