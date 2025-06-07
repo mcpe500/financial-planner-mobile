@@ -14,68 +14,13 @@ import com.example.financialplannerapp.ui.screen.auth.LoginScreen
 import com.example.financialplannerapp.ui.screen.dashboard.DashboardScreen
 import com.example.financialplannerapp.ui.screen.settings.AppSettingsScreen
 import com.example.financialplannerapp.ui.screen.settings.SettingsScreen
+import com.example.financialplannerapp.screen.settings.UserProfileSettingsScreen
+import com.example.financialplannerapp.screen.settings.SecuritySettingsScreen
+import com.example.financialplannerapp.screen.settings.DataSyncSettingsScreen
+import com.example.financialplannerapp.screen.settings.BackupRestoreSettingsScreen
+import com.example.financialplannerapp.screen.settings.ContactSupportScreen
 
-// Placeholder screens for missing implementations
-@Composable
-fun UserProfileSettingsScreen(navController: NavHostController, tokenManager: TokenManager) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("User Profile Settings Screen")
-        Text("Coming Soon...")
-        Button(onClick = { navController.popBackStack() }) {
-            Text("Go Back")
-        }
-    }
-}
-
-@Composable
-fun SecuritySettingsScreen(navController: NavHostController, tokenManager: TokenManager) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Security Settings Screen")
-        Text("Coming Soon...")
-        Button(onClick = { navController.popBackStack() }) {
-            Text("Go Back")
-        }
-    }
-}
-
-@Composable
-fun DataSyncSettingsScreen(navController: NavHostController) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Data Sync Settings Screen")
-        Text("Coming Soon...")
-        Button(onClick = { navController.popBackStack() }) {
-            Text("Go Back")
-        }
-    }
-}
-
-@Composable
-fun BackupRestoreSettingsScreen(navController: NavHostController) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Backup & Restore Settings Screen")
-        Text("Coming Soon...")
-        Button(onClick = { navController.popBackStack() }) {
-            Text("Go Back")
-        }
-    }
-}
-
+// Placeholder for missing Help Center implementation
 @Composable
 fun HelpCenterScreen(navController: NavHostController) {
     Column(
@@ -84,21 +29,6 @@ fun HelpCenterScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.Center
     ) {
         Text("Help Center Screen")
-        Text("Coming Soon...")
-        Button(onClick = { navController.popBackStack() }) {
-            Text("Go Back")
-        }
-    }
-}
-
-@Composable
-fun ContactSupportScreen(navController: NavHostController) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Contact Support Screen")
         Text("Coming Soon...")
         Button(onClick = { navController.popBackStack() }) {
             Text("Go Back")
