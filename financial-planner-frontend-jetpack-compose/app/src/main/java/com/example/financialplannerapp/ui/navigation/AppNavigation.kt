@@ -20,6 +20,11 @@ import com.example.financialplannerapp.screen.settings.DataSyncSettingsScreen
 import com.example.financialplannerapp.screen.settings.BackupRestoreSettingsScreen
 import com.example.financialplannerapp.screen.settings.ContactSupportScreen
 import com.example.financialplannerapp.screen.settings.HelpCenterScreen
+import com.example.financialplannerapp.screen.AddTransactionScreen
+import com.example.financialplannerapp.screen.ScanReceiptScreen
+import com.example.financialplannerapp.screen.TransactionHistoryScreen
+import com.example.financialplannerapp.screen.VoiceInputScreen
+import com.example.financialplannerapp.ui.screen.transaction.TransactionMainScreen
 
 @Composable
 fun AppNavigation(
@@ -101,6 +106,27 @@ fun AppNavigation(
         
         composable("contact_support") {
             ContactSupportScreen(navController = navController)
+        }
+        
+        // Transaction Screens
+        composable("transactions") {
+            TransactionMainScreen(navController = navController)
+        }
+        
+        composable("add_transaction") {
+            AddTransactionScreen(navController = navController)
+        }
+        
+        composable("transaction_history") {
+            TransactionHistoryScreen(navController = navController)
+        }
+        
+        composable("scan_receipt") {
+            ScanReceiptScreen(navController = navController)
+        }
+        
+        composable("voice_input") {
+            VoiceInputScreen(navController = navController)
         }
     }
 }
