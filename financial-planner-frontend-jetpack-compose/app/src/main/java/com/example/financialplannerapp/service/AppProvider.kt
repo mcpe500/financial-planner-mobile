@@ -8,18 +8,17 @@ import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.AppContainer
 import com.example.financialplannerapp.data.model.TranslationProvider
 
+// CompositionLocal declarations
+val LocalAppContainer = compositionLocalOf<AppContainer> {
+    error("No AppContainer provided")
+}
+
 val LocalReactiveSettingsService = compositionLocalOf<ReactiveSettingsService> {
     error("No ReactiveSettingsService provided")
 }
 
-// CompositionLocal for translation provider
 val LocalTranslationProvider = compositionLocalOf<TranslationProvider> { 
     error("No TranslationProvider provided") 
-}
-
-// Provide AppContainer for dependency injection
-val LocalAppContainer = compositionLocalOf<AppContainer> { 
-    error("No AppContainer provided") 
 }
 
 @Composable

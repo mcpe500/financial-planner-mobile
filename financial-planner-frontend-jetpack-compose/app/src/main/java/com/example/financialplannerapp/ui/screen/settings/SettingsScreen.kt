@@ -1,9 +1,6 @@
 package com.example.financialplannerapp.ui.screen.settings
 
 import android.util.Log
-import com.example.financialplannerapp.core.util.Translations
-import com.example.financialplannerapp.core.util.translate
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.core.util.translate
+import com.example.financialplannerapp.data.model.Translations
 
 private const val TAG_SETTINGS_SCREEN = "SettingsScreen"
 
@@ -49,56 +48,57 @@ fun SettingsScreen(navController: NavController) {
 
     val settingCategories = listOf(
         SettingItem(
-            title = translate(Translations.Key.PersonalProfile),
-            subtitle = translate(Translations.Key.Profile),
+            title = translate(Translations.PersonalProfile),
+            subtitle = translate(Translations.Profile),
             icon = Icons.Filled.Person,
             route = "userProfileSettings"
         ),
         SettingItem(
-            title = translate(Translations.Key.Security),
-            subtitle = translate(Translations.Key.Security),
+            title = translate(Translations.Security),
+            subtitle = translate(Translations.Security),
             icon = Icons.Filled.Security,
             route = "securitySettings"
         ),
         SettingItem(
-            title = translate(Translations.Key.AppSettings),
-            subtitle = translate(Translations.Key.AppInfo),
+            title = translate(Translations.AppSettings),
+            subtitle = translate(Translations.AppInfo),
             icon = Icons.Filled.Settings,
             route = "appSettings"
         ),
         SettingItem(
-            title = translate(Translations.Key.DataSync),
-            subtitle = translate(Translations.Key.DataSyncDesc),
+            title = translate(Translations.DataSync),
+            subtitle = translate(Translations.DataSyncDesc),
             icon = Icons.Filled.Sync,
             route = "dataSyncSettings",
             isOnlineRequired = true
         ),
         SettingItem(
-            title = translate(Translations.Key.BackupRestore),
-            subtitle = translate(Translations.Key.BackupRestoreDesc),
+            title = translate(Translations.BackupRestore),
+            subtitle = translate(Translations.BackupRestoreDesc),
             icon = Icons.Filled.CloudUpload,
             route = "backupRestoreSettings"
         ),
         SettingItem(
-            title = translate(Translations.Key.HelpCenter),
-            subtitle = translate(Translations.Key.HelpCenterDesc),
+            title = translate(Translations.HelpCenter),
+            subtitle = translate(Translations.HelpCenterDesc),
             icon = Icons.Filled.HelpOutline,
             route = "helpCenterSettings"
         ),
         SettingItem(
-            title = translate(Translations.Key.ContactSupport),
-            subtitle = translate(Translations.Key.ContactSupportDesc),
+            title = translate(Translations.ContactSupport),
+            subtitle = translate(Translations.ContactSupportDesc),
             icon = Icons.Filled.ContactSupport,
             route = "contactSupportSettings",
             isOnlineRequired = true
         )
     )
+    
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = translate(Translations.Key.Settings),
+                        text = translate(Translations.Settings),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = DarkGray
@@ -113,27 +113,29 @@ fun SettingsScreen(navController: NavController) {
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = translate(Translations.Key.Back),
+                            contentDescription = translate(Translations.Back),
                             tint = BibitGreen
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White,
-                    titleContentColor = DarkGray
+                    titleContentColor = DarkGray,
+                    navigationIconContentColor = BibitGreen
                 )
             )
-        }
+        },
+        containerColor = SoftGray
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(settingCategories) { settingItem ->
-                SettingItemCard(
+                SettingCard(
                     settingItem = settingItem,
                     onClick = {
                         Log.d(TAG_SETTINGS_SCREEN, "Navigating to ${settingItem.route}")
@@ -146,15 +148,20 @@ fun SettingsScreen(navController: NavController) {
 }
 
 @Composable
-private fun SettingItemCard(
+private fun SettingCard(
     settingItem: SettingItem,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(12.dp))
-            .clickable { onClick() },
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(12.dp),
+                ambientColor = Color.Black.copy(alpha = 0.1f),
+                spotColor = Color.Black.copy(alpha = 0.1f)
+            ),
+        onClick = onClick,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -165,56 +172,56 @@ private fun SettingItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon container
+            // Icon Container
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .padding(end = 16.dp),
+                    .padding(8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = settingItem.icon,
                     contentDescription = settingItem.title,
                     tint = BibitGreen,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
-
-            // Text content
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            // Text Content
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = settingItem.title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = DarkGray
-                    )
-                    if (settingItem.isOnlineRequired) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.Filled.CloudQueue,
-                            contentDescription = "Memerlukan koneksi internet",
-                            tint = BibitLightGreen,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
+                Text(
+                    text = settingItem.title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = DarkGray
+                )
                 Text(
                     text = settingItem.subtitle,
                     fontSize = 14.sp,
                     color = MediumGray,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 2.dp)
                 )
+                
+                // Online requirement indicator
+                if (settingItem.isOnlineRequired) {
+                    Text(
+                        text = "Online Required",
+                        fontSize = 12.sp,
+                        color = BibitGreen,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
-
-            // Arrow icon
+            
+            // Arrow Icon
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
-                contentDescription = "Buka",
+                contentDescription = "Navigate",
                 tint = MediumGray,
                 modifier = Modifier.size(20.dp)
             )

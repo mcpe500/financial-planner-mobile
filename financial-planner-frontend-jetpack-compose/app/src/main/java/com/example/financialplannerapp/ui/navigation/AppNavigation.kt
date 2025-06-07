@@ -48,38 +48,58 @@ fun AppNavigation(
         }
         
         // Main Settings Screen
-        composable("settingsScreen") {
-            SettingsScreen(navController = navController)
-        }
-        
-        // Settings Sub-screens
-        composable("userProfileSettings") {
-            UserProfileSettingsScreen(navController = navController, tokenManager = tokenManager)
-        }
-        
-        composable("securitySettings") {
-            SecuritySettingsScreen(navController = navController, tokenManager = tokenManager)
-        }
-        
-        composable("appSettings") {
+        composable("settings") {
             AppSettingsScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateToPersonalProfile = { navController.navigate("personal_profile") },
+                onNavigateToSecurity = { navController.navigate("security") },
+                onNavigateToAppInfo = { navController.navigate("app_info") },
+                onLogout = { 
+                    // Handle logout logic
+                    navController.navigate("login") {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    }
+                }
             )
         }
         
-        composable("dataSyncSettings") {
+        // Settings Sub-screens
+        composable("personal_profile") {
+            UserProfileSettingsScreen(
+                navController = navController, 
+                tokenManager = tokenManager
+            )
+        }
+        
+        composable("security") {
+            SecuritySettingsScreen(
+                navController = navController, 
+                tokenManager = tokenManager
+            )
+        }
+        
+        composable("app_info") {
+            // Create a simple app info screen or navigate to existing one
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("App Information Screen - Coming Soon")
+            }
+        }
+        
+        composable("data_sync") {
             DataSyncSettingsScreen(navController = navController)
         }
         
-        composable("backupRestoreSettings") {
+        composable("backup_restore") {
             BackupRestoreSettingsScreen(navController = navController)
         }
         
-        composable("helpCenterSettings") {
+        composable("help_center") {
             HelpCenterScreen(navController = navController)
         }
         
-        composable("contactSupportSettings") {
+        composable("contact_support") {
             ContactSupportScreen(navController = navController)
         }
     }

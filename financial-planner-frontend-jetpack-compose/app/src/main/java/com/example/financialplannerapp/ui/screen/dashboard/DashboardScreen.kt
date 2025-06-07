@@ -89,8 +89,8 @@ fun DashboardScreen(navController: NavController, tokenManager: TokenManager) {
                 }
             },
             onSettingsClick = {
-                Log.d(TAG_DASHBOARD_SCREEN, "Settings icon clicked, navigating to settingsScreen")
-                navController.navigate("settingsScreen")
+                Log.d(TAG_DASHBOARD_SCREEN, "Settings icon clicked, navigating to settings")
+                navController.navigate("settings")
             },
             modifier = Modifier.padding(paddingValues)
         )

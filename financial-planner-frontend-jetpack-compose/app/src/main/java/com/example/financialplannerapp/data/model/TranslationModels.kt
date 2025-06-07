@@ -14,7 +14,7 @@ enum class Translations {
     AppSettings, // For "App Settings" specifically
 
     // Profile Settings
-    SettingsProfile, SettingsProfileDesc,
+    SettingsProfile, SettingsProfileDesc, PersonalProfile,
 
     // Account Settings
     SettingsAccount, SettingsAccountDesc,
@@ -25,28 +25,35 @@ enum class Translations {
     ThemeLight, ThemeDark, ThemeSystem,
 
     // Language Settings
-    LanguageSetting, LanguageSettingDesc,
-    // Specific languages might be listed here or handled differently, e.g., English, Spanish
+    LanguageSetting, LanguageSettingDesc, SelectLanguage, LanguageChangedTo,
 
     // Currency Settings
-    CurrencySetting, CurrencySettingDesc,
-    // Specific currencies might be listed here or handled differently, e.g., USD, EUR
+    CurrencySetting, CurrencySettingDesc, SelectCurrency, CurrencyChangedTo,
+    CurrencyIDR, CurrencyUSD, CurrencyEUR, CurrencyJPY,
 
     // Notification Settings
     SettingsNotifications, SettingsNotificationsDesc,
     NotificationsSetting, NotificationsSettingDesc,
+    NotificationsEnabled, NotificationsDisabled,
 
     // Security Settings
-    SettingsSecurity, SettingsSecurityDesc,
+    SettingsSecurity, SettingsSecurityDesc, Security,
 
     // Privacy Settings
     SettingsPrivacy, SettingsPrivacyDesc,
 
     // About Section
-    SettingsAbout, SettingsAboutDesc,
+    SettingsAbout, SettingsAboutDesc, AppInfo,
+
+    // Data Management
+    DataSync, DataSyncDesc, BackupRestore, BackupRestoreDesc,
+    HelpCenter, HelpCenterDesc, ContactSupport, ContactSupportDesc,
 
     // Logout
-    SettingsLogout, SettingsLogoutDesc,
+    SettingsLogout, SettingsLogoutDesc, Logout,
+
+    // Common UI Elements
+    Profile, Dashboard,
 
     // Login Screen
     LoginButton, LoginFailed, UsernameLabel, PasswordLabel,
@@ -95,4 +102,6 @@ interface TranslationProvider {
 
     val translationStateFlow: StateFlow<TranslationState?> // To observe changes in language or translations
     fun changeLanguage(languageCode: String)
+    fun getCurrentTranslations(): Map<String, String>
+    fun getAvailableLanguages(): List<LanguageOption>
 }

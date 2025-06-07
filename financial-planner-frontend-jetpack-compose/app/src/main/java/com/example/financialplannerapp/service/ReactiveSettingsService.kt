@@ -168,6 +168,42 @@ class ReactiveSettingsService private constructor() {
     fun getCurrentCurrency(): String = _currentSettings.value.currency
     
     /**
+     * Set theme - suspend method for ViewModel use
+     */
+    suspend fun setTheme(theme: String) {
+        dbHelper?.let { helper ->
+            updateTheme(helper, theme)
+        }
+    }
+    
+    /**
+     * Set language - suspend method for ViewModel use
+     */
+    suspend fun setLanguage(languageCode: String) {
+        dbHelper?.let { helper ->
+            updateLanguage(helper, languageCode)
+        }
+    }
+    
+    /**
+     * Set currency - suspend method for ViewModel use
+     */
+    suspend fun setCurrency(currency: String) {
+        dbHelper?.let { helper ->
+            updateCurrency(helper, currency)
+        }
+    }
+    
+    /**
+     * Set notifications - suspend method for ViewModel use
+     */
+    suspend fun setNotifications(enabled: Boolean) {
+        dbHelper?.let { helper ->
+            updateNotifications(helper, enabled)
+        }
+    }
+    
+    /**
      * Cleanup resources
      */
     fun cleanup() {
