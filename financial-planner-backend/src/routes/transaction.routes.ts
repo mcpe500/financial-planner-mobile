@@ -7,4 +7,5 @@ const router = Router();
 // POST /api/transactions/receipt-ocr - Process receipt image for OCR
 router.post("/receipt-ocr", authenticate, processReceiptOCR);
 
+
 export default router;

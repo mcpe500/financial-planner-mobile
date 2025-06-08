@@ -21,6 +21,7 @@ apiRouter.get("/", (_req: Request, res: Response) => {
 apiRouter.use("/api/auth", authRoutes);
 apiRouter.use("/api/profile", profileRoutes);
 apiRouter.use("/api/transactions", transactionRoutes);
+apiRouter.use("/api/receipts", transactionRoutes);
 // apiRouter.use("/api/account", accountApiRoutes);
 
 // Web routes
