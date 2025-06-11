@@ -9,10 +9,12 @@ import com.example.financialplannerapp.data.Converters
 import com.example.financialplannerapp.data.local.dao.UserProfileDao
 import com.example.financialplannerapp.data.local.dao.AppSettingsDao
 import com.example.financialplannerapp.data.local.dao.CategoryDao
+import com.example.financialplannerapp.data.local.dao.ReceiptTransactionDao
 import com.example.financialplannerapp.data.local.dao.SecuritySettingsDao
 import com.example.financialplannerapp.data.local.dao.TransactionDao
 import com.example.financialplannerapp.data.local.model.AppSettingsEntity
 import com.example.financialplannerapp.data.local.model.CategoryEntity
+import com.example.financialplannerapp.data.local.model.ReceiptTransactionEntity
 import com.example.financialplannerapp.data.local.model.SecurityEntity
 import com.example.financialplannerapp.data.local.model.TransactionEntity
 import com.example.financialplannerapp.data.local.model.UserProfileEntity
@@ -23,9 +25,10 @@ import com.example.financialplannerapp.data.local.model.UserProfileEntity
         UserProfileEntity::class,
         SecurityEntity::class,
         CategoryEntity::class,
-        TransactionEntity::class
+        TransactionEntity::class,
+        ReceiptTransactionEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -35,6 +38,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun securitySettingsDao(): SecuritySettingsDao
     abstract fun categoryDao(): CategoryDao
     abstract fun transactionDao(): TransactionDao
+    abstract fun receiptTransactionDao(): ReceiptTransactionDao
 
     companion object {
         @Volatile

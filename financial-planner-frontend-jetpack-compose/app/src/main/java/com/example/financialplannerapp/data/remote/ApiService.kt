@@ -4,6 +4,7 @@ import com.example.financialplannerapp.data.model.LoginRequest
 import com.example.financialplannerapp.data.model.LoginResponse
 import com.example.financialplannerapp.data.model.RegisterRequest
 import com.example.financialplannerapp.data.model.RegisterResponse
+import com.example.financialplannerapp.data.model.StoreTransactionResponse
 import com.example.financialplannerapp.data.model.UserData
 import com.example.financialplannerapp.data.model.ReceiptOCRRequest
 import com.example.financialplannerapp.data.model.ReceiptOCRResponse
@@ -69,4 +70,10 @@ interface ApiService {
         @Header("Authorization") authHeader: String,
         @Body request: ReceiptOCRRequest
     ): Response<ReceiptOCRResponse>
+    
+    // Store transaction from OCR
+    @POST("api/transactions/store")
+    suspend fun storeTransactionFromOCR(
+        @Body request: Map<String, Any?>
+    ): Response<StoreTransactionResponse>
 }

@@ -138,7 +138,9 @@ fun ScanReceiptScreen(navController: NavController) {
     val viewModel: ScanReceiptViewModel = viewModel(
         factory = ScanReceiptViewModelFactory(
             receiptService = application.appContainer.receiptService,
-            tokenManager = application.appContainer.tokenManager
+            tokenManager = application.appContainer.tokenManager,
+            receiptTransactionRepository = application.appContainer.receiptTransactionRepository,
+            transactionRepository = application.appContainer.transactionRepository
         )
     )
     
@@ -309,8 +311,18 @@ fun ScanReceiptScreen(navController: NavController) {
 
                         Button(
                             onClick = {
-                                // Navigate to add transaction with OCR data
-                                navController.navigate("add_transaction_from_ocr")
+                                // Store the OCR data both locally and remotely
+                                viewModel.storeOCRData(currentState.data)
+                                
+                                // Show success message and navigate back
+                                Toast.makeText(
+                                    context, 
+                                    "Receipt data saved successfully!", 
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                
+                                // Navigate back to transactions or home
+                                navController.popBackStack()
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(

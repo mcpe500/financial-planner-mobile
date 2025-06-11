@@ -3,6 +3,8 @@ package com.example.financialplannerapp.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.financialplannerapp.TokenManager
+import com.example.financialplannerapp.data.repository.ReceiptTransactionRepository
+import com.example.financialplannerapp.data.repository.TransactionRepository
 import com.example.financialplannerapp.data.service.ReceiptService
 
 /**
@@ -10,7 +12,9 @@ import com.example.financialplannerapp.data.service.ReceiptService
  */
 class ScanReceiptViewModelFactory(
     private val receiptService: ReceiptService,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val receiptTransactionRepository: ReceiptTransactionRepository,
+    private val transactionRepository: TransactionRepository
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -18,7 +22,9 @@ class ScanReceiptViewModelFactory(
         if (modelClass.isAssignableFrom(ScanReceiptViewModel::class.java)) {
             return ScanReceiptViewModel(
                 receiptService = receiptService,
-                tokenManager = tokenManager
+                tokenManager = tokenManager,
+                receiptTransactionRepository = receiptTransactionRepository,
+                transactionRepository = transactionRepository
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

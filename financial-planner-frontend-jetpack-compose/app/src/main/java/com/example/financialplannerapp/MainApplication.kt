@@ -12,6 +12,8 @@ import com.example.financialplannerapp.data.repository.AuthRepository
 import com.example.financialplannerapp.data.repository.AuthRepositoryImpl
 import com.example.financialplannerapp.data.repository.CategoryRepository
 import com.example.financialplannerapp.data.repository.CategoryRepositoryImpl
+import com.example.financialplannerapp.data.repository.ReceiptTransactionRepository
+import com.example.financialplannerapp.data.repository.ReceiptTransactionRepositoryImpl
 import com.example.financialplannerapp.data.repository.SecurityRepository
 import com.example.financialplannerapp.data.repository.SecurityRepositoryImpl
 import com.example.financialplannerapp.data.repository.TransactionRepository
@@ -77,6 +79,7 @@ class AppContainer(private val applicationContext: Context) {
 
     // DAOs from AppDatabase - only use DAOs that actually exist
     private val transactionDao by lazy { appDatabase.transactionDao() }
+    private val receiptTransactionDao by lazy { appDatabase.receiptTransactionDao() }
     private val categoryDao by lazy { appDatabase.categoryDao() }
     private val appSettingsDao by lazy { appDatabase.appSettingsDao() }
     private val userProfileDao by lazy { appDatabase.userProfileDao() }
@@ -110,6 +113,10 @@ class AppContainer(private val applicationContext: Context) {
 
     val transactionRepository: TransactionRepository by lazy {
         TransactionRepositoryImpl(transactionDao, apiService)
+    }
+
+    val receiptTransactionRepository: ReceiptTransactionRepository by lazy {
+        ReceiptTransactionRepositoryImpl(receiptTransactionDao, transactionDao, apiService)
     }
 
     private val userProfileDatabaseHelper: UserProfileDatabaseHelper by lazy {

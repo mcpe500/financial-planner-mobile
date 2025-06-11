@@ -138,6 +138,90 @@ class Database {
 			throw error;
 		}
 	}
+
+	/**
+	 * Transaction methods
+	 */
+	async createTransaction(transactionData: any): Promise<any> {
+		try {
+			console.log('Creating transaction in database:', transactionData);
+			
+			const { data, error } = await this.supabase
+				.from('transactions')
+				.insert([transactionData])
+				.select()
+				.single();
+
+			if (error) {
+				console.error('Supabase error creating transaction:', error);
+				throw error;
+			}
+
+			console.log('Transaction created successfully:', data);
+			return data;
+		} catch (error) {
+			console.error('Error in createTransaction:', error);
+			throw error;
+		}
+	}
+
+	async getTransactionsByUserId(userId: string): Promise<any[]> {
+		try {
+			const { data, error } = await this.supabase
+				.from('transactions')
+				.select('*')
+				.eq('user_id', userId)
+				.order('created_at', { ascending: false });
+
+			if (error) {
+				console.error('Supabase error fetching transactions:', error);
+				throw error;
+			}
+
+			return data || [];
+		} catch (error) {
+			console.error('Error in getTransactionsByUserId:', error);
+			throw error;
+		}
+	}
+
+	async updateTransaction(transactionId: string, updateData: any): Promise<any | null> {
+		try {
+			const { data, error } = await this.supabase
+				.from('transactions')
+				.update(updateData)
+				.eq('id', transactionId)
+				.select()
+				.single();
+
+			if (error) {
+				console.error('Supabase error updating transaction:', error);
+				throw error;
+			}
+
+			return data;
+		} catch (error) {
+			console.error('Error in updateTransaction:', error);
+			throw error;
+		}
+	}
+
+	async deleteTransaction(transactionId: string): Promise<void> {
+		try {
+			const { error } = await this.supabase
+				.from('transactions')
+				.delete()
+				.eq('id', transactionId);
+
+			if (error) {
+				console.error('Supabase error deleting transaction:', error);
+				throw error;
+			}
+		} catch (error) {
+			console.error('Error in deleteTransaction:', error);
+			throw error;
+		}
+	}
 }
 
 export default Database.getInstance();
