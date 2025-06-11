@@ -1,51 +1,6 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../types/request.types";
-
-// Mock OCR service - replace with actual OCR service integration
-class MockOCRService {
-    static async processReceipt(imageBase64: string): Promise<any> {
-        // Simulate processing time
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Mock OCR response
-        return {
-            total_amount: Math.round((Math.random() * 100 + 10) * 100) / 100,
-            merchant_name: this.getRandomMerchant(),
-            date: new Date().toISOString().split('T')[0],
-            items: [
-                {
-                    name: "Coffee",
-                    price: 4.50,
-                    quantity: 1,
-                    category: "Food & Drink"
-                },
-                {
-                    name: "Sandwich",
-                    price: 8.99,
-                    quantity: 1,
-                    category: "Food & Drink"
-                }
-            ],
-            location: "Downtown Store",
-            confidence: 0.95,
-            receipt_id: `receipt_${Date.now()}`
-        };
-    }
-
-    private static getRandomMerchant(): string {
-        const merchants = [
-            "Starbucks",
-            "McDonald's",
-            "Target",
-            "Walmart",
-            "CVS Pharmacy",
-            "Whole Foods",
-            "Best Buy",
-            "Home Depot"
-        ];
-        return merchants[Math.floor(Math.random() * merchants.length)];
-    }
-}
+import { genAIService } from "../services/genAI.service";
 
 export const processReceiptOCR = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -80,8 +35,8 @@ export const processReceiptOCR = async (req: AuthRequest, res: Response): Promis
         console.log(`Processing OCR for user: ${user_id}`);
         console.log(`Image data length: ${image_base64.length} characters`);
 
-        // Process image with OCR service
-        const ocrResult = await MockOCRService.processReceipt(image_base64);
+        // Process image with GenAI service
+        const ocrResult = await genAIService.processReceiptOCR(image_base64);
 
         console.log(`OCR processing completed for user: ${user_id}`);
         console.log(`Extracted data:`, {

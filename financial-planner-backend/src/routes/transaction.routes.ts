@@ -7,5 +7,7 @@ const router = Router();
 // POST /api/transactions/receipt-ocr - Process receipt image for OCR
 router.post("/receipt-ocr", authenticate, processReceiptOCR);
 
+// POST /api/receipts/process - Process receipts endpoint (for Android app)
+router.post("/process", authenticate, processReceiptOCR);
 
 export default router;
