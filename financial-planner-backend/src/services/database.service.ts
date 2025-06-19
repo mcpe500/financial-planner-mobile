@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { config } from "../config/config";
 import { UserType, UserProfileUpdatePayload } from "../types/user.types";
+import { TransactionPayload, TransactionType } from "../types/transaction.types";
 
 class Database {
 	private static instance: Database;
@@ -137,6 +138,46 @@ class Database {
 			console.error('Error in updateUserProfile:', error);
 			throw error;
 		}
+	}
+
+	// Transaction methods
+	async createTransaction(userId: string, payload: TransactionPayload): Promise<TransactionType> {
+		const { data, error } = await this.supabase
+			.from('transactions')
+			.insert([{ ...payload, user_id: userId }])
+			.select()
+			.single();
+
+		if (error) {
+			throw error;
+		}
+		return data as TransactionType;
+	}
+
+	async getUserTransactions(userId: string): Promise<TransactionType[]> {
+		const { data, error } = await this.supabase
+			.from('transactions')
+			.select('*')
+			.eq('user_id', userId)
+			.order('date', { ascending: false });
+
+		if (error) {
+			throw error;
+		}
+		return data as TransactionType[];
+	}
+
+	async getTransactionById(id: string): Promise<TransactionType | null> {
+		const { data, error } = await this.supabase
+			.from('transactions')
+			.select('*')
+			.eq('id', id)
+			.single();
+
+		if (error && error.code !== 'PGRST116') {
+			throw error;
+		}
+		return data as TransactionType | null;
 	}
 }
 
