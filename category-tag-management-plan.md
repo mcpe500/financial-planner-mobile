@@ -1,84 +1,116 @@
-# Category and Tag Management Implementation Plan
+# Financial Planner - Category & Tag Management Master Plan
 
-## Overview
-This document outlines the implementation plan for adding dynamic category and tag management to the financial planner application. The system will support both SQLite and Supabase databases, with unlimited category hierarchy and flexible tagging.
+## 1. Architecture Overview
 
-## Database Schema
+```mermaid
+graph TD
+    A[Client] --> B[API Gateway]
+    B --> C[Transaction Controller]
+    C --> D[Database Service]
+    D --> E[Local Storage Adapter]
+    D --> F[Supabase Adapter]
+    C --> G[Category Controller]
+    C --> H[Tag Controller]
+    G --> D
+    H --> D
+```
+
+## 2. Database Schema Design
 
 ### Categories Table
-```sql
-CREATE TABLE categories (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
-    parent_id UUID REFERENCES categories(id)
-);
-```
-
-### Tags Table
-```sql
-CREATE TABLE tags (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL
-);
-```
-
-### Transaction Tags Join Table
-```sql
-CREATE TABLE transaction_tags (
-    transaction_id UUID REFERENCES transactions(id),
-    tag_id UUID REFERENCES tags(id),
-    PRIMARY KEY (transaction_id, tag_id)
-);
-```
-
-## API Endpoints
-
-### Category Endpoints
-- `POST /categories` - Create new category
-- `GET /categories` - Get category hierarchy
-- `PUT /categories/:id` - Update category
-- `DELETE /categories/:id` - Delete category
-
-### Tag Endpoints
-- `POST /tags` - Create new tag
-- `GET /tags` - List all tags
-- `POST /transactions/:id/tags` - Assign tags to transaction
-
-## Service Layer
-
-### CategoryService
-- `createCategory(name: string, parentId?: string)`
-- `getCategoryTree()`
-- `updateCategory(id: string, name: string)`
-- `deleteCategory(id: string)`
-
-### TagService
-- `createTag(name: string)`
-- `getTags()`
-- `assignTagsToTransaction(transactionId: string, tagIds: string[])`
-
-## Dual Database Support
-The system will support both SQLite and Supabase through a database adapter pattern:
-
 ```typescript
-interface DatabaseAdapter {
-    createCategory(category: Category): Promise<Category>;
-    getCategoryTree(): Promise<CategoryTree>;
-    // ... other methods
+interface Category {
+    id: string;
+    name: string;
+    parent_id?: string; // For sub-categories
+    user_id: string;
+    created_at: string;
+    updated_at: string;
 }
 ```
 
-Implementation steps:
-1. Create abstract base adapter
-2. Implement SQLiteAdapter
-3. Implement SupabaseAdapter
-4. Use environment variable to select adapter
+### Tags Table
+```typescript
+interface Tag {
+    id: string;
+    name: string;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+}
+```
 
-## Integration with Transactions
-- Update Transaction model to support multiple tags
-- Add tag assignment functionality to transaction creation/update
-- Include tags in transaction retrieval
+### Transaction Tags Table
+```typescript
+interface TransactionTag {
+    transaction_id: string;
+    tag_id: string;
+}
+```
 
-## Next Steps
-1. Review and approve this plan
-2. Switch to Code mode for implementation
+## 3. API Endpoints
+
+### Categories
+- `POST /categories` - Create new category
+- `GET /categories` - Get all categories
+- `GET /categories/:id` - Get category by ID
+- `PUT /categories/:id` - Update category
+- `DELETE /categories/:id` - Delete category
+
+### Tags
+- `POST /tags` - Create new tag
+- `GET /tags` - Get all tags
+- `PUT /tags/:id` - Update tag
+- `DELETE /tags/:id` - Delete tag
+
+### Transaction Tags
+- `POST /transactions/:id/tags` - Add tags to transaction
+- `DELETE /transactions/:id/tags` - Remove tags from transaction
+
+## 4. Business Logic
+
+### Category Management
+- Validate category hierarchy (prevent circular references)
+- Cascade delete sub-categories when parent is deleted
+- Unique name validation per user
+
+### Tag Management
+- Unique name validation per user
+- Automatic cleanup of unused tags
+
+### Transaction Splitting
+- Allow splitting transaction amount across multiple categories
+- Validate total split amount equals transaction amount
+- Create child transactions for each split
+
+## 5. Error Handling
+- Custom error classes for different scenarios
+- Detailed error messages in development mode
+- Consistent error response format
+```typescript
+interface ErrorResponse {
+    success: false;
+    message: string;
+    error?: string; // Only in development
+}
+```
+
+## 6. Integration
+- Extend existing TransactionType interface
+```typescript
+interface TransactionType {
+    // ... existing fields
+    category_id: string;
+    tags: string[];
+    parent_transaction_id?: string; // For split transactions
+}
+```
+- Add new methods to DatabaseService
+```typescript
+class DatabaseService {
+    // ... existing methods
+    createCategory(category: Category): Promise<Category>;
+    getCategoryTree(userId: string): Promise<Category[]>;
+    assignTagsToTransaction(transactionId: string, tagIds: string[]): Promise<void>;
+    splitTransaction(transactionId: string, splits: Split[]): Promise<Transaction[]>;
+}

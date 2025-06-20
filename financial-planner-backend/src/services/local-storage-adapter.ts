@@ -23,7 +23,9 @@ export class LocalStorageAdapter implements DatabaseAdapter {
         const categories = this.getCategories();
         const newCategory: Category = {
             id: crypto.randomUUID(),
-            ...category
+            ...category,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
         categories.push(newCategory);
         this.saveCategories(categories);
@@ -80,7 +82,9 @@ export class LocalStorageAdapter implements DatabaseAdapter {
         const tags = await this.getTags();
         const newTag: Tag = {
             id: crypto.randomUUID(),
-            ...tag
+            ...tag,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
         tags.push(newTag);
         this.saveTags(tags);

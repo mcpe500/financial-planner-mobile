@@ -2,6 +2,12 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { config } from "../config/config";
 import { UserType, UserProfileUpdatePayload } from "../types/user.types";
 import { TransactionPayload, TransactionType } from "../types/transaction.types";
+import { 
+    Category,
+    CategoryTree,
+    CreateCategoryPayload,
+    UpdateCategoryPayload
+} from "../types/category.types";
 import { DatabaseAdapter } from "./database-adapter.interface";
 import { LocalStorageAdapter } from "./local-storage-adapter";
 
@@ -17,59 +23,61 @@ class Database {
 			this.adapter = {
 				// Implement DatabaseAdapter methods using supabase
 				createCategory: async (category) => {
-					const { data, error } = await supabase
-						.from('categories')
-						.insert([category])
-						.select()
-						.single();
-					if (error) throw error;
-					return data;
+				    const { data, error } = await supabase
+				        .from('categories')
+				        .insert([category])
+				        .select()
+				        .single();
+				    if (error) throw error;
+				    return data;
 				},
-				getCategoryTree: async () => {
-					const { data, error } = await supabase
-						.from('categories')
-						.select('*');
-					if (error) throw error;
-					return data || [];
+				getCategoryTree: async (userId) => {
+				    const { data, error } = await supabase
+				        .from('categories')
+				        .select('*')
+				        .eq('user_id', userId);
+				    if (error) throw error;
+				    return data || [];
 				},
 				updateCategory: async (id, payload) => {
-					const { data, error } = await supabase
-						.from('categories')
-						.update(payload)
-						.eq('id', id)
-						.select()
-						.single();
-					if (error) throw error;
-					return data;
+				    const { data, error } = await supabase
+				        .from('categories')
+				        .update(payload)
+				        .eq('id', id)
+				        .select()
+				        .single();
+				    if (error) throw error;
+				    return data;
 				},
 				deleteCategory: async (id) => {
-					const { error } = await supabase
-						.from('categories')
-						.delete()
-						.eq('id', id);
-					if (error) throw error;
+				    const { error } = await supabase
+				        .from('categories')
+				        .delete()
+				        .eq('id', id);
+				    if (error) throw error;
 				},
 				createTag: async (tag) => {
-					const { data, error } = await supabase
-						.from('tags')
-						.insert([tag])
-						.select()
-						.single();
-					if (error) throw error;
-					return data;
+				    const { data, error } = await supabase
+				        .from('tags')
+				        .insert([tag])
+				        .select()
+				        .single();
+				    if (error) throw error;
+				    return data;
 				},
-				getTags: async () => {
-					const { data, error } = await supabase
-						.from('tags')
-						.select('*');
-					if (error) throw error;
-					return data || [];
+				getTags: async (userId) => {
+				    const { data, error } = await supabase
+				        .from('tags')
+				        .select('*')
+				        .eq('user_id', userId);
+				    if (error) throw error;
+				    return data || [];
 				},
 				assignTagsToTransaction: async (assignments) => {
-					const { error } = await supabase
-						.from('transaction_tags')
-						.insert(assignments);
-					if (error) throw error;
+				    const { error } = await supabase
+				        .from('transaction_tags')
+				        .insert(assignments);
+				    if (error) throw error;
 				},
 				
 				// Transaction methods
@@ -211,6 +219,23 @@ class Database {
 			console.error('Error in updateUserProfile:', error);
 			throw error;
 		}
+	}
+
+	// Category methods
+	async createCategory(category: CreateCategoryPayload): Promise<Category> {
+	    return await this.adapter.createCategory(category);
+	}
+
+	async getCategoryTree(userId: string): Promise<CategoryTree[]> {
+	    return await this.adapter.getCategoryTree(userId);
+	}
+
+	async updateCategory(id: string, payload: UpdateCategoryPayload): Promise<Category> {
+	    return await this.adapter.updateCategory(id, payload);
+	}
+
+	async deleteCategory(id: string): Promise<void> {
+	    return await this.adapter.deleteCategory(id);
 	}
 
 	// Transaction methods
