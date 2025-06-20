@@ -5,7 +5,6 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.example.financialplannerapp.data.Converters
 import com.example.financialplannerapp.data.local.dao.UserProfileDao
 import com.example.financialplannerapp.data.local.dao.AppSettingsDao
 import com.example.financialplannerapp.data.local.dao.CategoryDao

@@ -15,11 +15,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.financialplannerapp.core.util.toCurrency
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.data.local.model.TransactionEntity
+import com.example.financialplannerapp.ui.viewmodel.TransactionViewModelFactory
 
 // Color scheme
 private val BibitGreen = Color(0xFF4CAF50)
@@ -80,6 +85,14 @@ private fun TransactionMainContent(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    val viewModel: TransactionViewModel = viewModel(
+        factory = TransactionViewModelFactory(
+            transactionRepository = application.appContainer.transactionRepository
+        )
+    )
+    val state by viewModel.state
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -89,15 +102,8 @@ private fun TransactionMainContent(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         // Quick Stats Overview
-        val userId = "current_user_id" // TODO: Replace with actual user ID
-        val viewModel: TransactionViewModel = hiltViewModel()
-
-        LaunchedEffect(Unit) {
-            viewModel.loadTransactions(userId)
-        }
-
         when {
-            viewModel.isLoading.value -> {
+            state.isLoading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -105,7 +111,31 @@ private fun TransactionMainContent(
                     CircularProgressIndicator()
                 }
             }
-            viewModel.transactions.value.isEmpty() -> {
+            state.transactions.isEmpty() -> {
+                EmptyTransactionsCard()
+            }
+            else -> {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    TransactionStatsCard(state.transactions)
+                    TransactionActionsCard(navController)
+                    RecentTransactionsDetailedCard(
+                        transactions = state.transactions.take(5),
+                        onTransactionClick = { transaction ->
+                            navController.navigate("transaction_detail/${transaction.id}")
+                        },
+                        navController = navController
+                    )
+                    MonthlyTransactionSummary(state.transactions)
+                    CategoriesBreakdownCard(state.transactions)
+                    Spacer(modifier = Modifier.height(80.dp))
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun EmptyTransactionsCard() {
     Column(
@@ -136,44 +166,11 @@ private fun EmptyTransactionsCard() {
         )
     }
 }
-                EmptyTransactionsCard()
-            }
-            else -> {
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    TransactionStatsCard(viewModel.transactions.value)
-                    
-                    // Transaction Actions
-                    TransactionActionsCard(navController)
-                    
-                    // Recent Transactions (Detailed)
-                    RecentTransactionsDetailedCard(
-                        transactions = viewModel.transactions.value.take(5),
-                        onTransactionClick = { transaction ->
-                            navController.navigate("transaction_detail/${transaction.id}")
-                        }
-                    )
-                    
-                    // Monthly Summary
-                    MonthlyTransactionSummary(viewModel.transactions.value)
-                    
-                    // Categories Breakdown
-                    CategoriesBreakdownCard(viewModel.transactions.value)
-                    
-                    // Bottom spacing for FAB
-                    Spacer(modifier = Modifier.height(80.dp))
-                }
-            }
-        }
-    }
-}
 
 @Composable
-private fun TransactionStatsCard(transactions: List<Transaction>) {
-    val income = transactions.filter { it.type == "income" }.sumOf { it.amount }
-    val expenses = transactions.filter { it.type == "expense" }.sumOf { it.amount }
+private fun TransactionStatsCard(transactions: List<com.example.financialplannerapp.data.local.model.TransactionEntity>) {
+    val income = transactions.filter { it.type.equals("INCOME", true) }.sumOf { it.amount }
+    val expenses = transactions.filter { it.type.equals("EXPENSE", true) }.sumOf { it.amount }
     val balance = income - expenses
     Card(
         modifier = Modifier
@@ -194,7 +191,6 @@ private fun TransactionStatsCard(transactions: List<Transaction>) {
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -344,8 +340,9 @@ private fun TransactionActionItem(
 
 @Composable
 private fun RecentTransactionsDetailedCard(
-    transactions: List<Transaction>,
-    onTransactionClick: (Transaction) -> Unit
+    transactions: List<TransactionEntity>,
+    onTransactionClick: (TransactionEntity) -> Unit,
+    navController: NavController
 ) {
     Card(
         modifier = Modifier
@@ -380,16 +377,14 @@ private fun RecentTransactionsDetailedCard(
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
             transactions.forEach { transaction ->
                 TransactionDetailedItem(
-                    title = transaction.merchantName ?: transaction.description ?: "Transaction",
+                    title = transaction.merchantName ?: transaction.note ?: "Transaction",
                     category = transaction.category,
                     amount = transaction.amount,
                     date = transaction.date.toString(),
-                    description = transaction.notes,
+                    description = transaction.note,
                     onClick = { onTransactionClick(transaction) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -454,7 +449,7 @@ private fun TransactionDetailedItem(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Text(
-                    text = description,
+                    text = description?:"",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     modifier = Modifier.padding(top = 2.dp)
@@ -481,7 +476,7 @@ private fun TransactionDetailedItem(
 }
 
 @Composable
-private fun MonthlyTransactionSummary(transactions: List<Transaction>) {
+private fun MonthlyTransactionSummary(transactions: List<com.example.financialplannerapp.data.local.model.TransactionEntity>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -512,7 +507,7 @@ private fun MonthlyTransactionSummary(transactions: List<Transaction>) {
                     .mapValues { it.value.sumOf { t -> t.amount } }
                     .values.average()
                 val largestExpense = transactions
-                    .filter { it.type == "expense" }
+                    .filter { it.type.equals("EXPENSE", true) }
                     .maxByOrNull { it.amount }?.amount ?: 0.0
 
                 SummaryItem("Total Transactions", total.toString())
@@ -544,7 +539,7 @@ private fun SummaryItem(label: String, value: String) {
 }
 
 @Composable
-private fun CategoriesBreakdownCard(transactions: List<Transaction>) {
+private fun CategoriesBreakdownCard(transactions: List<com.example.financialplannerapp.data.local.model.TransactionEntity>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

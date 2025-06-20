@@ -164,16 +164,24 @@ class ReceiptTransactionRepositoryImpl constructor(
 
             // Create regular transaction from receipt data
             val transaction = TransactionEntity(
-                amount = receiptTransaction.totalAmount,
-                date = receiptTransaction.date,
-                description = "${receiptTransaction.merchantName} - Receipt Transaction",
-                categoryId = null, // You might want to map category names to IDs
-                type = if (receiptTransaction.totalAmount >= 0) "income" else "expense",
                 userId = receiptTransaction.userId,
+                amount = receiptTransaction.totalAmount,
+                type = if (receiptTransaction.totalAmount >= 0) "INCOME" else "EXPENSE",
+                date = receiptTransaction.date,
+                pocket = "Cash", // Default or infer if you have logic
+                category = receiptTransaction.category ?: "Other",
+                note = receiptTransaction.notes ?: "${receiptTransaction.merchantName} - Receipt Transaction",
+                tags = null, // Could parse from items/category if needed
+                isFromReceipt = true,
+                receiptId = receiptTransaction.receiptId,
+                merchantName = receiptTransaction.merchantName,
                 location = receiptTransaction.location,
                 receiptImagePath = null, // Could store image path if needed
-                tags = receiptTransaction.category?.let { "[$it]" }, // Convert category to tags
-                isRecurring = false
+                receiptConfidence = receiptTransaction.confidence,
+                isSynced = receiptTransaction.isSynced,
+                backendTransactionId = receiptTransaction.backendTransactionId,
+                createdAt = receiptTransaction.createdAt,
+                updatedAt = receiptTransaction.updatedAt
             )
 
             val transactionId = transactionDao.insertTransaction(transaction)

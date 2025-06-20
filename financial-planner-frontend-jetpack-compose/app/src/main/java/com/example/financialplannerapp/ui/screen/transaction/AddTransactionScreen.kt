@@ -1,5 +1,6 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.transaction
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,15 +15,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.semantics.Role
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.ui.viewmodel.AddTransactionViewModel
+import com.example.financialplannerapp.ui.viewmodel.AddTransactionViewModelFactory
+import java.text.SimpleDateFormat
+import java.util.*
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -35,6 +43,17 @@ private val ExpenseRed = Color(0xFFFF7043)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(navController: NavController) {
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    
+    val viewModel: AddTransactionViewModel = viewModel(
+        factory = AddTransactionViewModelFactory(
+            transactionRepository = application.appContainer.transactionRepository
+        )
+    )
+    
+    val state by viewModel.state
+    
     var transactionType by remember { mutableStateOf(TransactionType.EXPENSE) }
     var amount by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf("Today") }
@@ -43,6 +62,19 @@ fun AddTransactionScreen(navController: NavController) {
     var note by remember { mutableStateOf("") }
     var selectedTags by remember { mutableStateOf(setOf<String>()) }
     var hasAttachment by remember { mutableStateOf(false) }
+
+    // Handle state changes
+    LaunchedEffect(state) {
+        when {
+            state.isSuccess -> {
+                Toast.makeText(context, "Transaction saved successfully", Toast.LENGTH_SHORT).show()
+                navController.navigateUp()
+            }
+            state.error != null -> {
+                Toast.makeText(context, state.error, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -143,7 +175,7 @@ fun AddTransactionScreen(navController: NavController) {
                 onAttachmentChange = { hasAttachment = it }
             )
 
-            // Action Buttons
+            // Update Action Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -155,6 +187,7 @@ fun AddTransactionScreen(navController: NavController) {
                         note = ""
                         selectedTags = setOf()
                         hasAttachment = false
+                        viewModel.resetState()
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -169,16 +202,42 @@ fun AddTransactionScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        // Save transaction
-                        navController.navigateUp()
+                        val amountValue = amount.toDoubleOrNull()
+                        if (amountValue == null) {
+                            Toast.makeText(context, "Please enter a valid amount", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        
+                        val date = when (selectedDate) {
+                            "Today" -> Date()
+                            else -> SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate) ?: Date()
+                        }
+                        
+                        viewModel.createTransaction(
+                            amount = amountValue,
+                            type = transactionType.name,
+                            date = date,
+                            pocket = selectedPocket,
+                            category = selectedCategory,
+                            note = note.takeIf { it.isNotBlank() },
+                            tags = selectedTags.takeIf { it.isNotEmpty() }?.toList()
+                        )
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = BibitGreen,
                         contentColor = Color.White
-                    )
+                    ),
+                    enabled = !state.isLoading && amount.isNotBlank()
                 ) {
-                    Text("Save Transaction")
+                    if (state.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White
+                        )
+                    } else {
+                        Text("Save Transaction")
+                    }
                 }
             }
 
@@ -550,4 +609,8 @@ private fun AttachmentCard(
 @Composable
 fun AddTransactionScreenPreview() {
     AddTransactionScreen(rememberNavController())
+}
+
+enum class TransactionType {
+    INCOME, EXPENSE
 }

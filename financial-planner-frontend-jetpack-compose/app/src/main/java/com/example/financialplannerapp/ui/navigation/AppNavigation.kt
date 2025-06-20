@@ -20,7 +20,7 @@ import com.example.financialplannerapp.screen.settings.DataSyncSettingsScreen
 import com.example.financialplannerapp.screen.settings.BackupRestoreSettingsScreen
 import com.example.financialplannerapp.screen.settings.ContactSupportScreen
 import com.example.financialplannerapp.screen.settings.HelpCenterScreen
-import com.example.financialplannerapp.screen.AddTransactionScreen
+import com.example.financialplannerapp.ui.screen.transaction.AddTransactionScreen
 import com.example.financialplannerapp.ui.screen.transaction.ScanReceiptScreen
 import com.example.financialplannerapp.screen.TransactionHistoryScreen
 import com.example.financialplannerapp.screen.VoiceInputScreen

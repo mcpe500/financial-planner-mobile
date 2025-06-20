@@ -112,7 +112,7 @@ class AppContainer(private val applicationContext: Context) {
     }
 
     val transactionRepository: TransactionRepository by lazy {
-        TransactionRepositoryImpl(transactionDao, apiService)
+        TransactionRepositoryImpl(transactionDao)
     }
 
     val receiptTransactionRepository: ReceiptTransactionRepository by lazy {
