@@ -163,7 +163,9 @@ private fun DashboardContent(
         }
 
         // Upcoming Bills Reminder
-        UpcomingBillsCard()
+        navController?.let { nav ->
+            UpcomingBillsCard(navController = nav)
+        }
 
         // Bottom spacing for FAB
         Spacer(modifier = Modifier.height(100.dp))
@@ -629,11 +631,12 @@ private fun AccountBalanceCard() {
 }
 
 @Composable
-private fun UpcomingBillsCard() {
+private fun UpcomingBillsCard(navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(20.dp)),
+            .shadow(6.dp, RoundedCornerShape(20.dp))
+            .clickable { navController.navigate("bills") },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

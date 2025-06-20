@@ -22,8 +22,11 @@ import com.example.financialplannerapp.screen.settings.ContactSupportScreen
 import com.example.financialplannerapp.screen.settings.HelpCenterScreen
 import com.example.financialplannerapp.ui.screen.transaction.AddTransactionScreen
 import com.example.financialplannerapp.ui.screen.transaction.ScanReceiptScreen
-import com.example.financialplannerapp.screen.TransactionHistoryScreen
+import com.example.financialplannerapp.ui.screen.transaction.TransactionHistoryScreen
 import com.example.financialplannerapp.screen.VoiceInputScreen
+import com.example.financialplannerapp.ui.screen.bill.AddRecurringBillScreen
+import com.example.financialplannerapp.ui.screen.bill.BillCalendarScreen
+import com.example.financialplannerapp.ui.screen.bill.RecurringBillsMainScreen
 import com.example.financialplannerapp.ui.screen.transaction.TransactionMainScreen
 
 @Composable
@@ -107,10 +110,24 @@ fun AppNavigation(
         composable("contact_support") {
             ContactSupportScreen(navController = navController)
         }
-        
-        // Transaction Screens
+
         composable("transactions") {
             TransactionMainScreen(navController = navController)
+        }
+
+        composable("bills") {
+            RecurringBillsMainScreen(navController = navController)
+        }
+
+        composable("add_bill") {
+            AddRecurringBillScreen(navController = navController)
+        }
+        composable("bill_calendar") {
+            BillCalendarScreen(navController = navController)
+        }
+        composable("bill_details/{billId}") { backStackEntry ->
+            val billId = backStackEntry.arguments?.getString("billId")
+            AddRecurringBillScreen(navController = navController, billId = billId)
         }
         
         composable("add_transaction") {

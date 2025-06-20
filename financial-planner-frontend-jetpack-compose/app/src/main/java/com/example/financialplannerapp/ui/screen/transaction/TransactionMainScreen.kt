@@ -24,6 +24,7 @@ import androidx.navigation.NavController
 import com.example.financialplannerapp.core.util.toCurrency
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.data.local.model.TransactionEntity
+import com.example.financialplannerapp.ui.viewmodel.TransactionViewModel
 import com.example.financialplannerapp.ui.viewmodel.TransactionViewModelFactory
 
 // Color scheme
@@ -101,7 +102,8 @@ private fun TransactionMainContent(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // Quick Stats Overview
+        // Always show quick actions
+        TransactionActionsCard(navController)
         when {
             state.isLoading -> {
                 Box(
@@ -119,7 +121,6 @@ private fun TransactionMainContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     TransactionStatsCard(state.transactions)
-                    TransactionActionsCard(navController)
                     RecentTransactionsDetailedCard(
                         transactions = state.transactions.take(5),
                         onTransactionClick = { transaction ->

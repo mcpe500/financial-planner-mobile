@@ -2,8 +2,6 @@ package com.example.financialplannerapp.data.local.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
-import com.example.financialplannerapp.data.Converters
 import java.util.Date
 
 @Entity(tableName = "bills")

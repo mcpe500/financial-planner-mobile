@@ -2,16 +2,16 @@ package com.example.financialplannerapp.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.financialplannerapp.data.repository.TransactionRepository
+import com.example.financialplannerapp.data.repository.BillRepository
 
-class TransactionViewModelFactory(
-    private val transactionRepository: TransactionRepository
+class BillViewModelFactory(
+    private val billRepository: BillRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(TransactionViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(BillViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TransactionViewModel(transactionRepository) as T
+            return BillViewModel(billRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
-} 
+}

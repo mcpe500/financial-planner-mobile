@@ -610,7 +610,3 @@ private fun AttachmentCard(
 fun AddTransactionScreenPreview() {
     AddTransactionScreen(rememberNavController())
 }
-
-enum class TransactionType {
-    INCOME, EXPENSE
-}

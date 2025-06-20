@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.transaction
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -7,25 +7,35 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.data.local.model.TransactionEntity
 import com.example.financialplannerapp.ui.viewmodel.TransactionViewModel
+import com.example.financialplannerapp.ui.viewmodel.TransactionViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.shadow
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.CallSplit
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -54,12 +64,15 @@ enum class TransactionType {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TransactionHistoryScreen(
-    navController: NavController,
-    transactionViewModel: TransactionViewModel = viewModel()
-) {
-    val localTransactions by transactionViewModel.localTransactions.collectAsState()
-    val remoteUiState by transactionViewModel.remoteUiState.collectAsState()
+fun TransactionHistoryScreen(navController: NavController) {
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    val viewModel: TransactionViewModel = viewModel(
+        factory = TransactionViewModelFactory(
+            transactionRepository = application.appContainer.transactionRepository
+        )
+    )
+    val state by viewModel.state
 
     Scaffold(
         topBar = {
@@ -75,64 +88,76 @@ fun TransactionHistoryScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                actions = {
-                    IconButton(onClick = { transactionViewModel.syncFromRemote() }) {
-                        Icon(Icons.Default.Sync, contentDescription = "Sync")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White,
                     titleContentColor = DarkGray
                 )
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { /* TODO: Show add transaction dialog/form */ },
-                containerColor = BibitGreen,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Transaction")
-            }
-        }
+        containerColor = SoftGray
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SoftGray)
-                .padding(paddingValues)
-        ) {
-            // Status sync
-            when (remoteUiState) {
-                is com.example.financialplannerapp.ui.viewmodel.TransactionUiState.Loading -> {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        Text(" Syncing...", color = MediumGray, modifier = Modifier.align(Alignment.CenterVertically))
-                    }
-                }
-                is com.example.financialplannerapp.ui.viewmodel.TransactionUiState.Error -> {
-                    val message = (remoteUiState as com.example.financialplannerapp.ui.viewmodel.TransactionUiState.Error).message
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                        Icon(Icons.Default.Error, contentDescription = null, tint = ExpenseRed)
-                        Text(" Sync error: $message", color = ExpenseRed, modifier = Modifier.align(Alignment.CenterVertically))
-                    }
-                }
-                is com.example.financialplannerapp.ui.viewmodel.TransactionUiState.Success -> {
-                    // Optionally show success message
-                }
-                else -> {}
+        if (state.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
-
-            // Transaction List (from Room)
+        } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(SoftGray)
+                    .padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(localTransactions) { transaction: TransactionEntity ->
-                    // Tampilkan TransactionItem sesuai kebutuhan
-                    // TransactionItem(transaction = transaction, ...)
+                items(state.transactions) { transaction ->
+                    TransactionHistoryItem(transaction)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TransactionHistoryItem(transaction: TransactionEntity) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(transaction.date),
+                        fontSize = 14.sp,
+                        color = DarkGray
+                    )
+                    Text(
+                        text = transaction.category,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    transaction.note?.let {
+                        Text(
+                            text = it,
+                            fontSize = 13.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+                Text(
+                    text = (if (transaction.type.equals("INCOME", true)) "+" else "-") + transaction.amount.toString(),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (transaction.type.equals("INCOME", true)) BibitGreen else Color.Red
+                )
             }
         }
     }
@@ -464,10 +489,4 @@ private fun generateMockTransactions(): List<Transaction> {
             isSplit = false
         )
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TransactionHistoryScreenPreview() {
-    TransactionHistoryScreen(rememberNavController())
 }

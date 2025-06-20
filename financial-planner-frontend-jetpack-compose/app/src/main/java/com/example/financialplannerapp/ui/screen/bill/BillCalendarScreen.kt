@@ -32,15 +32,19 @@ import com.example.financialplannerapp.ui.viewmodel.BillViewModel
 import com.example.financialplannerapp.data.model.BillPayment
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import androidx.navigation.NavController
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.ui.viewmodel.BillViewModelFactory
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BillCalendarScreen(
-    billViewModel: BillViewModel = viewModel(),
-    onNavigateBack: () -> Unit = {},
-    onNavigateToAdd: () -> Unit = {},
-    onBillClick: (String) -> Unit = {}
-) {
+fun BillCalendarScreen(navController: NavController) {
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    val billViewModel: BillViewModel = viewModel(
+        factory = BillViewModelFactory(application.appContainer.billRepository)
+    )
     var currentMonth by remember { mutableStateOf(Calendar.getInstance()) }
     var selectedDate by remember { mutableStateOf<Date?>(null) }
 
@@ -107,7 +111,7 @@ fun BillCalendarScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Kembali",
@@ -116,7 +120,7 @@ fun BillCalendarScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNavigateToAdd) {
+                    IconButton(onClick = { navController.navigate("add_bill") }) {
                         Icon(
                             Icons.Default.Add,
                             contentDescription = "Tambah Tagihan",
@@ -324,7 +328,7 @@ fun BillCalendarScreen(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable { onBillClick(bill.id) }
+                                            .clickable { navController.navigate("bill_details/${bill.id}") }
                                             .background(
                                                 color = Color(0xFFF8F9FA),
                                                 shape = RoundedCornerShape(8.dp)

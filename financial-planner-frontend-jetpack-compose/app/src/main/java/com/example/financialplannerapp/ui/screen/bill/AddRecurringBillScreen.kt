@@ -24,20 +24,27 @@ import com.example.financialplannerapp.data.model.RepeatCycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.financialplannerapp.ui.viewmodel.BillViewModel
 import com.example.financialplannerapp.data.local.model.BillEntity
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.ui.viewmodel.BillViewModelFactory
+import com.google.*
 import com.google.gson.Gson
 
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddRecurringBillScreen(
-    billViewModel: BillViewModel = viewModel(),
-    billId: NavHostController? = null,
-    onNavigateBack: () -> Unit = {},
-    onSave: (RecurringBill) -> Unit = {}
+    navController: NavHostController,
+    billId: String? = null
 ) {
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    val billViewModel: BillViewModel = viewModel(
+        factory = BillViewModelFactory(application.appContainer.billRepository)
+    )
     var billName by remember { mutableStateOf("") }
     var estimatedAmount by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf(Date()) }
@@ -106,7 +113,7 @@ fun AddRecurringBillScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Kembali",
@@ -143,8 +150,7 @@ fun AddRecurringBillScreen(
                                     creationDate = recurringBill.creationDate
                                 )
                                 billViewModel.addBill(billEntity)
-                                onSave(recurringBill)
-                                onNavigateBack()
+                                navController.popBackStack()
                             }
                         }
                     ) {
@@ -513,11 +519,4 @@ fun AddRecurringBillScreen(
             }
         )
     }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun AddRecurringBillScreenPreview() {
-    AddRecurringBillScreen(rememberNavController())
 }

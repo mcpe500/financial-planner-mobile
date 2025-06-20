@@ -27,18 +27,66 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.financialplannerapp.ui.viewmodel.BillViewModel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import androidx.compose.ui.platform.LocalContext
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.ui.viewmodel.BillViewModelFactory
+import com.example.financialplannerapp.ui.screen.transaction.TransactionMainScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecurringBillsMainScreen(
-    billViewModel: BillViewModel = viewModel(),
-    onNavigateToAdd: () -> Unit = {},
-    onNavigateToCalendar: () -> Unit = {},
-    onNavigateToDetails: (String) -> Unit = {}
+fun RecurringBillsMainScreen(navController: NavController) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Recurring Bills", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { navController.navigate("bill_calendar") }) {
+                        Icon(
+                            Icons.Default.CalendarMonth,
+                            contentDescription = "Calendar View"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { navController.navigate("add_bill") },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Bill")
+            }
+        }
+    ) { paddingValues ->
+        RecurringBillsMainContent(
+            navController = navController,
+            modifier = Modifier.padding(paddingValues)
+        )
+    }
+}
+
+@Composable
+private fun RecurringBillsMainContent(
+    navController: NavController,
+    modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    val billViewModel: BillViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = BillViewModelFactory(application.appContainer.billRepository)
+    )
     var selectedFilter by remember { mutableStateOf(BillFilter.ALL) }
     var showMarkAsPaidDialog by remember { mutableStateOf<RecurringBill?>(null) }
     var showDeleteDialog by remember { mutableStateOf<RecurringBill?>(null) }
@@ -79,199 +127,164 @@ fun RecurringBillsMainScreen(
     val LightOrange = Color(0xFFFFF3E0)
     val LightBlue = Color(0xFFE3F2FD)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Tagihan Rutin",
-                        fontWeight = FontWeight.Bold,
-                        color = BibitDarkGreen
-                    )
-                },
-                actions = {
-                    IconButton(onClick = onNavigateToCalendar) {
-                        Icon(
-                            Icons.Default.CalendarMonth,
-                            contentDescription = "Calendar View",
-                            tint = BibitGreen
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        // Summary Cards
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Total Bills Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = LightBlue),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = bills.size.toString(),
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1976D2)
+                        )
+                        Text(
+                            text = "Total Tagihan",
+                            fontSize = 12.sp,
+                            color = Color(0xFF1976D2)
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {  },
-                containerColor = BibitGreen,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Tambah Tagihan")
+                }
+
+                // Upcoming Bills Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = LightOrange),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = bills.count { it.status == BillStatus.DUE_SOON }.toString(),
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFF9800)
+                        )
+                        Text(
+                            text = "Jatuh Tempo",
+                            fontSize = 12.sp,
+                            color = Color(0xFFFF9800)
+                        )
+                    }
+                }
+
+                // Overdue Bills Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = LightRed),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = bills.count { it.status == BillStatus.OVERDUE }.toString(),
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE53E3E)
+                        )
+                        Text(
+                            text = "Terlambat",
+                            fontSize = 12.sp,
+                            color = Color(0xFFE53E3E)
+                        )
+                    }
+                }
             }
         }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            // Summary Cards
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Total Bills Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(containerColor = LightBlue),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = bills.size.toString(),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1976D2)
-                            )
-                            Text(
-                                text = "Total Tagihan",
-                                fontSize = 12.sp,
-                                color = Color(0xFF1976D2)
-                            )
-                        }
-                    }
 
-                    // Upcoming Bills Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(containerColor = LightOrange),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+        // Filter Chips
+        item {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                items(BillFilter.entries.toTypedArray()) { filter ->
+                    FilterChip(
+                        onClick = { selectedFilter = filter },
+                        label = {
                             Text(
-                                text = bills.count { it.status == BillStatus.DUE_SOON }.toString(),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFF9800)
+                                "${filter.label} (${
+                                    when (filter) {
+                                        BillFilter.ALL -> bills.size
+                                        BillFilter.UPCOMING -> bills.count { it.status == BillStatus.UPCOMING || it.status == BillStatus.DUE_SOON }
+                                        BillFilter.PAID -> bills.count { it.status == BillStatus.PAID }
+                                        BillFilter.UNPAID -> bills.count { it.status != BillStatus.PAID }
+                                    }
+                                })"
                             )
-                            Text(
-                                text = "Jatuh Tempo",
-                                fontSize = 12.sp,
-                                color = Color(0xFFFF9800)
-                            )
-                        }
-                    }
-
-                    // Overdue Bills Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(containerColor = LightRed),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = bills.count { it.status == BillStatus.OVERDUE }.toString(),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFE53E3E)
-                            )
-                            Text(
-                                text = "Terlambat",
-                                fontSize = 12.sp,
-                                color = Color(0xFFE53E3E)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Filter Chips
-            item {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp)
-                ) {
-                    items(BillFilter.entries.toTypedArray()) { filter ->
-                        FilterChip(
-                            onClick = { selectedFilter = filter },
-                            label = {
-                                Text(
-                                    "${filter.label} (${
-                                        when (filter) {
-                                            BillFilter.ALL -> bills.size
-                                            BillFilter.UPCOMING -> bills.count { it.status == BillStatus.UPCOMING || it.status == BillStatus.DUE_SOON }
-                                            BillFilter.PAID -> bills.count { it.status == BillStatus.PAID }
-                                            BillFilter.UNPAID -> bills.count { it.status != BillStatus.PAID }
-                                        }
-                                    })"
-                                )
-                            },
-                            selected = selectedFilter == filter,
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = BibitGreen,
-                                selectedLabelColor = Color.White
-                            )
+                        },
+                        selected = selectedFilter == filter,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = BibitGreen,
+                            selectedLabelColor = Color.White
                         )
-                    }
+                    )
                 }
             }
+        }
 
-            // Bills List
-            items(filteredBills) { bill ->
-                BillCard(
-                    bill = bill,
-                    onMarkAsPaid = { showMarkAsPaidDialog = bill },
-                    onEdit = { onNavigateToDetails(bill.id) },
-                    onDelete = { showDeleteDialog = bill },
-                    onClick = { onNavigateToDetails(bill.id) }
-                )
-            }
+        // Bills List
+        items(filteredBills) { bill ->
+            BillCard(
+                bill = bill,
+                onMarkAsPaid = { showMarkAsPaidDialog = bill },
+                onEdit = { /* TODO: Edit navigation */ },
+                onDelete = { showDeleteDialog = bill },
+                onClick = { /* TODO: Details navigation */ }
+            )
+        }
 
-            // Empty State
-            if (filteredBills.isEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+        // Empty State
+        if (filteredBills.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "📋",
-                                fontSize = 48.sp
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "Tidak ada tagihan",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF666666)
-                            )
-                            Text(
-                                text = "Tambah tagihan rutin pertama Anda",
-                                fontSize = 14.sp,
-                                color = Color(0xFF999999)
-                            )
-                        }
+                        Text(
+                            text = "📋",
+                            fontSize = 48.sp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Tidak ada tagihan",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF666666)
+                        )
+                        Text(
+                            text = "Tambah tagihan rutin pertama Anda",
+                            fontSize = 14.sp,
+                            color = Color(0xFF999999)
+                        )
                     }
                 }
             }

@@ -31,6 +31,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import com.example.financialplannerapp.data.repository.BillRepository
+import com.example.financialplannerapp.data.repository.BillRepositoryImpl
 
 class MainApplication : Application() {
 
@@ -84,6 +86,7 @@ class AppContainer(private val applicationContext: Context) {
     private val appSettingsDao by lazy { appDatabase.appSettingsDao() }
     private val userProfileDao by lazy { appDatabase.userProfileDao() }
     private val securitySettingsDao by lazy { appDatabase.securitySettingsDao() }
+    private val billDao by lazy { appDatabase.billDao() }
 
     // Services
     val translationProvider: TranslationProvider by lazy {
@@ -139,5 +142,9 @@ class AppContainer(private val applicationContext: Context) {
     // Receipt Service
     val receiptService: com.example.financialplannerapp.data.service.ReceiptService by lazy {
         com.example.financialplannerapp.data.service.ReceiptService(apiService, tokenManager, applicationContext)
+    }
+
+    val billRepository: BillRepository by lazy {
+        BillRepositoryImpl(billDao)
     }
 }
