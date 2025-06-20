@@ -89,27 +89,92 @@ private fun TransactionMainContent(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         // Quick Stats Overview
-        TransactionStatsCard()
-        
-        // Transaction Actions
-        TransactionActionsCard(navController)
-        
-        // Recent Transactions (Detailed)
-        RecentTransactionsDetailedCard(navController)
-        
-        // Monthly Summary
-        MonthlyTransactionSummary()
-        
-        // Categories Breakdown
-        CategoriesBreakdownCard()
-        
-        // Bottom spacing for FAB
-        Spacer(modifier = Modifier.height(80.dp))
+        val userId = "current_user_id" // TODO: Replace with actual user ID
+        val viewModel: TransactionViewModel = hiltViewModel()
+
+        LaunchedEffect(Unit) {
+            viewModel.loadTransactions(userId)
+        }
+
+        when {
+            viewModel.isLoading.value -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            viewModel.transactions.value.isEmpty() -> {
+@Composable
+private fun EmptyTransactionsCard() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.Receipt,
+            contentDescription = "No transactions",
+            modifier = Modifier.size(64.dp),
+            tint = MediumGray
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "No transactions yet",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = DarkGray
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Add your first transaction to get started",
+            fontSize = 14.sp,
+            color = MediumGray
+        )
+    }
+}
+                EmptyTransactionsCard()
+            }
+            else -> {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    TransactionStatsCard(viewModel.transactions.value)
+                    
+                    // Transaction Actions
+                    TransactionActionsCard(navController)
+                    
+                    // Recent Transactions (Detailed)
+                    RecentTransactionsDetailedCard(
+                        transactions = viewModel.transactions.value.take(5),
+                        onTransactionClick = { transaction ->
+                            navController.navigate("transaction_detail/${transaction.id}")
+                        }
+                    )
+                    
+                    // Monthly Summary
+                    MonthlyTransactionSummary(viewModel.transactions.value)
+                    
+                    // Categories Breakdown
+                    CategoriesBreakdownCard(viewModel.transactions.value)
+                    
+                    // Bottom spacing for FAB
+                    Spacer(modifier = Modifier.height(80.dp))
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun TransactionStatsCard() {
+private fun TransactionStatsCard(transactions: List<Transaction>) {
+    val income = transactions.filter { it.type == "income" }.sumOf { it.amount }
+    val expenses = transactions.filter { it.type == "expense" }.sumOf { it.amount }
+    val balance = income - expenses
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -134,9 +199,9 @@ private fun TransactionStatsCard() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                StatItem("Income", 5000.0, BibitGreen, true)
-                StatItem("Expenses", 3200.0, ExpenseRed, false)
-                StatItem("Balance", 1800.0, BibitGreen, true)
+                StatItem("Income", income, BibitGreen, true)
+                StatItem("Expenses", expenses, ExpenseRed, false)
+                StatItem("Balance", balance, BibitGreen, true)
             }
         }
     }
@@ -278,7 +343,10 @@ private fun TransactionActionItem(
 }
 
 @Composable
-private fun RecentTransactionsDetailedCard(navController: NavController) {
+private fun RecentTransactionsDetailedCard(
+    transactions: List<Transaction>,
+    onTransactionClick: (Transaction) -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -315,41 +383,17 @@ private fun RecentTransactionsDetailedCard(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Mock detailed transactions
-            TransactionDetailedItem(
-                title = "Starbucks Coffee",
-                category = "Food & Drink",
-                amount = -12.50,
-                date = "Today, 2:30 PM",
-                description = "Grande Latte + Croissant"
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            TransactionDetailedItem(
-                title = "Monthly Salary",
-                category = "Income",
-                amount = 3000.00,
-                date = "Yesterday, 9:00 AM",
-                description = "Company XYZ payroll"
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            TransactionDetailedItem(
-                title = "Grocery Shopping",
-                category = "Food & Groceries",
-                amount = -85.30,
-                date = "Jun 5, 6:45 PM",
-                description = "Weekly groceries at Supermarket"
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            TransactionDetailedItem(
-                title = "Gas Station",
-                category = "Transportation",
-                amount = -45.20,
-                date = "Jun 4, 8:15 AM",
-                description = "Shell Station - Tank refill"
-            )
+            transactions.forEach { transaction ->
+                TransactionDetailedItem(
+                    title = transaction.merchantName ?: transaction.description ?: "Transaction",
+                    category = transaction.category,
+                    amount = transaction.amount,
+                    date = transaction.date.toString(),
+                    description = transaction.notes,
+                    onClick = { onTransactionClick(transaction) }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
     }
 }
@@ -360,7 +404,8 @@ private fun TransactionDetailedItem(
     category: String,
     amount: Double,
     date: String,
-    description: String
+    description: String?,
+    onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -369,7 +414,8 @@ private fun TransactionDetailedItem(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(12.dp)
             )
-            .padding(16.dp),
+            .padding(16.dp)
+            .clickable { onClick() },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -435,7 +481,7 @@ private fun TransactionDetailedItem(
 }
 
 @Composable
-private fun MonthlyTransactionSummary() {
+private fun MonthlyTransactionSummary(transactions: List<Transaction>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -460,9 +506,18 @@ private fun MonthlyTransactionSummary() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                SummaryItem("Total Transactions", "47")
-                SummaryItem("Avg per Day", "$106.67")
-                SummaryItem("Largest Expense", "$485.20")
+                val total = transactions.size
+                val avgPerDay = transactions
+                    .groupBy { it.date }
+                    .mapValues { it.value.sumOf { t -> t.amount } }
+                    .values.average()
+                val largestExpense = transactions
+                    .filter { it.type == "expense" }
+                    .maxByOrNull { it.amount }?.amount ?: 0.0
+
+                SummaryItem("Total Transactions", total.toString())
+                SummaryItem("Avg per Day", "$${"%.2f".format(avgPerDay)}")
+                SummaryItem("Largest Expense", "$${"%.2f".format(largestExpense)}")
             }
         }
     }
@@ -489,7 +544,7 @@ private fun SummaryItem(label: String, value: String) {
 }
 
 @Composable
-private fun CategoriesBreakdownCard() {
+private fun CategoriesBreakdownCard(transactions: List<Transaction>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -510,13 +565,18 @@ private fun CategoriesBreakdownCard() {
                 modifier = Modifier.padding(bottom = 16.dp)
             )
             
-            CategoryItem("Food & Drink", 856.40, 35)
-            Spacer(modifier = Modifier.height(8.dp))
-            CategoryItem("Transportation", 345.20, 14)
-            Spacer(modifier = Modifier.height(8.dp))
-            CategoryItem("Shopping", 523.15, 21)
-            Spacer(modifier = Modifier.height(8.dp))
-            CategoryItem("Entertainment", 234.80, 10)
+            val categories = transactions
+                .groupBy { it.category }
+                .mapValues { it.value.sumOf { t -> t.amount } }
+                .toList()
+                .sortedByDescending { it.second }
+                .take(4)
+
+            categories.forEach { (category, amount) ->
+                val percentage = (amount / categories.sumOf { it.second }) * 100
+                CategoryItem(category, amount, percentage.toInt())
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     }
 }
