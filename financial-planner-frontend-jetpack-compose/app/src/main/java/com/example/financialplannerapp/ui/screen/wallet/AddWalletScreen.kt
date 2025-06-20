@@ -29,9 +29,39 @@ import androidx.navigation.compose.rememberNavController
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
+private val BibitLightGreen = Color(0xFF81C784)
 private val SoftGray = Color(0xFFF5F5F5)
 private val MediumGray = Color(0xFF9E9E9E)
 private val DarkGray = Color(0xFF424242)
+
+// Wallet data class and WalletType enum (Copy from WalletsMainScreen if not shared)
+// This should ideally be in a shared data module if you're building a larger app.
+// For simplicity, I'm assuming they are in the same package or imported.
+/*
+data class Wallet(
+    val id: String,
+    val name: String,
+    val type: WalletType,
+    val balance: Double,
+    val icon: ImageVector,
+    val color: Color,
+    val isShared: Boolean = false,
+    val memberCount: Int = 1
+)
+
+enum class WalletType {
+    CASH, BANK, E_WALLET, INVESTMENT, DEBT
+}
+
+val WalletType.icon: ImageVector
+    get() = when (this) {
+        WalletType.CASH -> Icons.Default.Money
+        WalletType.BANK -> Icons.Default.AccountBalance
+        WalletType.E_WALLET -> Icons.Default.Smartphone
+        WalletType.INVESTMENT -> Icons.Default.TrendingUp
+        WalletType.DEBT -> Icons.Default.CreditCard
+    }
+*/
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +69,8 @@ fun AddWalletScreen(navController: NavController) {
     var walletName by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(WalletType.CASH) }
     var initialBalance by remember { mutableStateOf("") }
-    var selectedIcon by remember { mutableStateOf(Icons.Default.Wallet) }
+    // Initialize selectedIcon based on default selectedType
+    var selectedIcon by remember { mutableStateOf(selectedType.icon) }
     var selectedColor by remember { mutableStateOf(BibitGreen) }
 
     Scaffold(
@@ -90,7 +121,11 @@ fun AddWalletScreen(navController: NavController) {
             // Wallet Type Selection
             WalletTypeCard(
                 selectedType = selectedType,
-                onTypeChange = { selectedType = it }
+                onTypeChange = {
+                    selectedType = it
+                    // Update icon when type changes, but allow manual override later
+                    selectedIcon = it.icon
+                }
             )
 
             // Initial Balance Input
@@ -128,7 +163,8 @@ fun AddWalletScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        // Save wallet logic
+                        // TODO: Implement actual wallet saving logic here
+                        // For now, just navigate back
                         navController.navigateUp()
                     },
                     modifier = Modifier.weight(1f),
@@ -136,7 +172,8 @@ fun AddWalletScreen(navController: NavController) {
                         containerColor = BibitGreen,
                         contentColor = Color.White
                     ),
-                    enabled = walletName.isNotEmpty()
+                    // Enable button only if name is not empty and balance is a valid number
+                    enabled = walletName.isNotEmpty() && initialBalance.toDoubleOrNull() != null
                 ) {
                     Text("Save Wallet")
                 }
@@ -298,57 +335,42 @@ private fun WalletTypeOption(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val typeInfo = getWalletTypeInfo(type)
-
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) BibitGreen.copy(alpha = 0.1f) else SoftGray
-        ),
-        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, BibitGreen) else null
+            .clickable(onClick = onClick)
+            .background(
+                color = if (isSelected) BibitLightGreen.copy(alpha = 0.2f) else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                typeInfo.icon,
-                contentDescription = typeInfo.name,
-                tint = if (isSelected) BibitGreen else MediumGray,
-                modifier = Modifier.size(24.dp)
+        Icon(
+            imageVector = type.icon, // Use the extension property
+            contentDescription = type.name,
+            tint = if (isSelected) BibitGreen else MediumGray,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = type.name.lowercase().replaceFirstChar { it.uppercase() },
+            fontSize = 16.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isSelected) BibitGreen else DarkGray
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        RadioButton(
+            selected = isSelected,
+            onClick = null, // Handled by the Row's clickable modifier
+            colors = RadioButtonDefaults.colors(
+                selectedColor = BibitGreen,
+                unselectedColor = MediumGray
             )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = typeInfo.name,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isSelected) BibitGreen else DarkGray
-                )
-                Text(
-                    text = typeInfo.description,
-                    fontSize = 12.sp,
-                    color = MediumGray
-                )
-            }
-
-            RadioButton(
-                selected = isSelected,
-                onClick = onClick,
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = BibitGreen
-                )
-            )
-        }
+        )
     }
 }
+
 
 @Composable
 private fun InitialBalanceCard(
@@ -375,30 +397,21 @@ private fun InitialBalanceCard(
 
             OutlinedTextField(
                 value = balance,
-                onValueChange = onBalanceChange,
-                label = { Text("Enter initial balance") },
-                placeholder = { Text("0.00") },
-                leadingIcon = {
-                    Text(
-                        "$",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = BibitGreen
-                    )
+                onValueChange = { newValue ->
+                    // Allow only digits and a single decimal point
+                    if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                        onBalanceChange(newValue)
+                    }
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                label = { Text("Enter initial balance") },
+                placeholder = { Text("e.g., 1000.00") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                leadingIcon = { Text("$", color = DarkGray) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = BibitGreen,
                     focusedLabelColor = BibitGreen
                 )
-            )
-
-            Text(
-                text = "You can always update this later",
-                fontSize = 12.sp,
-                color = MediumGray,
-                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
@@ -409,16 +422,22 @@ private fun IconSelectionCard(
     selectedIcon: ImageVector,
     onIconChange: (ImageVector) -> Unit
 ) {
-    val availableIcons = listOf(
-        Icons.Default.Wallet,
-        Icons.Default.Money,
-        Icons.Default.AccountBalance,
-        Icons.Default.CreditCard,
-        Icons.Default.TrendingUp,
-        Icons.Default.Savings,
-        Icons.Default.LocalAtm,
-        Icons.Default.AccountBalanceWallet
-    )
+    val availableIcons = remember {
+        listOf(
+            Icons.Default.Wallet,
+            Icons.Default.Money,
+            Icons.Default.AccountBalance,
+            Icons.Default.CreditCard,
+            Icons.Default.TrendingUp,
+            Icons.Default.Savings,
+            Icons.Default.Home,
+            Icons.Default.DirectionsCar,
+            Icons.Default.Fastfood,
+            Icons.Default.MedicalServices,
+            Icons.Default.School,
+            Icons.Default.Smartphone // Added for e-wallet consistency
+        )
+    }
 
     Card(
         modifier = Modifier
@@ -431,7 +450,7 @@ private fun IconSelectionCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Choose Icon",
+                text = "Select Icon",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = DarkGray,
@@ -439,7 +458,8 @@ private fun IconSelectionCard(
             )
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
                 items(availableIcons) { icon ->
                     IconOption(
@@ -462,37 +482,41 @@ private fun IconOption(
     Box(
         modifier = Modifier
             .size(56.dp)
+            .clickable(onClick = onClick)
             .background(
-                if (isSelected) BibitGreen else SoftGray,
-                CircleShape
+                color = if (isSelected) BibitLightGreen.copy(alpha = 0.4f) else SoftGray,
+                shape = CircleShape
             )
-            .clickable { onClick() },
+            .shadow(if (isSelected) 4.dp else 1.dp, CircleShape),
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            icon,
-            contentDescription = "Icon",
-            tint = if (isSelected) Color.White else MediumGray,
-            modifier = Modifier.size(24.dp)
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (isSelected) BibitGreen else MediumGray,
+            modifier = Modifier.size(32.dp)
         )
     }
 }
+
 
 @Composable
 private fun ColorSelectionCard(
     selectedColor: Color,
     onColorChange: (Color) -> Unit
 ) {
-    val availableColors = listOf(
-        BibitGreen,
-        Color(0xFF2196F3), // Blue
-        Color(0xFF9C27B0), // Purple
-        Color(0xFFFF9800), // Orange
-        Color(0xFFF44336), // Red
-        Color(0xFF00BCD4), // Cyan
-        Color(0xFF795548), // Brown
-        Color(0xFF607D8B)  // Blue Grey
-    )
+    val availableColors = remember {
+        listOf(
+            BibitGreen,
+            Color(0xFF2196F3), // Blue
+            Color(0xFFFFC107), // Amber
+            Color(0xFF9C27B0), // Purple
+            Color(0xFFFF5722), // Deep Orange
+            Color(0xFF00BCD4), // Cyan
+            Color(0xFFE91E63), // Pink
+            Color(0xFF795548)  // Brown
+        )
+    }
 
     Card(
         modifier = Modifier
@@ -505,7 +529,7 @@ private fun ColorSelectionCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Choose Color",
+                text = "Select Color",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = DarkGray,
@@ -513,7 +537,8 @@ private fun ColorSelectionCard(
             )
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
                 items(availableColors) { color ->
                     ColorOption(
@@ -536,54 +561,26 @@ private fun ColorOption(
     Box(
         modifier = Modifier
             .size(48.dp)
+            .clickable(onClick = onClick)
             .background(color, CircleShape)
-            .clickable { onClick() },
+            .padding(4.dp), // Add padding for the border effect
         contentAlignment = Alignment.Center
     ) {
         if (isSelected) {
-            Icon(
-                Icons.Default.Check,
-                contentDescription = "Selected",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = 0.3f), CircleShape), // Inner translucent circle
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Selected",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
-    }
-}
-
-data class WalletTypeInfo(
-    val name: String,
-    val description: String,
-    val icon: ImageVector
-)
-
-private fun getWalletTypeInfo(type: WalletType): WalletTypeInfo {
-    return when (type) {
-        WalletType.CASH -> WalletTypeInfo(
-            "Cash",
-            "Physical money you carry",
-            Icons.Default.Money
-        )
-        WalletType.BANK -> WalletTypeInfo(
-            "Bank Account",
-            "Savings or checking account",
-            Icons.Default.AccountBalance
-        )
-        WalletType.E_WALLET -> WalletTypeInfo(
-            "E-Wallet",
-            "Digital wallet like GoPay, OVO",
-            Icons.Default.Wallet
-        )
-        WalletType.INVESTMENT -> WalletTypeInfo(
-            "Investment",
-            "Stocks, bonds, mutual funds",
-            Icons.Default.TrendingUp
-        )
-        WalletType.DEBT -> WalletTypeInfo(
-            "Debt/Credit",
-            "Credit cards, loans",
-            Icons.Default.CreditCard
-        )
     }
 }
 

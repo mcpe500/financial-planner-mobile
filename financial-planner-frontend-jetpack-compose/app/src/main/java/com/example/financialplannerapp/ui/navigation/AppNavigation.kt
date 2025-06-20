@@ -27,6 +27,7 @@ import com.example.financialplannerapp.screen.VoiceInputScreen
 import com.example.financialplannerapp.ui.screen.transaction.TransactionMainScreen
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import com.example.financialplannerapp.screen.AddWalletScreen
 import com.example.financialplannerapp.screen.DebtReceivableMainScreen
 import com.example.financialplannerapp.screen.WalletsMainScreen
 
@@ -138,6 +139,10 @@ fun AppNavigation(
         // --- New Quick Action Routes ---
         composable("wallet") {
             WalletsMainScreen(navController = navController)
+        }
+
+        composable("add_wallet") {
+            AddWalletScreen(navController = navController)
         }
         composable("debt") {
             DebtReceivableMainScreen()

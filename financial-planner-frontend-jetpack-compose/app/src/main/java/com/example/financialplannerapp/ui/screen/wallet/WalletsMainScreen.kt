@@ -47,6 +47,16 @@ enum class WalletType {
     CASH, BANK, E_WALLET, INVESTMENT, DEBT
 }
 
+// Extension property to get icon for WalletType
+val WalletType.icon: ImageVector
+    get() = when (this) {
+        WalletType.CASH -> Icons.Default.Money
+        WalletType.BANK -> Icons.Default.AccountBalance
+        WalletType.E_WALLET -> Icons.Default.Smartphone // Changed to Smartphone for e-wallet
+        WalletType.INVESTMENT -> Icons.Default.TrendingUp
+        WalletType.DEBT -> Icons.Default.CreditCard
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletsMainScreen(navController: NavController) {
@@ -73,10 +83,10 @@ fun WalletsMainScreen(navController: NavController) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { navController.navigate("transfer_between_wallets") }) {
+                    IconButton(onClick = { /* TODO: Handle transfer */ }) {
                         Icon(Icons.Default.SwapHoriz, contentDescription = "Transfer")
                     }
-                    IconButton(onClick = { navController.navigate("reconcile_balance") }) {
+                    IconButton(onClick = { /* TODO: Handle reconcile */ }) {
                         Icon(Icons.Default.Balance, contentDescription = "Reconcile")
                     }
                 },
@@ -88,7 +98,10 @@ fun WalletsMainScreen(navController: NavController) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navController.navigate("add_wallet") },
+                onClick = {
+                    // Ini yang akan mengarahkan ke AddWalletScreen
+                    navController.navigate("add_wallet")
+                },
                 containerColor = BibitGreen,
                 contentColor = Color.White
             ) {
@@ -133,19 +146,22 @@ fun WalletsMainScreen(navController: NavController) {
                 0 -> AllWalletsTab(
                     wallets = allWallets,
                     onWalletClick = { wallet ->
-                        navController.navigate("wallet_details/${wallet.id}")
+                        // Handle wallet click, e.g., navigate to details
+                        // navController.navigate("wallet_details/${wallet.id}")
                     },
                     onEditClick = { wallet ->
-                        navController.navigate("edit_wallet/${wallet.id}")
+                        // Handle edit wallet
+                        // navController.navigate("edit_wallet/${wallet.id}")
                     },
                     onDeleteClick = { wallet ->
-                        // Handle delete
+                        // Handle delete wallet
                     }
                 )
                 1 -> SharedWalletsTab(
                     sharedWallets = sharedWallets,
                     onWalletClick = { wallet ->
-                        navController.navigate("shared_wallet_details/${wallet.id}")
+                        // Handle shared wallet click
+                        // navController.navigate("shared_wallet_details/${wallet.id}")
                     }
                 )
                 2 -> InvitationsTab(
@@ -634,7 +650,7 @@ fun generateMockWallets(): List<Wallet> {
             name = "GoPay",
             type = WalletType.E_WALLET,
             balance = 125.50,
-            icon = Icons.Default.Wallet,
+            icon = Icons.Default.Smartphone, // Updated icon
             color = Color(0xFF00BCD4)
         ),
         Wallet(
