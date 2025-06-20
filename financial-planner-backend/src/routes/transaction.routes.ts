@@ -1,13 +1,29 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth.middleware";
-import { processReceiptOCR } from "../controllers/transaction.controller";
+import {
+  createTransaction,
+  getUserTransactions,
+  getTransactionById,
+  processReceiptOCR
+} from "../controllers/transaction.controller";
 
 const router = Router();
 
+// Transaction CRUD operations
+// POST /api/transactions - Create a new transaction
+router.post("/", authenticate, createTransaction);
+
+// GET /api/transactions - Get all transactions for user
+router.get("/", authenticate, getUserTransactions);
+
+// GET /api/transactions/:id - Get transaction by ID
+router.get("/:id", authenticate, getTransactionById);
+
+// Receipt processing endpoints
 // POST /api/transactions/receipt-ocr - Process receipt image for OCR
 router.post("/receipt-ocr", authenticate, processReceiptOCR);
 
-// POST /api/receipts/process - Process receipts endpoint (for Android app)
+// POST /api/transactions/process - Process receipts (Android)
 router.post("/process", authenticate, processReceiptOCR);
 
 export default router;
