@@ -240,24 +240,35 @@ class Database {
 
 	// Transaction methods
 	async createTransaction(userIdOrData: string | any, payload?: TransactionPayload): Promise<TransactionType | any> {
-		try {
-			let transactionData: any;
-			
-			if (typeof userIdOrData === 'string' && payload) {
-				transactionData = { ...payload, user_id: userIdOrData };
-			} else {
-				transactionData = userIdOrData;
-			}
+	    try {
+	        let transactionData: any;
+	        
+	        if (typeof userIdOrData === 'string' && payload) {
+	            transactionData = {
+	                ...payload,
+	                user_id: userIdOrData,
+	                created_at: new Date().toISOString(),
+	                updated_at: new Date().toISOString(),
+	                sync_status: 'pending'
+	            };
+	        } else {
+	            transactionData = {
+	                ...userIdOrData,
+	                created_at: new Date().toISOString(),
+	                updated_at: new Date().toISOString(),
+	                sync_status: 'pending'
+	            };
+	        }
 
-			console.log('Creating transaction in database:', transactionData);
-			
-			const createdTransaction = await this.adapter.createTransaction(transactionData);
-			console.log('Transaction created successfully:', createdTransaction);
-			return createdTransaction;
-		} catch (error) {
-			console.error('Error in createTransaction:', error);
-			throw error;
-		}
+	        console.log('Creating transaction in database:', transactionData);
+	        
+	        const createdTransaction = await this.adapter.createTransaction(transactionData);
+	        console.log('Transaction created successfully:', createdTransaction);
+	        return createdTransaction;
+	    } catch (error) {
+	        console.error('Error in createTransaction:', error);
+	        throw error;
+	    }
 	}
 
 	async getUserTransactions(userId: string): Promise<TransactionType[]> {

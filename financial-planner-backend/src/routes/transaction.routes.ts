@@ -4,8 +4,12 @@ import {
   createTransaction,
   getUserTransactions,
   getTransactionById,
+  updateTransaction,
+  deleteTransaction,
   processReceiptOCR,
-  storeTransactionFromOCR
+  storeTransactionFromOCR,
+  processVoiceInput,
+  processQRCode
 } from "../controllers/transaction.controller";
 
 const router = Router();
@@ -20,14 +24,25 @@ router.get("/", authenticate, getUserTransactions);
 // GET /api/transactions/:id - Get transaction by ID
 router.get("/:id", authenticate, getTransactionById);
 
-// Receipt processing endpoints
-// POST /api/transactions/receipt-ocr - Process receipt image for OCR
+// PUT /api/transactions/:id - Update transaction
+router.put("/:id", authenticate, updateTransaction);
+
+// DELETE /api/transactions/:id - Delete transaction
+router.delete("/:id", authenticate, deleteTransaction);
+
+// Input method endpoints
+// POST /api/transactions/ocr - Process receipt via OCR
+router.post("/ocr", authenticate, processReceiptOCR);
+
+// POST /api/transactions/speech - Process voice input
+router.post("/speech", authenticate, processVoiceInput);
+
+// POST /api/transactions/qr - Process QR code
+router.post("/qr", authenticate, processQRCode);
+
+// Legacy endpoints (for compatibility)
 router.post("/receipt-ocr", authenticate, processReceiptOCR);
-
-// POST /api/transactions/process - Process receipts (Android)
 router.post("/process", authenticate, processReceiptOCR);
-
-// POST /api/transactions/store - Store transaction from OCR data
 router.post("/store", authenticate, storeTransactionFromOCR);
 
 export default router;
