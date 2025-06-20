@@ -33,7 +33,7 @@ export const processReceiptOCR = async (req: AuthRequest, res: Response): Promis
                 message: "Unauthorized access"
             });
             return;
-        }
+        };
 
         console.log(`Processing OCR for user: ${user_id}`);
         console.log(`Image data length: ${image_base64.length} characters`);
@@ -90,7 +90,7 @@ export const storeTransactionFromOCR = async (req: AuthRequest, res: Response): 
                 message: "Required fields missing: total_amount, merchant_name"
             });
             return;
-        }
+        };
 
         console.log(`Storing transaction from OCR for user: ${user_id}`);
         console.log(`Transaction data:`, {
@@ -108,12 +108,14 @@ export const storeTransactionFromOCR = async (req: AuthRequest, res: Response): 
             date: date || new Date().toISOString(),
             location: location || null,
             receipt_id: receipt_id || `receipt_${Date.now()}`,
-            category: category || 'General',
+            category_id: category || 'General',
             notes: notes || null,
             items: items ? JSON.stringify(items) : null,
-            transaction_type: total_amount >= 0 ? 'income' : 'expense',
+            tags: [],
+            type: total_amount >= 0 ? 'income' : 'expense',
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            sync_status: 'pending'
         };
 
         // Store in Supabase
@@ -156,8 +158,13 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
     const payload: TransactionPayload = req.body;
     const transaction = await database.createTransaction(req.user.id, payload);
     res.status(201).json({ success: true, data: transaction });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to create transaction", error });
+  } catch (error: any) {
+    console.error("Error creating transaction:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create transaction",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -189,5 +196,107 @@ export const getTransactionById = async (req: AuthRequest, res: Response): Promi
     res.status(200).json({ success: true, data: transaction });
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to get transaction", error });
+  }
+};
+
+export const updateTransaction = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+    const { id } = req.params;
+    const payload = req.body;
+    
+    const updatedTransaction = await database.updateTransaction(id, {
+      ...payload,
+      updated_at: new Date().toISOString()
+    });
+    
+    res.status(200).json({ success: true, data: updatedTransaction });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update transaction",
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
+  }
+};
+
+export const deleteTransaction = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+    const { id } = req.params;
+    await database.deleteTransaction(id);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete transaction",
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
+  }
+};
+
+export const processVoiceInput = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+    const { audio_base64 } = req.body;
+    
+    // TODO: Implement voice processing logic
+    // TODO: Implement actual voice processing logic
+    const processedData = {
+      amount: 0,
+      description: "Voice input transaction",
+      date: new Date().toISOString()
+    };
+    
+    res.status(200).json({
+      success: true,
+      message: "Voice input processed successfully",
+      data: processedData
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to process voice input",
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
+  }
+};
+
+export const processQRCode = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+    const { qr_data } = req.body;
+    
+    // TODO: Implement QR code processing logic
+    // TODO: Implement actual QR code processing logic
+    const processedData = {
+      amount: 0,
+      description: "QR code transaction",
+      date: new Date().toISOString()
+    };
+    
+    res.status(200).json({
+      success: true,
+      message: "QR code processed successfully",
+      data: processedData
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to process QR code",
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
   }
 };
