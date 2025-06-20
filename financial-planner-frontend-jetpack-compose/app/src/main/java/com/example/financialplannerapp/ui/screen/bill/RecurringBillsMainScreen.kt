@@ -26,10 +26,15 @@ import com.example.financialplannerapp.data.model.BillFilter
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financialplannerapp.ui.viewmodel.BillViewModel
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecurringBillsMainScreen(
+    billViewModel: BillViewModel = viewModel(),
     onNavigateToAdd: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
     onNavigateToDetails: (String) -> Unit = {}
@@ -38,55 +43,22 @@ fun RecurringBillsMainScreen(
     var showMarkAsPaidDialog by remember { mutableStateOf<RecurringBill?>(null) }
     var showDeleteDialog by remember { mutableStateOf<RecurringBill?>(null) }
 
-    // Mock Data
-    val bills = remember {
-        listOf(
-            RecurringBill(
-                id = "1",
-                name = "Listrik PLN",
-                estimatedAmount = 450000.0,
-                dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 5) }.time,
-                repeatCycle = "MONTHLY",
-                notes = "Tagihan listrik rumah",
-                payments = listOf(
-                    BillPayment("p1", 420000.0, Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -25) }.time)
-                )
-            ),
-            RecurringBill(
-                id = "2",
-                name = "Internet IndiHome",
-                estimatedAmount = 350000.0,
-                dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -2) }.time,
-                repeatCycle = "MONTHLY",
-                notes = "Paket 50 Mbps"
-            ),
-            RecurringBill(
-                id = "3",
-                name = "BPJS Kesehatan",
-                estimatedAmount = 150000.0,
-                dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 12) }.time,
-                repeatCycle = "MONTHLY",
-                notes = "Keluarga 4 orang"
-            ),
-            RecurringBill(
-                id = "4",
-                name = "Asuransi Mobil",
-                estimatedAmount = 2500000.0,
-                dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 45) }.time,
-                repeatCycle = "YEARLY",
-                notes = "Asuransi comprehensive"
-            ),
-            RecurringBill(
-                id = "5",
-                name = "Netflix Subscription",
-                estimatedAmount = 169000.0,
-                dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 8) }.time,
-                repeatCycle = "MONTHLY",
-                notes = "Premium plan",
-                payments = listOf(
-                    BillPayment("p2", 169000.0, Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -22) }.time)
-                )
-            )
+    val billEntities by billViewModel.localBills.collectAsState()
+    val bills = billEntities.map { entity ->
+        RecurringBill(
+            id = entity.uuid,
+            name = entity.name,
+            estimatedAmount = entity.estimatedAmount,
+            dueDate = entity.dueDate,
+            repeatCycle = entity.repeatCycle,
+            category = entity.category,
+            notes = entity.notes,
+            isActive = entity.isActive,
+            payments = Gson().fromJson<List<BillPayment>>(entity.paymentsJson, object : TypeToken<List<BillPayment>>() {}.type) ?: emptyList(),
+            autoPay = entity.autoPay,
+            notificationEnabled = entity.notificationEnabled,
+            lastPaymentDate = entity.lastPaymentDate,
+            creationDate = entity.creationDate
         )
     }
 

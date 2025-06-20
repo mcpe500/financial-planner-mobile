@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financialplannerapp.data.local.model.TransactionEntity
+import com.example.financialplannerapp.ui.viewmodel.TransactionViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -51,15 +54,12 @@ enum class TransactionType {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TransactionHistoryScreen(navController: NavController) {
-    var showFilters by remember { mutableStateOf(false) }
-    var selectedDateRange by remember { mutableStateOf("All Time") }
-    var selectedPocket by remember { mutableStateOf("All Pockets") }
-    var selectedCategory by remember { mutableStateOf("All Categories") }
-    var selectedTag by remember { mutableStateOf("All Tags") }
-
-    // Mock data
-    val transactions = remember { generateMockTransactions() }
+fun TransactionHistoryScreen(
+    navController: NavController,
+    transactionViewModel: TransactionViewModel = viewModel()
+) {
+    val localTransactions by transactionViewModel.localTransactions.collectAsState()
+    val remoteUiState by transactionViewModel.remoteUiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -76,8 +76,8 @@ fun TransactionHistoryScreen(navController: NavController) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showFilters = !showFilters }) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                    IconButton(onClick = { transactionViewModel.syncFromRemote() }) {
+                        Icon(Icons.Default.Sync, contentDescription = "Sync")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -88,7 +88,7 @@ fun TransactionHistoryScreen(navController: NavController) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navController.navigate("add_transaction") },
+                onClick = { /* TODO: Show add transaction dialog/form */ },
                 containerColor = BibitGreen,
                 contentColor = Color.White
             ) {
@@ -102,32 +102,36 @@ fun TransactionHistoryScreen(navController: NavController) {
                 .background(SoftGray)
                 .padding(paddingValues)
         ) {
-            // Filters Section
-            if (showFilters) {
-                FilterSection(
-                    selectedDateRange = selectedDateRange,
-                    selectedPocket = selectedPocket,
-                    selectedCategory = selectedCategory,
-                    selectedTag = selectedTag,
-                    onDateRangeChange = { selectedDateRange = it },
-                    onPocketChange = { selectedPocket = it },
-                    onCategoryChange = { selectedCategory = it },
-                    onTagChange = { selectedTag = it }
-                )
+            // Status sync
+            when (remoteUiState) {
+                is com.example.financialplannerapp.ui.viewmodel.TransactionUiState.Loading -> {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        Text(" Syncing...", color = MediumGray, modifier = Modifier.align(Alignment.CenterVertically))
+                    }
+                }
+                is com.example.financialplannerapp.ui.viewmodel.TransactionUiState.Error -> {
+                    val message = (remoteUiState as com.example.financialplannerapp.ui.viewmodel.TransactionUiState.Error).message
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                        Icon(Icons.Default.Error, contentDescription = null, tint = ExpenseRed)
+                        Text(" Sync error: $message", color = ExpenseRed, modifier = Modifier.align(Alignment.CenterVertically))
+                    }
+                }
+                is com.example.financialplannerapp.ui.viewmodel.TransactionUiState.Success -> {
+                    // Optionally show success message
+                }
+                else -> {}
             }
 
-            // Transaction List
+            // Transaction List (from Room)
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(transactions) { transaction ->
-                    TransactionItem(
-                        transaction = transaction,
-                        onEdit = { navController.navigate("edit_transaction/${transaction.id}") },
-                        onDelete = { /* Handle delete */ }
-                    )
+                items(localTransactions) { transaction: TransactionEntity ->
+                    // Tampilkan TransactionItem sesuai kebutuhan
+                    // TransactionItem(transaction = transaction, ...)
                 }
             }
         }
