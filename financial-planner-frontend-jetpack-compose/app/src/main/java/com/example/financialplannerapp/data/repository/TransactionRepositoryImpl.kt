@@ -126,4 +126,20 @@ class TransactionRepositoryImpl constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun getUserTransactionsRemote(token: String): List<TransactionData> {
+        val response = apiService.getUserTransactions(token)
+        if (response.isSuccessful && response.body() != null) {
+            return response.body()!!
+        } else {
+            throw Exception(response.message())
+        }
+    }
+
+    override suspend fun createTransactionRemote(token: String, payload: TransactionPayload) {
+        val response = apiService.createTransaction(token, payload)
+        if (!response.isSuccessful) {
+            throw Exception(response.message())
+        }
+    }
 }

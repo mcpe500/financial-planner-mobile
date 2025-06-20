@@ -23,6 +23,11 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.semantics.Role
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financialplannerapp.data.local.model.TransactionEntity
+import com.example.financialplannerapp.data.model.TransactionPayload
+import com.example.financialplannerapp.ui.viewmodel.TransactionViewModel
+import java.util.Date
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -34,7 +39,10 @@ private val ExpenseRed = Color(0xFFFF7043)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTransactionScreen(navController: NavController) {
+fun AddTransactionScreen(
+    navController: NavController,
+    transactionViewModel: TransactionViewModel = viewModel()
+) {
     var transactionType by remember { mutableStateOf(TransactionType.EXPENSE) }
     var amount by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf("Today") }
@@ -169,7 +177,35 @@ fun AddTransactionScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        // Save transaction
+                        // Buat entity dan payload dari input user
+                        val now = Date()
+                        val entity = TransactionEntity(
+                            amount = amount.toDoubleOrNull() ?: 0.0,
+                            date = now,
+                            description = note,
+                            categoryId = null, // mapping sesuai kebutuhan
+                            type = if (transactionType == TransactionType.INCOME) "income" else "expense",
+                            userId = "user_id", // ganti dengan userIdProvider jika ada
+                            accountId = null,
+                            tags = selectedTags.joinToString(","),
+                            location = null,
+                            receiptImagePath = null,
+                            isRecurring = false,
+                            recurringType = null
+                        )
+                        val payload = TransactionPayload(
+                            amount = amount.toDoubleOrNull() ?: 0.0,
+                            type = if (transactionType == TransactionType.INCOME) "income" else "expense",
+                            category = selectedCategory,
+                            description = note,
+                            date = now.toInstant().toString(),
+                            merchant_name = null,
+                            location = null,
+                            receipt_id = null,
+                            items = null,
+                            notes = note
+                        )
+                        transactionViewModel.addTransactionLocalAndRemote(entity, payload)
                         navController.navigateUp()
                     },
                     modifier = Modifier.weight(1f),

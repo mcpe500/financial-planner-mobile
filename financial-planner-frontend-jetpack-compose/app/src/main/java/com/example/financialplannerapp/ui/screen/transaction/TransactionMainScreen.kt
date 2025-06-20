@@ -20,6 +20,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.financialplannerapp.core.util.toCurrency
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financialplannerapp.data.local.model.TransactionEntity
+import com.example.financialplannerapp.ui.viewmodel.TransactionViewModel
 
 // Color scheme
 private val BibitGreen = Color(0xFF4CAF50)
@@ -31,7 +34,13 @@ private val ExpenseRed = Color(0xFFFF7043)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TransactionMainScreen(navController: NavController) {
+fun TransactionMainScreen(
+    navController: NavController,
+    transactionViewModel: TransactionViewModel = viewModel()
+) {
+    val localTransactions by transactionViewModel.localTransactions.collectAsState()
+    val remoteUiState by transactionViewModel.remoteUiState.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -70,6 +79,7 @@ fun TransactionMainScreen(navController: NavController) {
     ) { paddingValues ->
         TransactionMainContent(
             navController = navController,
+            transactions = localTransactions,
             modifier = Modifier.padding(paddingValues)
         )
     }
@@ -78,6 +88,7 @@ fun TransactionMainScreen(navController: NavController) {
 @Composable
 private fun TransactionMainContent(
     navController: NavController,
+    transactions: List<TransactionEntity>,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -88,28 +99,17 @@ private fun TransactionMainContent(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // Quick Stats Overview
-        TransactionStatsCard()
-        
-        // Transaction Actions
+        TransactionStatsCard(transactions)
         TransactionActionsCard(navController)
-        
-        // Recent Transactions (Detailed)
-        RecentTransactionsDetailedCard(navController)
-        
-        // Monthly Summary
-        MonthlyTransactionSummary()
-        
-        // Categories Breakdown
-        CategoriesBreakdownCard()
-        
-        // Bottom spacing for FAB
+        RecentTransactionsDetailedCard(navController, transactions)
+        MonthlyTransactionSummary(transactions)
+        CategoriesBreakdownCard(transactions)
         Spacer(modifier = Modifier.height(80.dp))
     }
 }
 
 @Composable
-private fun TransactionStatsCard() {
+private fun TransactionStatsCard(transactions: List<TransactionEntity>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -278,7 +278,7 @@ private fun TransactionActionItem(
 }
 
 @Composable
-private fun RecentTransactionsDetailedCard(navController: NavController) {
+private fun RecentTransactionsDetailedCard(navController: NavController, transactions: List<TransactionEntity>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -435,7 +435,7 @@ private fun TransactionDetailedItem(
 }
 
 @Composable
-private fun MonthlyTransactionSummary() {
+private fun MonthlyTransactionSummary(transactions: List<TransactionEntity>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -489,7 +489,7 @@ private fun SummaryItem(label: String, value: String) {
 }
 
 @Composable
-private fun CategoriesBreakdownCard() {
+private fun CategoriesBreakdownCard(transactions: List<TransactionEntity>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
