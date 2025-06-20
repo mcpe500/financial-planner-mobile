@@ -33,7 +33,7 @@ export const processReceiptOCR = async (req: AuthRequest, res: Response): Promis
                 message: "Unauthorized access"
             });
             return;
-        }
+        };
 
         console.log(`Processing OCR for user: ${user_id}`);
         console.log(`Image data length: ${image_base64.length} characters`);
@@ -90,7 +90,7 @@ export const storeTransactionFromOCR = async (req: AuthRequest, res: Response): 
                 message: "Required fields missing: total_amount, merchant_name"
             });
             return;
-        }
+        };
 
         console.log(`Storing transaction from OCR for user: ${user_id}`);
         console.log(`Transaction data:`, {
@@ -156,8 +156,13 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
     const payload: TransactionPayload = req.body;
     const transaction = await database.createTransaction(req.user.id, payload);
     res.status(201).json({ success: true, data: transaction });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to create transaction", error });
+  } catch (error: any) {
+    console.error("Error creating transaction:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create transaction",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
