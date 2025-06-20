@@ -9,6 +9,8 @@ import android.util.Log
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.model.ReceiptOCRRequest
 import com.example.financialplannerapp.data.model.ReceiptOCRResponse
+import com.example.financialplannerapp.data.model.ReceiptOCRData
+import com.example.financialplannerapp.data.model.ReceiptItem
 import com.example.financialplannerapp.data.remote.ApiService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -35,11 +37,11 @@ class ReceiptService(
      */
     suspend fun processReceiptOCR(imageUri: Uri): Result<ReceiptOCRResponse> = withContext(Dispatchers.IO) {
         try {
-            val userId = tokenManager.getUserId() ?: return@withContext Result.failure(
-                Exception("User ID not available")
-            )
+            // Check if user is authenticated
+            val isAuthenticated = tokenManager.isAuthenticated()
+            val userId = tokenManager.getUserId() ?: "local_user"
             
-            Log.d(TAG, "Starting receipt processing for user: $userId")
+            Log.d(TAG, "Starting receipt processing for user: $userId, authenticated: $isAuthenticated")
             
             // Validate image URI
             if (!isValidImageUri(imageUri)) {
@@ -53,7 +55,14 @@ class ReceiptService(
             }
             
             Log.d(TAG, "Image converted to base64, size: ${base64Image.length} characters")
-              // Create request
+            
+            // If user is not authenticated, return a mock response for local storage
+            if (!isAuthenticated) {
+                Log.d(TAG, "User not authenticated, returning mock OCR response")
+                return@withContext Result.success(createMockOCRResponse())
+            }
+            
+            // Create request for authenticated users
             val request = ReceiptOCRRequest(
                 imageBase64 = base64Image,
                 userId = userId
@@ -174,5 +183,34 @@ class ReceiptService(
             Log.e(TAG, "Error validating image URI", e)
             false
         }
+    }
+
+    /**
+     * Create a mock OCR response for unauthenticated users
+     */
+    private fun createMockOCRResponse(): ReceiptOCRResponse {
+        val currentDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            .format(java.util.Date())
+        
+        return ReceiptOCRResponse(
+            success = true,
+            message = "Receipt processed locally (limited functionality)",
+            data = ReceiptOCRData(
+                totalAmount = 0.00,
+                merchantName = "Local Receipt",
+                date = currentDate,
+                items = listOf(
+                    ReceiptItem(
+                        name = "Unable to extract items without authentication",
+                        price = 0.00,
+                        quantity = 1,
+                        category = "Unknown"
+                    )
+                ),
+                location = "Unknown Location",
+                confidence = 0.1,
+                receiptId = "local_receipt_${System.currentTimeMillis()}"
+            )
+        )
     }
 }

@@ -8,6 +8,11 @@ export interface TransactionType {
   date: string; // ISO date string
   created_at: string;
   updated_at: string;
+  merchant_name?: string;
+  location?: string;
+  receipt_id?: string;
+  items?: any[];
+  notes?: string;
 }
 
 export interface TransactionPayload {
@@ -16,4 +21,9 @@ export interface TransactionPayload {
   category: string;
   description?: string;
   date: string; // ISO date string
-} 
+  merchant_name?: string;
+  location?: string;
+  receipt_id?: string;
+  items?: any[];
+  notes?: string;
+}

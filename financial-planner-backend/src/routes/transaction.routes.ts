@@ -4,7 +4,8 @@ import {
   createTransaction,
   getUserTransactions,
   getTransactionById,
-  processReceiptOCR
+  processReceiptOCR,
+  storeTransactionFromOCR
 } from "../controllers/transaction.controller";
 
 const router = Router();
@@ -25,5 +26,8 @@ router.post("/receipt-ocr", authenticate, processReceiptOCR);
 
 // POST /api/transactions/process - Process receipts (Android)
 router.post("/process", authenticate, processReceiptOCR);
+
+// POST /api/transactions/store - Store transaction from OCR data
+router.post("/store", authenticate, storeTransactionFromOCR);
 
 export default router;

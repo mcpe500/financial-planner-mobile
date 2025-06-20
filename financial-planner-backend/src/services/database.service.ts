@@ -141,30 +141,56 @@ class Database {
 	}
 
 	// Transaction methods
-	async createTransaction(userId: string, payload: TransactionPayload): Promise<TransactionType> {
-		const { data, error } = await this.supabase
-			.from('transactions')
-			.insert([{ ...payload, user_id: userId }])
-			.select()
-			.single();
+	async createTransaction(userIdOrData: string | any, payload?: TransactionPayload): Promise<TransactionType | any> {
+		try {
+			let transactionData: any;
+			
+			// Handle both old and new method signatures
+			if (typeof userIdOrData === 'string' && payload) {
+				// Old signature: createTransaction(userId: string, payload: TransactionPayload)
+				transactionData = { ...payload, user_id: userIdOrData };
+			} else {
+				// New signature: createTransaction(transactionData: any)
+				transactionData = userIdOrData;
+			}
 
-		if (error) {
+			console.log('Creating transaction in database:', transactionData);
+			
+			const { data, error } = await this.supabase
+				.from('transactions')
+				.insert([transactionData])
+				.select()
+				.single();
+
+			if (error) {
+				console.error('Supabase error creating transaction:', error);
+				throw error;
+			}
+
+			console.log('Transaction created successfully:', data);
+			return data;
+		} catch (error) {
+			console.error('Error in createTransaction:', error);
 			throw error;
 		}
-		return data as TransactionType;
 	}
 
 	async getUserTransactions(userId: string): Promise<TransactionType[]> {
-		const { data, error } = await this.supabase
-			.from('transactions')
-			.select('*')
-			.eq('user_id', userId)
-			.order('date', { ascending: false });
+		try {
+			const { data, error } = await this.supabase
+				.from('transactions')
+				.select('*')
+				.eq('user_id', userId)
+				.order('date', { ascending: false });
 
-		if (error) {
+			if (error) {
+				throw error;
+			}
+			return data as TransactionType[];
+		} catch (error) {
+			console.error('Error in getUserTransactions:', error);
 			throw error;
 		}
-		return data as TransactionType[];
 	}
 
 	async getTransactionById(id: string): Promise<TransactionType | null> {
@@ -178,6 +204,64 @@ class Database {
 			throw error;
 		}
 		return data as TransactionType | null;
+	}
+
+	async getTransactionsByUserId(userId: string): Promise<any[]> {
+		try {
+			const { data, error } = await this.supabase
+				.from('transactions')
+				.select('*')
+				.eq('user_id', userId)
+				.order('created_at', { ascending: false });
+
+			if (error) {
+				console.error('Supabase error fetching transactions:', error);
+				throw error;
+			}
+
+			return data || [];
+		} catch (error) {
+			console.error('Error in getTransactionsByUserId:', error);
+			throw error;
+		}
+	}
+
+	async updateTransaction(transactionId: string, updateData: any): Promise<any | null> {
+		try {
+			const { data, error } = await this.supabase
+				.from('transactions')
+				.update(updateData)
+				.eq('id', transactionId)
+				.select()
+				.single();
+
+			if (error) {
+				console.error('Supabase error updating transaction:', error);
+				throw error;
+			}
+
+			return data;
+		} catch (error) {
+			console.error('Error in updateTransaction:', error);
+			throw error;
+		}
+	}
+
+	async deleteTransaction(transactionId: string): Promise<void> {
+		try {
+			const { error } = await this.supabase
+				.from('transactions')
+				.delete()
+				.eq('id', transactionId);
+
+			if (error) {
+				console.error('Supabase error deleting transaction:', error);
+				throw error;
+			}
+		} catch (error) {
+			console.error('Error in deleteTransaction:', error);
+			throw error;
+		}
 	}
 }
 
