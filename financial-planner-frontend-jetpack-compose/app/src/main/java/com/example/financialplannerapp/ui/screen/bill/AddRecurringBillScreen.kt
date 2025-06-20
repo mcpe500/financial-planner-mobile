@@ -21,6 +21,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.financialplannerapp.data.model.RecurringBill
 import com.example.financialplannerapp.data.model.RepeatCycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financialplannerapp.ui.viewmodel.BillViewModel
+import com.example.financialplannerapp.data.local.model.BillEntity
+import com.google.gson.Gson
 
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -29,6 +33,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddRecurringBillScreen(
+    billViewModel: BillViewModel = viewModel(),
     billId: NavHostController? = null,
     onNavigateBack: () -> Unit = {},
     onSave: (RecurringBill) -> Unit = {}
@@ -113,7 +118,7 @@ fun AddRecurringBillScreen(
                     TextButton(
                         onClick = {
                             if (validateForm()) {
-                                val bill = RecurringBill(
+                                val recurringBill = RecurringBill(
                                     id = (billId ?: UUID.randomUUID().toString()) as String,
                                     name = billName,
                                     estimatedAmount = estimatedAmount.replace(",", "").replace(".", "").toDouble(),
@@ -121,7 +126,24 @@ fun AddRecurringBillScreen(
                                     repeatCycle = selectedCycle.label,
                                     notes = notes
                                 )
-                                onSave(bill)
+                                // Simpan ke RoomDB melalui ViewModel
+                                val billEntity = BillEntity(
+                                    uuid = recurringBill.id,
+                                    name = recurringBill.name,
+                                    estimatedAmount = recurringBill.estimatedAmount,
+                                    dueDate = recurringBill.dueDate,
+                                    repeatCycle = recurringBill.repeatCycle,
+                                    category = recurringBill.category,
+                                    notes = recurringBill.notes,
+                                    isActive = recurringBill.isActive,
+                                    paymentsJson = Gson().toJson(recurringBill.payments),
+                                    autoPay = recurringBill.autoPay,
+                                    notificationEnabled = recurringBill.notificationEnabled,
+                                    lastPaymentDate = recurringBill.lastPaymentDate,
+                                    creationDate = recurringBill.creationDate
+                                )
+                                billViewModel.addBill(billEntity)
+                                onSave(recurringBill)
                                 onNavigateBack()
                             }
                         }
