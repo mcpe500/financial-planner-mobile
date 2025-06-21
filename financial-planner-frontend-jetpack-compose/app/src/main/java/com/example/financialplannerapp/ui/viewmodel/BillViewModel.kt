@@ -7,64 +7,72 @@ import com.example.financialplannerapp.data.repository.BillRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-sealed class BillUiState {
-    object Loading : BillUiState()
-    data class Success(val bills: List<BillEntity>) : BillUiState()
-    data class Error(val message: String) : BillUiState()
-    object Idle : BillUiState()
-}
-
 class BillViewModel(
     private val repository: BillRepository
 ) : ViewModel() {
-    val localBills: StateFlow<List<BillEntity>> =
-        repository.getAllBills().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    private val _uiState = MutableStateFlow<BillUiState>(BillUiState.Idle)
-    val uiState: StateFlow<BillUiState> = _uiState.asStateFlow()
+    val localBills: StateFlow<List<BillEntity>> =
+        repository.getAllBills()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    private val _operationSuccess = MutableSharedFlow<Boolean>()
+    val operationSuccess: SharedFlow<Boolean> = _operationSuccess.asSharedFlow()
 
     fun addBill(bill: BillEntity) {
         viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
             try {
                 repository.insertBill(bill)
-                _uiState.value = BillUiState.Success(repository.getAllBills().first())
+                _operationSuccess.emit(true)
             } catch (e: Exception) {
-                _uiState.value = BillUiState.Error(e.message ?: "Error adding bill")
+                _error.value = e.message ?: "An unexpected error occurred while adding the bill."
+                _operationSuccess.emit(false)
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
     fun updateBill(bill: BillEntity) {
         viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
             try {
                 repository.updateBill(bill)
-                _uiState.value = BillUiState.Success(repository.getAllBills().first())
             } catch (e: Exception) {
-                _uiState.value = BillUiState.Error(e.message ?: "Error updating bill")
+                _error.value = e.message ?: "An unexpected error occurred while updating the bill."
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-    fun deleteBill(bill: BillEntity) {
+    fun deleteBill(billId: String) {
         viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
             try {
-                repository.deleteBill(bill)
-                _uiState.value = BillUiState.Success(repository.getAllBills().first())
+                repository.deleteBillByUuid(billId)
             } catch (e: Exception) {
-                _uiState.value = BillUiState.Error(e.message ?: "Error deleting bill")
+                _error.value = e.message ?: "An unexpected error occurred while deleting the bill."
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-    fun loadBills() {
-        viewModelScope.launch {
-            _uiState.value = BillUiState.Loading
-            try {
-                val bills = repository.getAllBills().first()
-                _uiState.value = BillUiState.Success(bills)
-            } catch (e: Exception) {
-                _uiState.value = BillUiState.Error(e.message ?: "Error loading bills")
-            }
-        }
+    fun clearError() {
+        _error.value = null
     }
-} 
+}

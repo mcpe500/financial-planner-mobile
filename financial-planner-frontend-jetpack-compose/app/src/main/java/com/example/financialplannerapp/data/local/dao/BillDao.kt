@@ -10,8 +10,8 @@ interface BillDao {
     @Query("SELECT * FROM bills ORDER BY dueDate ASC")
     fun getAllBills(): Flow<List<BillEntity>>
 
-    @Query("SELECT * FROM bills WHERE id = :id")
-    suspend fun getBillById(id: Int): BillEntity?
+    @Query("SELECT * FROM bills WHERE uuid = :uuid")
+    suspend fun getBillByUuid(uuid: String): BillEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBill(bill: BillEntity): Long
@@ -24,6 +24,9 @@ interface BillDao {
 
     @Delete
     suspend fun deleteBill(bill: BillEntity)
+
+    @Query("DELETE FROM bills WHERE uuid = :uuid")
+    suspend fun deleteBillByUuid(uuid: String)
 
     @Query("DELETE FROM bills")
     suspend fun deleteAllBills()
