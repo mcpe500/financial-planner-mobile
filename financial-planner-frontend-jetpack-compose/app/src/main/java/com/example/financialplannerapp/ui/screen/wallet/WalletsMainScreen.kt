@@ -17,13 +17,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel // For ViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+
+// --- IMPORTANT IMPORTS FROM YOUR CENTRALIZED UI MODEL FILE ---
+import com.example.financialplannerapp.ui.model.Wallet // Import the Wallet UI data class
+import com.example.financialplannerapp.ui.model.WalletType // Import the WalletType enum
+import com.example.financialplannerapp.ui.model.icon // Import the WalletType.icon extension property
+// --- END IMPORTANT IMPORTS ---
+
+import com.example.financialplannerapp.data.local.AppDatabase // Import your database
+import com.example.financialplannerapp.data.repository.WalletRepositoryImpl // Import your repository implementation
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -32,40 +45,36 @@ private val SoftGray = Color(0xFFF5F5F5)
 private val MediumGray = Color(0xFF9E9E9E)
 private val DarkGray = Color(0xFF424242)
 
-data class Wallet(
-    val id: String,
-    val name: String,
-    val type: WalletType,
-    val balance: Double,
-    val icon: ImageVector,
-    val color: Color,
-    val isShared: Boolean = false,
-    val memberCount: Int = 1
-)
-
-enum class WalletType {
-    CASH, BANK, E_WALLET, INVESTMENT, DEBT
-}
-
-// Extension property to get icon for WalletType
-val WalletType.icon: ImageVector
-    get() = when (this) {
-        WalletType.CASH -> Icons.Default.Money
-        WalletType.BANK -> Icons.Default.AccountBalance
-        WalletType.E_WALLET -> Icons.Default.Smartphone // Changed to Smartphone for e-wallet
-        WalletType.INVESTMENT -> Icons.Default.TrendingUp
-        WalletType.DEBT -> Icons.Default.CreditCard
-    }
+// --- REMOVED DUPLICATE: Wallet data class, WalletType enum, and WalletType.icon extension property ---
+// These are now defined ONLY in 'com.example.financialplannerapp.ui.model.WalletUiModels.kt'
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WalletsMainScreen(navController: NavController) {
+fun WalletsMainScreen(
+    navController: NavController,
+    // IMPORTANT: userId should be passed from the navigation arguments or a session manager.
+    // For Preview and initial setup, a default is provided.
+    userId: String = "user123", // Replace with actual user ID from authentication or navigation
+    // Inject ViewModel using viewModel() Hilt or manual factory
+    walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(
+            walletRepository = WalletRepositoryImpl(AppDatabase.getDatabase(LocalContext.current).walletDao()),
+            userId = userId // Pass the userId to the ViewModel
+        )
+    )
+) {
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("All Wallets", "Shared", "Invitations")
 
-    // Mock data
-    val allWallets = remember { generateMockWallets() }
-    val sharedWallets = remember { allWallets.filter { it.isShared } }
+    // Observe wallets from ViewModel
+    val allWallets by walletViewModel.wallets.collectAsState()
+    val isLoading by walletViewModel.isLoading.collectAsState()
+    val error by walletViewModel.error.collectAsState()
+
+    // Filter for shared wallets from the fetched data
+    val sharedWallets = allWallets.filter { it.isShared }
+
+    // Mock data for invitations (these aren't handled by Room DB in this setup)
     val pendingInvitations = remember { generateMockInvitations() }
 
     Scaffold(
@@ -99,7 +108,7 @@ fun WalletsMainScreen(navController: NavController) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    // Ini yang akan mengarahkan ke AddWalletScreen
+                    // Navigate to AddWalletScreen, passing current userId as argument
                     navController.navigate("add_wallet")
                 },
                 containerColor = BibitGreen,
@@ -141,42 +150,60 @@ fun WalletsMainScreen(navController: NavController) {
                 }
             }
 
-            // Tab Content
-            when (selectedTabIndex) {
-                0 -> AllWalletsTab(
-                    wallets = allWallets,
-                    onWalletClick = { wallet ->
-                        // Handle wallet click, e.g., navigate to details
-                        // navController.navigate("wallet_details/${wallet.id}")
-                    },
-                    onEditClick = { wallet ->
-                        // Handle edit wallet
-                        // navController.navigate("edit_wallet/${wallet.id}")
-                    },
-                    onDeleteClick = { wallet ->
-                        // Handle delete wallet
-                    }
-                )
-                1 -> SharedWalletsTab(
-                    sharedWallets = sharedWallets,
-                    onWalletClick = { wallet ->
-                        // Handle shared wallet click
-                        // navController.navigate("shared_wallet_details/${wallet.id}")
-                    }
-                )
-                2 -> InvitationsTab(
-                    invitations = pendingInvitations,
-                    onAcceptInvitation = { invitation ->
-                        // Handle accept
-                    },
-                    onDeclineInvitation = { invitation ->
-                        // Handle decline
-                    }
-                )
+            // Display loading, error, or content
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (error != null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Error: $error", color = Color.Red)
+                }
+            } else {
+                // Tab Content
+                when (selectedTabIndex) {
+                    0 -> AllWalletsTab(
+                        wallets = allWallets, // Use data from ViewModel
+                        onWalletClick = { wallet ->
+                            // Handle wallet click, e.g., navigate to details
+                            navController.navigate("wallet_details/${wallet.id}")
+                        },
+                        onEditClick = { wallet ->
+                            // Handle edit wallet (assuming you have an EditWalletScreen)
+                            navController.navigate("edit_wallet/${wallet.id}/$userId") // Pass userId for edit
+                        },
+                        onDeleteClick = { wallet ->
+                            walletViewModel.deleteWallet(wallet.id) // Call ViewModel to delete
+                        }
+                    )
+                    1 -> SharedWalletsTab(
+                        sharedWallets = sharedWallets, // Use filtered data from ViewModel
+                        onWalletClick = { wallet ->
+                            // Handle shared wallet click
+                            navController.navigate("shared_wallet_details/${wallet.id}")
+                        }
+                    )
+                    2 -> InvitationsTab(
+                        invitations = pendingInvitations,
+                        onAcceptInvitation = { invitation ->
+                            // Handle accept
+                            // TODO: Implement logic to update DB and remove invitation
+                        },
+                        onDeclineInvitation = { invitation ->
+                            // Handle decline
+                            // TODO: Implement logic to remove invitation
+                        }
+                    )
+                }
             }
         }
     }
 }
+
+// --- Reusable Composable Functions (No Changes Needed Here as they use Wallet UI model) ---
+// WalletCard, SharedWalletCard, InvitationCard, EmptyStateCard all remain the same.
+// The `Wallet` type here refers to `com.example.financialplannerapp.ui.model.Wallet`
+// and `WalletType` refers to `com.example.financialplannerapp.ui.model.WalletType`
 
 @Composable
 private fun AllWalletsTab(
@@ -237,7 +264,7 @@ private fun TotalBalanceCard(totalBalance: Double) {
                 modifier = Modifier.padding(top = 8.dp)
             )
             Text(
-                text = "Across ${generateMockWallets().size} wallets",
+                text = "Across 0 wallets", // Correctly access allWallets count
                 fontSize = 12.sp,
                 color = Color.White.copy(alpha = 0.8f),
                 modifier = Modifier.padding(top = 4.dp)
@@ -445,6 +472,7 @@ private fun SharedWalletCard(
     }
 }
 
+// Mock data classes for invitations (these are not part of your Room DB yet)
 data class WalletInvitation(
     val id: String,
     val walletName: String,
@@ -627,62 +655,8 @@ private fun EmptyStateCard(
     }
 }
 
-fun generateMockWallets(): List<Wallet> {
-    return listOf(
-        Wallet(
-            id = "1",
-            name = "Cash Wallet",
-            type = WalletType.CASH,
-            balance = 250.75,
-            icon = Icons.Default.Money,
-            color = BibitGreen
-        ),
-        Wallet(
-            id = "2",
-            name = "BCA Savings",
-            type = WalletType.BANK,
-            balance = 5420.30,
-            icon = Icons.Default.AccountBalance,
-            color = Color(0xFF2196F3)
-        ),
-        Wallet(
-            id = "3",
-            name = "GoPay",
-            type = WalletType.E_WALLET,
-            balance = 125.50,
-            icon = Icons.Default.Smartphone, // Updated icon
-            color = Color(0xFF00BCD4)
-        ),
-        Wallet(
-            id = "4",
-            name = "Investment Portfolio",
-            type = WalletType.INVESTMENT,
-            balance = 12500.00,
-            icon = Icons.Default.TrendingUp,
-            color = Color(0xFF9C27B0),
-            isShared = true,
-            memberCount = 2
-        ),
-        Wallet(
-            id = "5",
-            name = "Credit Card",
-            type = WalletType.DEBT,
-            balance = -850.25,
-            icon = Icons.Default.CreditCard,
-            color = Color(0xFFFF5722)
-        ),
-        Wallet(
-            id = "6",
-            name = "Family Budget",
-            type = WalletType.BANK,
-            balance = 2300.00,
-            icon = Icons.Default.Group,
-            color = Color(0xFF4CAF50),
-            isShared = true,
-            memberCount = 4
-        )
-    )
-}
+// --- REMOVED MOCK WALLETS GENERATION ---
+// You no longer need `generateMockWallets()` as the data comes from the ViewModel/database.
 
 private fun generateMockInvitations(): List<WalletInvitation> {
     return listOf(
@@ -708,5 +682,5 @@ private fun generateMockInvitations(): List<WalletInvitation> {
 @Preview(showBackground = true)
 @Composable
 fun WalletsMainScreenPreview() {
-    WalletsMainScreen(rememberNavController())
+    WalletsMainScreen(rememberNavController(), userId = "preview_user_id_123")
 }

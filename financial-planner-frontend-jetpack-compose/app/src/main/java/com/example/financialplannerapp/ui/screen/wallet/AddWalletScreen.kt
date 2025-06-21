@@ -19,13 +19,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext // Needed for AppDatabase and ViewModelFactory
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel // Needed for viewModel()
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.data.local.AppDatabase // Import your AppDatabase
+import com.example.financialplannerapp.data.repository.WalletRepositoryImpl // Import your repository impl
+import com.example.financialplannerapp.ui.model.Wallet // Import your Wallet UI model
+import com.example.financialplannerapp.ui.model.WalletType // Import WalletType enum
+import com.example.financialplannerapp.ui.model.icon // Import WalletType.icon extension
+import com.example.financialplannerapp.ui.model.toHex // Import Color.toHex extension
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
+import java.util.UUID // For generating unique IDs
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -34,42 +45,29 @@ private val SoftGray = Color(0xFFF5F5F5)
 private val MediumGray = Color(0xFF9E9E9E)
 private val DarkGray = Color(0xFF424242)
 
-// Wallet data class and WalletType enum (Copy from WalletsMainScreen if not shared)
-// This should ideally be in a shared data module if you're building a larger app.
-// For simplicity, I'm assuming they are in the same package or imported.
-/*
-data class Wallet(
-    val id: String,
-    val name: String,
-    val type: WalletType,
-    val balance: Double,
-    val icon: ImageVector,
-    val color: Color,
-    val isShared: Boolean = false,
-    val memberCount: Int = 1
-)
-
-enum class WalletType {
-    CASH, BANK, E_WALLET, INVESTMENT, DEBT
-}
-
-val WalletType.icon: ImageVector
-    get() = when (this) {
-        WalletType.CASH -> Icons.Default.Money
-        WalletType.BANK -> Icons.Default.AccountBalance
-        WalletType.E_WALLET -> Icons.Default.Smartphone
-        WalletType.INVESTMENT -> Icons.Default.TrendingUp
-        WalletType.DEBT -> Icons.Default.CreditCard
-    }
-*/
+// --- IMPORTANT: Removed duplicate WalletType, its icon extension, toHex, toColor, iconFromName ---
+// These are now defined ONLY in 'com.example.financialplannerapp.ui.model.WalletUiModels.kt'
+// and imported above.
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddWalletScreen(navController: NavController) {
+fun AddWalletScreen(
+    navController: NavController,
+    // IMPORTANT: userId should be passed from the navigation arguments or a session manager
+    userId: String = "default_user_id" // Provide a default or get it from navigation.
+) {
+    // Initialize ViewModel with necessary dependencies
+    val viewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(
+            walletRepository = WalletRepositoryImpl(AppDatabase.getDatabase(LocalContext.current).walletDao()),
+            userId = userId
+        )
+    )
+
     var walletName by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(WalletType.CASH) }
     var initialBalance by remember { mutableStateOf("") }
-    // Initialize selectedIcon based on default selectedType
+    // selectedIcon is of type ImageVector
     var selectedIcon by remember { mutableStateOf(selectedType.icon) }
     var selectedColor by remember { mutableStateOf(BibitGreen) }
 
@@ -103,12 +101,12 @@ fun AddWalletScreen(navController: NavController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Preview Card
+            // Preview Card - Correctly passes selectedIcon (which is ImageVector)
             WalletPreviewCard(
                 name = walletName.ifEmpty { "New Wallet" },
                 type = selectedType,
                 balance = initialBalance.toDoubleOrNull() ?: 0.0,
-                icon = selectedIcon,
+                icon = selectedIcon, // <-- CORRECTED: Pass ImageVector directly
                 color = selectedColor
             )
 
@@ -124,7 +122,7 @@ fun AddWalletScreen(navController: NavController) {
                 onTypeChange = {
                     selectedType = it
                     // Update icon when type changes, but allow manual override later
-                    selectedIcon = it.icon
+                    selectedIcon = it.icon // This correctly uses WalletType.icon
                 }
             )
 
@@ -163,8 +161,18 @@ fun AddWalletScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        // TODO: Implement actual wallet saving logic here
-                        // For now, just navigate back
+                        val newWallet = Wallet(
+                            id = UUID.randomUUID().toString(), // Generate a unique ID for the UI model
+                            name = walletName,
+                            type = selectedType, // Use the WalletType enum directly
+                            balance = initialBalance.toDoubleOrNull() ?: 0.0,
+                            icon = selectedIcon, // Store ImageVector directly in UI model
+                            color = selectedColor, // Store Color directly in UI model
+                            isShared = false,
+                            memberCount = 1
+                        )
+                        // ViewModel will handle mapping this UI Wallet to WalletEntity
+                        viewModel.addWallet(newWallet)
                         navController.navigateUp()
                     },
                     modifier = Modifier.weight(1f),
@@ -172,7 +180,6 @@ fun AddWalletScreen(navController: NavController) {
                         containerColor = BibitGreen,
                         contentColor = Color.White
                     ),
-                    // Enable button only if name is not empty and balance is a valid number
                     enabled = walletName.isNotEmpty() && initialBalance.toDoubleOrNull() != null
                 ) {
                     Text("Save Wallet")
@@ -184,12 +191,15 @@ fun AddWalletScreen(navController: NavController) {
     }
 }
 
+// These @Composable functions remain largely the same as they work with ImageVector and Color directly,
+// which are the types present in the UI model.
+
 @Composable
 private fun WalletPreviewCard(
     name: String,
     type: WalletType,
     balance: Double,
-    icon: ImageVector,
+    icon: ImageVector, // This is ImageVector, not WalletType.icon
     color: Color
 ) {
     Card(
@@ -212,7 +222,7 @@ private fun WalletPreviewCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        icon,
+                        icon, // Correct: icon is already an ImageVector
                         contentDescription = name,
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
@@ -347,7 +357,7 @@ private fun WalletTypeOption(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = type.icon, // Use the extension property
+            imageVector = type.icon, // Correct: Uses the WalletType.icon extension
             contentDescription = type.name,
             tint = if (isSelected) BibitGreen else MediumGray,
             modifier = Modifier.size(24.dp)
@@ -435,7 +445,7 @@ private fun IconSelectionCard(
             Icons.Default.Fastfood,
             Icons.Default.MedicalServices,
             Icons.Default.School,
-            Icons.Default.Smartphone // Added for e-wallet consistency
+            Icons.Default.Smartphone
         )
     }
 
@@ -587,5 +597,7 @@ private fun ColorOption(
 @Preview(showBackground = true)
 @Composable
 fun AddWalletScreenPreview() {
-    AddWalletScreen(rememberNavController())
+    // Provide a dummy userId for the preview, as AddWalletScreen now expects it.
+    // In a real app, you'd pass this via navigation arguments.
+    AddWalletScreen(navController = rememberNavController(), userId = "preview_user_id_123")
 }

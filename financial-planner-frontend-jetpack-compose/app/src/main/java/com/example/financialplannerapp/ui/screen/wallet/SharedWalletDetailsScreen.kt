@@ -18,8 +18,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel // For ViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.data.local.AppDatabase // Import your database
+import com.example.financialplannerapp.data.repository.WalletRepositoryImpl // Import your repository implementation
+
+// --- IMPORTANT IMPORTS FROM YOUR CENTRALIZED UI MODEL FILE ---
+import com.example.financialplannerapp.ui.model.Wallet // Import the Wallet UI data class
+import com.example.financialplannerapp.ui.model.WalletType // Import WalletType enum
+import com.example.financialplannerapp.ui.model.icon // Import WalletType.icon extension for WalletInfoCard
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
+
+// --- END IMPORTANT IMPORTS ---
+
+
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -28,6 +42,8 @@ private val SoftGray = Color(0xFFF5F5F5)
 private val MediumGray = Color(0xFF9E9E9E)
 private val DarkGray = Color(0xFF424242)
 
+// WalletMember and MemberPermission can remain here if they are only used within this screen
+// or move them to a 'ui.model.sharedwallet' package if you anticipate reuse.
 data class WalletMember(
     val id: String,
     val name: String,
@@ -43,24 +59,32 @@ enum class MemberPermission {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SharedWalletDetailsScreen(navController: NavController, walletId: String) {
+fun SharedWalletDetailsScreen(
+    navController: NavController,
+    walletId: String,
+    // Assume userId might be needed for permission checks or future actions
+    userId: String = "user123", // Passed from navigation or session
+    walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(
+            walletRepository = WalletRepositoryImpl(AppDatabase.getDatabase(androidx.compose.ui.platform.LocalContext.current).walletDao()),
+            userId = userId // Pass the userId to the ViewModel
+        )
+    )
+) {
     var showInviteDialog by remember { mutableStateOf(false) }
     var showPermissionDialog by remember { mutableStateOf<WalletMember?>(null) }
 
-    // Mock data
-    val wallet = remember {
-        Wallet(
-            id = walletId,
-            name = "Family Budget",
-            type = WalletType.BANK,
-            balance = 2300.00,
-            icon = Icons.Default.Group,
-            color = BibitGreen,
-            isShared = true,
-            memberCount = 4
-        )
+    // Observe all wallets, then find the specific one by walletId
+    val allWallets by walletViewModel.wallets.collectAsState()
+    val isLoading by walletViewModel.isLoading.collectAsState()
+    val error by walletViewModel.error.collectAsState()
+
+    // Find the specific wallet for this screen
+    val wallet = remember(walletId, allWallets) {
+        allWallets.find { it.id == walletId }
     }
 
+    // Mock members (since member management isn't in Room DB yet)
     val members = remember { generateMockMembers() }
 
     Scaffold(
@@ -68,7 +92,7 @@ fun SharedWalletDetailsScreen(navController: NavController, walletId: String) {
             TopAppBar(
                 title = {
                     Text(
-                        wallet.name,
+                        wallet?.name ?: "Loading...", // Display wallet name if available
                         fontWeight = FontWeight.SemiBold
                     )
                 },
@@ -89,54 +113,68 @@ fun SharedWalletDetailsScreen(navController: NavController, walletId: String) {
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SoftGray)
-                .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Wallet Info Card
-            item {
-                WalletInfoCard(wallet)
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
+        } else if (error != null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: $error", color = Color.Red)
+            }
+        } else if (wallet == null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Wallet not found!", color = Color.Gray)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(SoftGray)
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Wallet Info Card
+                item {
+                    WalletInfoCard(wallet)
+                }
 
-            // Members Section Header
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Members (${members.size})",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = DarkGray
-                    )
-
-                    TextButton(
-                        onClick = { showInviteDialog = true }
+                // Members Section Header
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Add",
-                            modifier = Modifier.size(16.dp)
+                        Text(
+                            text = "Members (${members.size})",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = DarkGray
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Invite")
+
+                        TextButton(
+                            onClick = { showInviteDialog = true }
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Add",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Invite")
+                        }
                     }
                 }
-            }
 
-            // Members List
-            items(members) { member ->
-                MemberCard(
-                    member = member,
-                    onPermissionClick = { showPermissionDialog = member },
-                    onRemoveClick = { /* Handle remove */ }
-                )
+                // Members List
+                items(members) { member ->
+                    MemberCard(
+                        member = member,
+                        onPermissionClick = { showPermissionDialog = member },
+                        onRemoveClick = { /* Handle remove */ } // TODO: Implement remove member logic
+                    )
+                }
             }
         }
     }
@@ -146,7 +184,8 @@ fun SharedWalletDetailsScreen(navController: NavController, walletId: String) {
         InviteMemberDialog(
             onDismiss = { showInviteDialog = false },
             onInvite = { email, permission ->
-                // Handle invite
+                // TODO: Implement actual invite logic (e.g., send invite to backend)
+                println("Inviting $email with $permission permission")
                 showInviteDialog = false
             }
         )
@@ -158,7 +197,8 @@ fun SharedWalletDetailsScreen(navController: NavController, walletId: String) {
             member = member,
             onDismiss = { showPermissionDialog = null },
             onPermissionChange = { newPermission ->
-                // Handle permission change
+                // TODO: Implement actual permission change logic (e.g., update member in backend/DB)
+                println("Changing ${member.name}'s permission to $newPermission")
                 showPermissionDialog = null
             }
         )
@@ -166,7 +206,7 @@ fun SharedWalletDetailsScreen(navController: NavController, walletId: String) {
 }
 
 @Composable
-private fun WalletInfoCard(wallet: Wallet) {
+private fun WalletInfoCard(wallet: Wallet) { // Wallet type is now from ui.model
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -187,7 +227,7 @@ private fun WalletInfoCard(wallet: Wallet) {
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        wallet.icon,
+                        wallet.icon, // Uses the extension property from ui.model.WalletType
                         contentDescription = wallet.name,
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
