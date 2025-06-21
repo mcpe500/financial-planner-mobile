@@ -14,13 +14,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector // Keep this for Icons.Default
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel // For ViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+
+// --- IMPORTANT IMPORTS FROM YOUR CENTRALIZED UI MODEL FILE ---
+import com.example.financialplannerapp.ui.model.Wallet // Import the Wallet UI data class
+import com.example.financialplannerapp.ui.model.WalletType // Import WalletType enum
+// No need to import 'icon' extension here unless you explicitly use WalletType.icon in this file
+// --- END IMPORTANT IMPORTS ---
+
+import com.example.financialplannerapp.data.local.AppDatabase // Import your database
+import com.example.financialplannerapp.data.repository.WalletRepositoryImpl // Import your repository implementation
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -28,18 +42,41 @@ private val SoftGray = Color(0xFFF5F5F5)
 private val MediumGray = Color(0xFF9E9E9E)
 private val DarkGray = Color(0xFF424242)
 
+// --- REMOVED DUPLICATE: Wallet data class, WalletType enum, and WalletType.icon extension property ---
+// These are now defined ONLY in 'com.example.financialplannerapp.ui.model.WalletUiModels.kt'
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReconcileBalanceScreen(navController: NavController) {
-    var selectedWallet by remember { mutableStateOf("") }
-    var realBalance by remember { mutableStateOf("") }
+fun ReconcileBalanceScreen(
+    navController: NavController,
+    // For simplicity, we're hardcoding a userId for ViewModel factory.
+    // In a real app, this should come from navigation arguments or a session manager.
+    userId: String = "user123", // Default for preview/initial setup
+    walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(
+            walletRepository = WalletRepositoryImpl(AppDatabase.getDatabase(LocalContext.current).walletDao()),
+            userId = userId
+        )
+    )
+) {
+    var selectedWalletOption by remember { mutableStateOf("") } // Format: "Wallet Name ($Balance)"
+    var realBalanceInput by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var showConfirmation by remember { mutableStateOf(false) }
 
-    val wallets = remember { generateMockWallets() }
-    val selectedWalletData = wallets.find { "${it.name} ($${String.format("%.2f", it.balance)})" == selectedWallet }
+    // Observe wallets from ViewModel
+    val allWallets by walletViewModel.wallets.collectAsState()
+    val isLoading by walletViewModel.isLoading.collectAsState()
+    val error by walletViewModel.error.collectAsState()
+
+    // Find the selected Wallet UI model based on the string option
+    val selectedWalletData = remember(selectedWalletOption, allWallets) {
+        val name = selectedWalletOption.substringBefore(" (").trim()
+        allWallets.find { it.name == name }
+    }
+
     val appBalance = selectedWalletData?.balance ?: 0.0
-    val realBalanceValue = realBalance.toDoubleOrNull() ?: 0.0
+    val realBalanceValue = realBalanceInput.toDoubleOrNull() ?: 0.0
     val difference = realBalanceValue - appBalance
 
     Scaffold(
@@ -63,84 +100,101 @@ fun ReconcileBalanceScreen(navController: NavController) {
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SoftGray)
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Info Card
-            ReconcileInfoCard()
-
-            // Wallet Selection
-            WalletSelectionCard(
-                selectedWallet = selectedWallet,
-                wallets = wallets,
-                onWalletChange = { selectedWallet = it }
-            )
-
-            // Balance Comparison
-            if (selectedWallet.isNotEmpty()) {
-                BalanceComparisonCard(
-                    appBalance = appBalance,
-                    realBalance = realBalanceValue,
-                    difference = difference
-                )
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
-
-            // Real Balance Input
-            RealBalanceInputCard(
-                realBalance = realBalance,
-                onRealBalanceChange = { realBalance = it }
-            )
-
-            // Note Input
-            ReconcileNoteCard(
-                note = note,
-                onNoteChange = { note = it }
-            )
-
-            // Reconcile Button
-            Button(
-                onClick = { showConfirmation = true },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = selectedWallet.isNotEmpty() && realBalance.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BibitGreen,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(12.dp)
+        } else if (error != null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: $error", color = Color.Red)
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(SoftGray)
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    Icons.Default.Balance,
-                    contentDescription = "Reconcile",
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "Reconcile Balance",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+                // Info Card
+                ReconcileInfoCard()
 
-            Spacer(modifier = Modifier.height(16.dp))
+                // Wallet Selection
+                WalletSelectionCard(
+                    selectedWalletOption = selectedWalletOption,
+                    wallets = allWallets, // Pass the actual wallets from ViewModel
+                    onWalletChange = { selectedWalletOption = it }
+                )
+
+                // Balance Comparison
+                if (selectedWalletOption.isNotEmpty()) {
+                    BalanceComparisonCard(
+                        appBalance = appBalance,
+                        realBalance = realBalanceValue,
+                        difference = difference
+                    )
+                }
+
+                // Real Balance Input
+                RealBalanceInputCard(
+                    realBalance = realBalanceInput,
+                    onRealBalanceChange = { realBalanceInput = it }
+                )
+
+                // Note Input
+                ReconcileNoteCard(
+                    note = note,
+                    onNoteChange = { note = it }
+                )
+
+                // Reconcile Button
+                Button(
+                    onClick = { showConfirmation = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = selectedWalletOption.isNotEmpty() && realBalanceInput.toDoubleOrNull() != null,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BibitGreen,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Balance,
+                        contentDescription = "Reconcile",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Reconcile Balance",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 
     // Confirmation Dialog
     if (showConfirmation) {
         ReconcileConfirmationDialog(
-            walletName = selectedWallet.takeWhile { it != '(' }.trim(),
+            walletName = selectedWalletData?.name ?: "N/A", // Use actual wallet name
             appBalance = appBalance,
             realBalance = realBalanceValue,
             difference = difference,
             note = note,
             onConfirm = {
-                // Handle reconciliation
+                // Handle reconciliation logic:
+                // 1. Update the balance of the selected wallet in the database
+                // 2. Potentially add a reconciliation transaction record
+                selectedWalletData?.let { walletToUpdate ->
+                    val updatedWallet = walletToUpdate.copy(balance = realBalanceValue)
+                    walletViewModel.updateWallet(updatedWallet) // Call ViewModel to update
+                    // TODO: Add logic to record reconciliation transaction if needed
+                }
                 showConfirmation = false
                 navController.navigateUp()
             },
@@ -195,11 +249,12 @@ private fun ReconcileInfoCard() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WalletSelectionCard(
-    selectedWallet: String,
-    wallets: List<Wallet>,
+    selectedWalletOption: String, // Renamed to avoid conflict
+    wallets: List<Wallet>, // Now expects List<Wallet> from UI model
     onWalletChange: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    // Map Wallet UI models to string options for the dropdown
     val walletOptions = wallets.map { "${it.name} ($${String.format("%.2f", it.balance)})" }
 
     Card(
@@ -225,7 +280,7 @@ private fun WalletSelectionCard(
                 onExpandedChange = { expanded = !expanded }
             ) {
                 OutlinedTextField(
-                    value = selectedWallet,
+                    value = selectedWalletOption,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Choose wallet to reconcile") },
@@ -242,11 +297,11 @@ private fun WalletSelectionCard(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    walletOptions.forEach { wallet ->
+                    walletOptions.forEach { walletOption -> // Use walletOption here
                         DropdownMenuItem(
-                            text = { Text(wallet) },
+                            text = { Text(walletOption) },
                             onClick = {
-                                onWalletChange(wallet)
+                                onWalletChange(walletOption)
                                 expanded = false
                             }
                         )
@@ -356,7 +411,7 @@ private fun BalanceComparisonCard(
 private fun BalanceRow(
     label: String,
     amount: Double,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector, // Changed to ImageVector
     color: Color
 ) {
     Row(
@@ -585,5 +640,5 @@ private fun ReconcileDetailRow(
 @Preview(showBackground = true)
 @Composable
 fun ReconcileBalanceScreenPreview() {
-    ReconcileBalanceScreen(rememberNavController())
+    ReconcileBalanceScreen(rememberNavController(), userId = "preview_user_id_123")
 }

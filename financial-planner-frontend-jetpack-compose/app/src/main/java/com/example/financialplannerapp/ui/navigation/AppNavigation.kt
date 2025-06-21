@@ -13,7 +13,7 @@ import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.ui.screen.auth.LoginScreen
 import com.example.financialplannerapp.ui.screen.dashboard.DashboardScreen
 import com.example.financialplannerapp.ui.screen.settings.AppSettingsScreen
-import com.example.financialplannerapp.ui.screen.settings.SettingsScreen
+import com.example.financialplannerapp.ui.screen.settings.SettingsScreen // Assuming this is your individual settings screen composable
 import com.example.financialplannerapp.screen.settings.UserProfileSettingsScreen
 import com.example.financialplannerapp.screen.settings.SecuritySettingsScreen
 import com.example.financialplannerapp.screen.settings.DataSyncSettingsScreen
@@ -28,6 +28,11 @@ import com.example.financialplannerapp.ui.screen.bill.AddRecurringBillScreen
 import com.example.financialplannerapp.ui.screen.bill.BillCalendarScreen
 import com.example.financialplannerapp.ui.screen.bill.RecurringBillsMainScreen
 import com.example.financialplannerapp.ui.screen.transaction.TransactionMainScreen
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import com.example.financialplannerapp.screen.AddWalletScreen
+import com.example.financialplannerapp.screen.DebtReceivableMainScreen
+import com.example.financialplannerapp.screen.WalletsMainScreen
 
 @Composable
 fun AppNavigation(
@@ -46,7 +51,7 @@ fun AppNavigation(
                 tokenManager = tokenManager
             )
         }
-        
+
         // Main Dashboard
         composable("dashboard") {
             DashboardScreen(
@@ -54,37 +59,39 @@ fun AppNavigation(
                 tokenManager = tokenManager
             )
         }
-        
+
         // Main Settings Screen
         composable("settings") {
             AppSettingsScreen(
                 onNavigateToPersonalProfile = { navController.navigate("personal_profile") },
                 onNavigateToSecurity = { navController.navigate("security") },
                 onNavigateToAppInfo = { navController.navigate("app_info") },
-                onLogout = { 
+                onLogout = {
                     // Handle logout logic
+                    tokenManager.clear() // Clear token on logout
                     navController.navigate("login") {
                         popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
         }
-        
+
         // Settings Sub-screens
         composable("personal_profile") {
             UserProfileSettingsScreen(
-                navController = navController, 
+                navController = navController,
                 tokenManager = tokenManager
             )
         }
-        
+
         composable("security") {
             SecuritySettingsScreen(
-                navController = navController, 
+                navController = navController,
                 tokenManager = tokenManager
             )
         }
-        
+
         composable("app_info") {
             // Create a simple app info screen or navigate to existing one
             Box(
@@ -94,23 +101,24 @@ fun AppNavigation(
                 Text("App Information Screen - Coming Soon")
             }
         }
-        
+
         composable("data_sync") {
             DataSyncSettingsScreen(navController = navController)
         }
-        
+
         composable("backup_restore") {
             BackupRestoreSettingsScreen(navController = navController)
         }
-        
+
         composable("help_center") {
             HelpCenterScreen(navController = navController)
         }
-        
+
         composable("contact_support") {
             ContactSupportScreen(navController = navController)
         }
 
+        // Transaction Screens
         composable("transactions") {
             TransactionMainScreen(navController = navController)
         }
@@ -133,17 +141,57 @@ fun AppNavigation(
         composable("add_transaction") {
             AddTransactionScreen(navController = navController)
         }
-        
+
         composable("transaction_history") {
             TransactionHistoryScreen(navController = navController)
         }
-        
+
         composable("scan_receipt") {
             ScanReceiptScreen(navController = navController)
         }
-        
+
         composable("voice_input") {
             VoiceInputScreen(navController = navController)
+        }
+
+        // --- New Quick Action Routes ---
+        composable("wallet") {
+            WalletsMainScreen(navController = navController)
+        }
+
+        composable("add_wallet") {
+            AddWalletScreen(navController = navController)
+        }
+        composable("debt") {
+            DebtReceivableMainScreen()
+        }
+        composable("goals") {
+            PlaceholderScreen(title = "Financial Goals Screen")
+        }
+        // --- End New Quick Action Routes ---
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PlaceholderScreen(title: String) {
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(title) }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = "This is the $title", style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(text = "Content for $title will be implemented here.", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

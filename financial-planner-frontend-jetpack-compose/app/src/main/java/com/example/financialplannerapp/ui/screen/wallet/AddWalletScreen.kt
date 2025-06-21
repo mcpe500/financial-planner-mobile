@@ -19,27 +19,56 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext // Needed for AppDatabase and ViewModelFactory
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel // Needed for viewModel()
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.data.local.AppDatabase // Import your AppDatabase
+import com.example.financialplannerapp.data.repository.WalletRepositoryImpl // Import your repository impl
+import com.example.financialplannerapp.ui.model.Wallet // Import your Wallet UI model
+import com.example.financialplannerapp.ui.model.WalletType // Import WalletType enum
+import com.example.financialplannerapp.ui.model.icon // Import WalletType.icon extension
+import com.example.financialplannerapp.ui.model.toHex // Import Color.toHex extension
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
+import java.util.UUID // For generating unique IDs
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
+private val BibitLightGreen = Color(0xFF81C784)
 private val SoftGray = Color(0xFFF5F5F5)
 private val MediumGray = Color(0xFF9E9E9E)
 private val DarkGray = Color(0xFF424242)
 
+// --- IMPORTANT: Removed duplicate WalletType, its icon extension, toHex, toColor, iconFromName ---
+// These are now defined ONLY in 'com.example.financialplannerapp.ui.model.WalletUiModels.kt'
+// and imported above.
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddWalletScreen(navController: NavController) {
+fun AddWalletScreen(
+    navController: NavController,
+    // IMPORTANT: userId should be passed from the navigation arguments or a session manager
+    userId: String = "default_user_id" // Provide a default or get it from navigation.
+) {
+    // Initialize ViewModel with necessary dependencies
+    val viewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(
+            walletRepository = WalletRepositoryImpl(AppDatabase.getDatabase(LocalContext.current).walletDao()),
+            userId = userId
+        )
+    )
+
     var walletName by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(WalletType.CASH) }
     var initialBalance by remember { mutableStateOf("") }
-    var selectedIcon by remember { mutableStateOf(Icons.Default.Wallet) }
+    // selectedIcon is of type ImageVector
+    var selectedIcon by remember { mutableStateOf(selectedType.icon) }
     var selectedColor by remember { mutableStateOf(BibitGreen) }
 
     Scaffold(
@@ -72,12 +101,12 @@ fun AddWalletScreen(navController: NavController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Preview Card
+            // Preview Card - Correctly passes selectedIcon (which is ImageVector)
             WalletPreviewCard(
                 name = walletName.ifEmpty { "New Wallet" },
                 type = selectedType,
                 balance = initialBalance.toDoubleOrNull() ?: 0.0,
-                icon = selectedIcon,
+                icon = selectedIcon, // <-- CORRECTED: Pass ImageVector directly
                 color = selectedColor
             )
 
@@ -90,7 +119,11 @@ fun AddWalletScreen(navController: NavController) {
             // Wallet Type Selection
             WalletTypeCard(
                 selectedType = selectedType,
-                onTypeChange = { selectedType = it }
+                onTypeChange = {
+                    selectedType = it
+                    // Update icon when type changes, but allow manual override later
+                    selectedIcon = it.icon // This correctly uses WalletType.icon
+                }
             )
 
             // Initial Balance Input
@@ -128,7 +161,18 @@ fun AddWalletScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        // Save wallet logic
+                        val newWallet = Wallet(
+                            id = UUID.randomUUID().toString(), // Generate a unique ID for the UI model
+                            name = walletName,
+                            type = selectedType, // Use the WalletType enum directly
+                            balance = initialBalance.toDoubleOrNull() ?: 0.0,
+                            icon = selectedIcon, // Store ImageVector directly in UI model
+                            color = selectedColor, // Store Color directly in UI model
+                            isShared = false,
+                            memberCount = 1
+                        )
+                        // ViewModel will handle mapping this UI Wallet to WalletEntity
+                        viewModel.addWallet(newWallet)
                         navController.navigateUp()
                     },
                     modifier = Modifier.weight(1f),
@@ -136,7 +180,7 @@ fun AddWalletScreen(navController: NavController) {
                         containerColor = BibitGreen,
                         contentColor = Color.White
                     ),
-                    enabled = walletName.isNotEmpty()
+                    enabled = walletName.isNotEmpty() && initialBalance.toDoubleOrNull() != null
                 ) {
                     Text("Save Wallet")
                 }
@@ -147,12 +191,15 @@ fun AddWalletScreen(navController: NavController) {
     }
 }
 
+// These @Composable functions remain largely the same as they work with ImageVector and Color directly,
+// which are the types present in the UI model.
+
 @Composable
 private fun WalletPreviewCard(
     name: String,
     type: WalletType,
     balance: Double,
-    icon: ImageVector,
+    icon: ImageVector, // This is ImageVector, not WalletType.icon
     color: Color
 ) {
     Card(
@@ -175,7 +222,7 @@ private fun WalletPreviewCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        icon,
+                        icon, // Correct: icon is already an ImageVector
                         contentDescription = name,
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
@@ -298,57 +345,42 @@ private fun WalletTypeOption(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val typeInfo = getWalletTypeInfo(type)
-
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) BibitGreen.copy(alpha = 0.1f) else SoftGray
-        ),
-        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, BibitGreen) else null
+            .clickable(onClick = onClick)
+            .background(
+                color = if (isSelected) BibitLightGreen.copy(alpha = 0.2f) else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                typeInfo.icon,
-                contentDescription = typeInfo.name,
-                tint = if (isSelected) BibitGreen else MediumGray,
-                modifier = Modifier.size(24.dp)
+        Icon(
+            imageVector = type.icon, // Correct: Uses the WalletType.icon extension
+            contentDescription = type.name,
+            tint = if (isSelected) BibitGreen else MediumGray,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = type.name.lowercase().replaceFirstChar { it.uppercase() },
+            fontSize = 16.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isSelected) BibitGreen else DarkGray
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        RadioButton(
+            selected = isSelected,
+            onClick = null, // Handled by the Row's clickable modifier
+            colors = RadioButtonDefaults.colors(
+                selectedColor = BibitGreen,
+                unselectedColor = MediumGray
             )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = typeInfo.name,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isSelected) BibitGreen else DarkGray
-                )
-                Text(
-                    text = typeInfo.description,
-                    fontSize = 12.sp,
-                    color = MediumGray
-                )
-            }
-
-            RadioButton(
-                selected = isSelected,
-                onClick = onClick,
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = BibitGreen
-                )
-            )
-        }
+        )
     }
 }
+
 
 @Composable
 private fun InitialBalanceCard(
@@ -375,30 +407,21 @@ private fun InitialBalanceCard(
 
             OutlinedTextField(
                 value = balance,
-                onValueChange = onBalanceChange,
-                label = { Text("Enter initial balance") },
-                placeholder = { Text("0.00") },
-                leadingIcon = {
-                    Text(
-                        "$",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = BibitGreen
-                    )
+                onValueChange = { newValue ->
+                    // Allow only digits and a single decimal point
+                    if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                        onBalanceChange(newValue)
+                    }
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                label = { Text("Enter initial balance") },
+                placeholder = { Text("e.g., 1000.00") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                leadingIcon = { Text("$", color = DarkGray) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = BibitGreen,
                     focusedLabelColor = BibitGreen
                 )
-            )
-
-            Text(
-                text = "You can always update this later",
-                fontSize = 12.sp,
-                color = MediumGray,
-                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
@@ -409,16 +432,22 @@ private fun IconSelectionCard(
     selectedIcon: ImageVector,
     onIconChange: (ImageVector) -> Unit
 ) {
-    val availableIcons = listOf(
-        Icons.Default.Wallet,
-        Icons.Default.Money,
-        Icons.Default.AccountBalance,
-        Icons.Default.CreditCard,
-        Icons.Default.TrendingUp,
-        Icons.Default.Savings,
-        Icons.Default.LocalAtm,
-        Icons.Default.AccountBalanceWallet
-    )
+    val availableIcons = remember {
+        listOf(
+            Icons.Default.Wallet,
+            Icons.Default.Money,
+            Icons.Default.AccountBalance,
+            Icons.Default.CreditCard,
+            Icons.Default.TrendingUp,
+            Icons.Default.Savings,
+            Icons.Default.Home,
+            Icons.Default.DirectionsCar,
+            Icons.Default.Fastfood,
+            Icons.Default.MedicalServices,
+            Icons.Default.School,
+            Icons.Default.Smartphone
+        )
+    }
 
     Card(
         modifier = Modifier
@@ -431,7 +460,7 @@ private fun IconSelectionCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Choose Icon",
+                text = "Select Icon",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = DarkGray,
@@ -439,7 +468,8 @@ private fun IconSelectionCard(
             )
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
                 items(availableIcons) { icon ->
                     IconOption(
@@ -462,37 +492,41 @@ private fun IconOption(
     Box(
         modifier = Modifier
             .size(56.dp)
+            .clickable(onClick = onClick)
             .background(
-                if (isSelected) BibitGreen else SoftGray,
-                CircleShape
+                color = if (isSelected) BibitLightGreen.copy(alpha = 0.4f) else SoftGray,
+                shape = CircleShape
             )
-            .clickable { onClick() },
+            .shadow(if (isSelected) 4.dp else 1.dp, CircleShape),
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            icon,
-            contentDescription = "Icon",
-            tint = if (isSelected) Color.White else MediumGray,
-            modifier = Modifier.size(24.dp)
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (isSelected) BibitGreen else MediumGray,
+            modifier = Modifier.size(32.dp)
         )
     }
 }
+
 
 @Composable
 private fun ColorSelectionCard(
     selectedColor: Color,
     onColorChange: (Color) -> Unit
 ) {
-    val availableColors = listOf(
-        BibitGreen,
-        Color(0xFF2196F3), // Blue
-        Color(0xFF9C27B0), // Purple
-        Color(0xFFFF9800), // Orange
-        Color(0xFFF44336), // Red
-        Color(0xFF00BCD4), // Cyan
-        Color(0xFF795548), // Brown
-        Color(0xFF607D8B)  // Blue Grey
-    )
+    val availableColors = remember {
+        listOf(
+            BibitGreen,
+            Color(0xFF2196F3), // Blue
+            Color(0xFFFFC107), // Amber
+            Color(0xFF9C27B0), // Purple
+            Color(0xFFFF5722), // Deep Orange
+            Color(0xFF00BCD4), // Cyan
+            Color(0xFFE91E63), // Pink
+            Color(0xFF795548)  // Brown
+        )
+    }
 
     Card(
         modifier = Modifier
@@ -505,7 +539,7 @@ private fun ColorSelectionCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Choose Color",
+                text = "Select Color",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = DarkGray,
@@ -513,7 +547,8 @@ private fun ColorSelectionCard(
             )
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
                 items(availableColors) { color ->
                     ColorOption(
@@ -536,59 +571,33 @@ private fun ColorOption(
     Box(
         modifier = Modifier
             .size(48.dp)
+            .clickable(onClick = onClick)
             .background(color, CircleShape)
-            .clickable { onClick() },
+            .padding(4.dp), // Add padding for the border effect
         contentAlignment = Alignment.Center
     ) {
         if (isSelected) {
-            Icon(
-                Icons.Default.Check,
-                contentDescription = "Selected",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = 0.3f), CircleShape), // Inner translucent circle
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Selected",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
-    }
-}
-
-data class WalletTypeInfo(
-    val name: String,
-    val description: String,
-    val icon: ImageVector
-)
-
-private fun getWalletTypeInfo(type: WalletType): WalletTypeInfo {
-    return when (type) {
-        WalletType.CASH -> WalletTypeInfo(
-            "Cash",
-            "Physical money you carry",
-            Icons.Default.Money
-        )
-        WalletType.BANK -> WalletTypeInfo(
-            "Bank Account",
-            "Savings or checking account",
-            Icons.Default.AccountBalance
-        )
-        WalletType.E_WALLET -> WalletTypeInfo(
-            "E-Wallet",
-            "Digital wallet like GoPay, OVO",
-            Icons.Default.Wallet
-        )
-        WalletType.INVESTMENT -> WalletTypeInfo(
-            "Investment",
-            "Stocks, bonds, mutual funds",
-            Icons.Default.TrendingUp
-        )
-        WalletType.DEBT -> WalletTypeInfo(
-            "Debt/Credit",
-            "Credit cards, loans",
-            Icons.Default.CreditCard
-        )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun AddWalletScreenPreview() {
-    AddWalletScreen(rememberNavController())
+    // Provide a dummy userId for the preview, as AddWalletScreen now expects it.
+    // In a real app, you'd pass this via navigation arguments.
+    AddWalletScreen(navController = rememberNavController(), userId = "preview_user_id_123")
 }

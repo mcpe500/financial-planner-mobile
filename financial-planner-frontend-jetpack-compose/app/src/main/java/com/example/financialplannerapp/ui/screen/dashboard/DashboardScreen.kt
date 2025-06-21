@@ -21,6 +21,9 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.AttachMoney // For Debt
+import androidx.compose.material.icons.filled.TrackChanges // For Goal
+import androidx.compose.material.icons.filled.Wallet // For Wallet
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +33,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -141,6 +145,11 @@ private fun DashboardContent(
             onSettingsClick = onSettingsClick
         )
 
+        // Quick Actions Card
+        navController?.let { nav ->
+            QuickActionsCard(navController = nav)
+        }
+
         // Income vs Expenses Chart
         IncomeExpensesChart(
             income = monthlyIncome,
@@ -167,8 +176,7 @@ private fun DashboardContent(
             UpcomingBillsCard(navController = nav)
         }
 
-        // Bottom spacing for FAB
-        Spacer(modifier = Modifier.height(100.dp))
+
 
         // Bottom spacing for FAB
         Spacer(modifier = Modifier.height(100.dp))
@@ -236,7 +244,7 @@ private fun HeaderSection(
                         modifier = Modifier.size(22.dp)
                     )
                 }
-                
+
                 IconButton(
                     onClick = onSettingsClick,
                     modifier = Modifier
@@ -350,7 +358,7 @@ private fun IncomeExpensesChart(
                     isPositive = false
                 )
             }
-            
+
             // Net difference
             val netAmount = income - expenses
             Spacer(modifier = Modifier.height(16.dp))
@@ -498,7 +506,7 @@ private fun BudgetSummaryCard(
                 progress > 0.8f -> Color(0xFFFF7043) // Orange for over 80%
                 else -> BibitGreen // Green for under 80%
             }
-            
+
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier
@@ -552,7 +560,7 @@ private fun EnhancedBudgetItem(
 private fun AccountBalanceCard() {
     val totalBalance = 12847.56
     val percentageChange = 2.5f
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -573,7 +581,7 @@ private fun AccountBalanceCard() {
             ) {
                 // Add subtle geometric patterns or gradients here if desired
             }
-            
+
             Column(
                 modifier = Modifier.padding(24.dp)
             ) {
@@ -597,7 +605,7 @@ private fun AccountBalanceCard() {
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
-                    
+
                     Icon(
                         imageVector = Icons.Default.AccountBalanceWallet,
                         contentDescription = null,
@@ -605,9 +613,9 @@ private fun AccountBalanceCard() {
                         modifier = Modifier.size(32.dp)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -704,7 +712,7 @@ private fun EnhancedBillItem(
         daysUntilDue <= 7 -> Color(0xFFFF7043) // Orange for soon
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f) // Normal
     }
-    
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -740,7 +748,7 @@ private fun EnhancedBillItem(
                 )
             }
         }
-        
+
         Column(
             horizontalAlignment = Alignment.End
         ) {
@@ -863,7 +871,7 @@ private fun TransactionSummaryCard(navController: NavController) {
                         )
                     }
                 }
-                
+
                 Icon(
                     imageVector = Icons.Default.ArrowForward,
                     contentDescription = null,
@@ -904,6 +912,89 @@ private fun SimpleSummaryItem(
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+
+@Composable
+private fun QuickActionsCard(navController: NavController) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                QuickActionButton(
+                    icon = Icons.Default.Wallet,
+                    label = "Wallet",
+                    onClick = { navController.navigate("wallet") } // Assuming a "wallet" route
+                )
+                QuickActionButton(
+                    icon = Icons.Default.AttachMoney, // Using AttachMoney for debt
+                    label = "Debt",
+                    onClick = { navController.navigate("debt") } // Assuming a "debt" route
+                )
+                QuickActionButton(
+                    icon = Icons.Default.TrackChanges, // Using TrackChanges for goal
+                    label = "Goals",
+                    onClick = { navController.navigate("goals") } // Assuming a "goals" route
+                )
+                QuickActionButton(
+                    icon = Icons.Default.Settings,
+                    label = "Settings",
+                    onClick = { navController.navigate("settings") }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .background(
+                    color = BibitLightGreen.copy(alpha = 0.2f),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = BibitDarkGreen,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
