@@ -30,7 +30,7 @@ import com.example.financialplannerapp.data.local.model.WalletEntity
         CategoryEntity::class,
         TransactionEntity::class,
         ReceiptTransactionEntity::class,
-        BillEntity::class
+        BillEntity::class,
         WalletEntity::class
     ],
     version = 6,
