@@ -38,12 +38,6 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
-
-private val BibitGreen = Color(0xFF4CAF50)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecurringBillsMainScreen(navController: NavController) {
@@ -68,8 +62,8 @@ fun RecurringBillsMainScreen(navController: NavController) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate("add_bill") },
-                containerColor = BibitGreen,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Bill")
             }
@@ -125,7 +119,7 @@ private fun RecurringBillsMainContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(SoftGray)
+            .background(MaterialTheme.colorScheme.surfaceVariant) // Use theme color
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -179,7 +173,10 @@ fun DeleteConfirmationDialog(
         title = { Text("Delete Bill") },
         text = { Text("Are you sure you want to delete '$billName'?") },
         confirmButton = {
-            Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = Color.Red)) {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
                 Text("Delete")
             }
         },
@@ -198,16 +195,16 @@ fun EditBillDialog(
     var amount by remember(bill) { mutableStateOf(bill.estimatedAmount.toLong().toString()) }
     val initialDate = remember(bill) { Calendar.getInstance().apply { time = bill.dueDate } }
     var selectedDate by remember(bill) { mutableStateOf(initialDate) }
-    val initialCycle = remember(bill) { 
+    val initialCycle = remember(bill) {
         try { RepeatCycle.valueOf(bill.repeatCycle) } catch (e: Exception) { RepeatCycle.MONTHLY }
     }
     var selectedCycle by remember(bill) { mutableStateOf(initialCycle) }
-    
+
     var nameError by remember { mutableStateOf(false) }
     var amountError by remember { mutableStateOf(false) }
-    
-    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.timeInMillis)
+
     var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.timeInMillis)
 
     if (showDatePicker) {
         DatePickerDialog(
@@ -227,14 +224,17 @@ fun EditBillDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(16.dp)) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
             Column(
                 modifier = Modifier
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Edit Recurring Bill", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Edit Recurring Bill", style = MaterialTheme.typography.headlineSmall)
 
                 OutlinedTextField(
                     value = name,
@@ -252,16 +252,14 @@ fun EditBillDialog(
                     isError = amountError,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
-                val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
+
+                val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
                 OutlinedTextField(
                     value = dateFormat.format(selectedDate.time),
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Next Due Date") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
                     trailingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) }
                 )
 
@@ -297,29 +295,19 @@ fun EditBillDialog(
 }
 
 @Composable
-private fun BillHeaderSection(
-    onBackClick: () -> Unit,
-    onCalendarClick: () -> Unit
-) {
+private fun BillHeaderSection(onBackClick: () -> Unit, onCalendarClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        IconButton(onClick = onBackClick) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-        }
+        IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
         Text(
-            text = "Recurring Bills",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
+            "Recurring Bills",
+            style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
-        IconButton(onClick = onCalendarClick) {
-            Icon(Icons.Default.CalendarToday, contentDescription = "Calendar View")
-        }
+        IconButton(onClick = onCalendarClick) { Icon(Icons.Default.CalendarToday, contentDescription = "Calendar View") }
     }
 }
 
@@ -336,14 +324,12 @@ fun BillSummaryCards(bills: List<RecurringBill>) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            SummaryItem(label = "Total", value = totalBills.toString(), color = DarkGray)
-            SummaryItem(label = "Upcoming", value = upcomingBills.toString(), color = Color(0xFFFFA726))
-            SummaryItem(label = "Overdue", value = overdueBills.toString(), color = Color(0xFFEF5350))
+            SummaryItem("Total", totalBills.toString(), MaterialTheme.colorScheme.onSurface)
+            SummaryItem("Upcoming", upcomingBills.toString(), MaterialTheme.colorScheme.tertiary)
+            SummaryItem("Overdue", overdueBills.toString(), MaterialTheme.colorScheme.error)
         }
     }
 }
@@ -351,20 +337,15 @@ fun BillSummaryCards(bills: List<RecurringBill>) {
 @Composable
 fun SummaryItem(label: String, value: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = color)
-        Text(text = label, fontSize = 14.sp, color = MediumGray)
+        Text(value, style = MaterialTheme.typography.headlineMedium.copy(color = color))
+        Text(label, style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilterChips(
-    selectedFilter: BillFilter,
-    onFilterSelected: (BillFilter) -> Unit,
-    bills: List<RecurringBill>
-) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
+fun FilterChips(selectedFilter: BillFilter, onFilterSelected: (BillFilter) -> Unit, bills: List<RecurringBill>) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(BillFilter.values()) { filter ->
             val count = when (filter) {
                 BillFilter.ALL -> bills.size
@@ -377,8 +358,8 @@ fun FilterChips(
                 onClick = { onFilterSelected(filter) },
                 label = { Text("${filter.label} ($count)") },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = BibitGreen,
-                    selectedLabelColor = Color.White
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 shape = RoundedCornerShape(16.dp)
             )
@@ -387,111 +368,81 @@ fun FilterChips(
 }
 
 @Composable
-fun BillCard(
-    bill: RecurringBill,
-    onCardClick: () -> Unit,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
-) {
+fun BillCard(bill: RecurringBill, onCardClick: () -> Unit, onEditClick: () -> Unit, onDeleteClick: () -> Unit) {
     val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
     val statusColor = when (bill.status) {
-        BillStatus.PAID -> BibitGreen
-        BillStatus.DUE_SOON -> Color(0xFFFFA726)
-        BillStatus.OVERDUE -> Color(0xFFEF5350)
-        else -> MediumGray
+        BillStatus.PAID -> MaterialTheme.colorScheme.primary
+        BillStatus.DUE_SOON -> MaterialTheme.colorScheme.tertiary
+        BillStatus.OVERDUE -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onCardClick),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onCardClick),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
+        elevation = CardDefaults.cardElevation(2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.Receipt,
-                    contentDescription = "Bill",
-                    tint = BibitGreen,
+                    Icons.Default.Receipt,
+                    "Bill",
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(40.dp)
                 )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = bill.name, fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(text = "Amount: ${formatCurrency(bill.estimatedAmount)}", fontSize = 14.sp, color = MediumGray)
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        bill.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        "Amount: ${formatCurrency(bill.estimatedAmount)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Box(
                     modifier = Modifier
                         .background(statusColor.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    Text(text = bill.status.name, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        bill.status.name,
+                        color = statusColor,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
             Divider()
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Next Due: ${dateFormat.format(bill.nextDueDate)}", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    "Next Due: ${dateFormat.format(bill.nextDueDate)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     IconButton(onClick = onEditClick, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit Bill", tint = MediumGray)
+                        Icon(Icons.Default.Edit, "Edit Bill", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     IconButton(onClick = onDeleteClick, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete Bill", tint = MediumGray)
+                        Icon(Icons.Default.Delete, "Delete Bill", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CycleDropDown(
-    selectedCycle: RepeatCycle,
-    onCycleSelected: (RepeatCycle) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded }
-    ) {
-        OutlinedTextField(
-            value = selectedCycle.label,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Billing Cycle") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth()
-        )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            RepeatCycle.values().forEach { cycle ->
-                DropdownMenuItem(
-                    text = { Text(cycle.label) },
-                    onClick = {
-                        onCycleSelected(cycle)
-                        expanded = false
-                    }
-                )
             }
         }
     }
 }
 
 private fun formatCurrency(amount: Double): String {
-    val format = NumberFormat.getCurrencyInstance(Locale("in", "ID"))
-    return format.format(amount)
+    return NumberFormat.getCurrencyInstance(Locale("in", "ID")).format(amount)
 }
