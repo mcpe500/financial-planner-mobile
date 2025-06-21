@@ -12,37 +12,96 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 
+// Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
 private val BibitLightGreen = Color(0xFF81C784)
 private val BibitDarkGreen = Color(0xFF388E3C)
+private val BibitAccent = Color(0xFF66BB6A)
+private val SoftGray = Color(0xFFF5F5F5)
+private val MediumGray = Color(0xFF9E9E9E)
+private val DarkGray = Color(0xFF424242)
+private val WarningOrange = Color(0xFFFF9800)
+private val ErrorRed = Color(0xFFF44336)
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
+// Light theme color scheme
 private val LightColorScheme = lightColorScheme(
     primary = BibitGreen,
-    secondary = BibitLightGreen,
-    tertiary = BibitDarkGreen
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
     onPrimary = Color.White,
+    primaryContainer = BibitLightGreen,
+    onPrimaryContainer = Color.White,
+    secondary = BibitAccent,
     onSecondary = Color.White,
+    secondaryContainer = BibitLightGreen,
+    onSecondaryContainer = DarkGray,
+    tertiary = WarningOrange,
     onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    error = ErrorRed,
+    onError = Color.White,
+    errorContainer = ErrorRed.copy(alpha = 0.1f),
+    onErrorContainer = ErrorRed,
+    background = Color.White,
+    onBackground = DarkGray,
+    surface = Color.White,
+    onSurface = DarkGray,
+    surfaceVariant = SoftGray,
+    onSurfaceVariant = MediumGray,
+    outline = MediumGray,
+    outlineVariant = SoftGray,
+    scrim = Color.Black,
+    inverseSurface = DarkGray,
+    inverseOnSurface = Color.White,
+    inversePrimary = BibitLightGreen,
+    surfaceDim = SoftGray,
+    surfaceBright = Color.White,
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = SoftGray,
+    surfaceContainer = SoftGray.copy(alpha = 0.5f),
+    surfaceContainerHigh = SoftGray.copy(alpha = 0.8f),
+    surfaceContainerHighest = SoftGray
+)
+
+// Dark theme color scheme
+private val DarkColorScheme = darkColorScheme(
+    primary = BibitLightGreen,
+    onPrimary = Color.Black,
+    primaryContainer = BibitDarkGreen,
+    onPrimaryContainer = Color.White,
+    secondary = BibitAccent,
+    onSecondary = Color.Black,
+    secondaryContainer = BibitDarkGreen,
+    onSecondaryContainer = Color.White,
+    tertiary = WarningOrange,
+    onTertiary = Color.Black,
+    error = ErrorRed.copy(alpha = 0.8f),
+    onError = Color.White,
+    errorContainer = ErrorRed.copy(alpha = 0.2f),
+    onErrorContainer = ErrorRed.copy(alpha = 0.8f),
+    background = Color(0xFF121212),
+    onBackground = Color.White,
+    surface = Color(0xFF1E1E1E),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF2E2E2E),
+    onSurfaceVariant = Color(0xFFB0B0B0),
+    outline = Color(0xFF6E6E6E),
+    outlineVariant = Color(0xFF3E3E3E),
+    scrim = Color.Black,
+    inverseSurface = Color.White,
+    inverseOnSurface = Color.Black,
+    inversePrimary = BibitGreen,
+    surfaceDim = Color(0xFF0E0E0E),
+    surfaceBright = Color(0xFF2E2E2E),
+    surfaceContainerLowest = Color(0xFF0A0A0A),
+    surfaceContainerLow = Color(0xFF1A1A1A),
+    surfaceContainer = Color(0xFF1E1E1E),
+    surfaceContainerHigh = Color(0xFF2A2A2A),
+    surfaceContainerHighest = Color(0xFF353535)
 )
 
 @Composable
 fun FinancialPlannerAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // Set to false to use our custom color scheme
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

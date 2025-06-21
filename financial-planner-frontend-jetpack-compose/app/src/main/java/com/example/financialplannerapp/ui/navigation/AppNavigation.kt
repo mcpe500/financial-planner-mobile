@@ -135,7 +135,7 @@ fun AppNavigation(
         }
         composable("bill_details/{billId}") { backStackEntry ->
             val billId = backStackEntry.arguments?.getString("billId")
-            AddRecurringBillScreen(navController = navController, billId = billId)
+            AddRecurringBillScreen(navController = navController)
         }
         
         composable("add_transaction") {

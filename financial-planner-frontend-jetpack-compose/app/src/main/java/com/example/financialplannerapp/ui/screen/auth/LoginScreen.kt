@@ -8,6 +8,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,14 +18,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
@@ -56,14 +63,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import com.example.financialplannerapp.ui.theme.FinancialPlannerAppTheme
 
 private const val TAG_LOGIN_SCREEN = "LoginScreen"
-
-// Bibit-inspired color palette (copied for self-containment, ideally shared in a Theme file)
-private val BibitGreen = Color(0xFF4CAF50)
-private val SoftGray = Color(0xFFF5F5F5)
-private val DarkGray = Color(0xFF424242)
-private val MediumGray = Color(0xFF9E9E9E) // Added for text colors
 
 @Composable
 fun LoginScreen(navController: NavController, tokenManager: TokenManager) {
@@ -183,99 +185,152 @@ fun LoginScreen(navController: NavController, tokenManager: TokenManager) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SoftGray) // Set background color
-            .padding(24.dp), // Increased padding
+            .background(MaterialTheme.colorScheme.background)
+            .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (isLoading) {
-            CircularProgressIndicator(color = BibitGreen) // Themed loading indicator
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         } else {
-            // --- START OF MODIFIED WELCOME TEXT AND IMAGE ---
-            Text(
-                text = "Welcome to",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = DarkGray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 8.dp) // Adjust padding
-            )
-
-            // Using Row for Logo and "Financial Planner" text
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
+            // Main Login Card
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AccountBalanceWallet, // Updated to AccountBalanceWallet
-                    contentDescription = "Wallet Icon",
-                    modifier = Modifier.size(95.dp), // Adjust icon size to fit next to text
-                    tint = BibitGreen // Green color
+                    .shadow(8.dp, RoundedCornerShape(24.dp)),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
-                Spacer(modifier = Modifier.width(8.dp)) // Space between icon and text
-
-                // "Financial Planner" text within a single AnnotatedString
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.ExtraBold, fontSize = 36.sp, color = BibitGreen)) {
-                            append("Financial ")
+            ) {
+                Column(
+                    modifier = Modifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Logo and App Name Section
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 24.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountBalanceWallet,
+                                contentDescription = "Wallet Icon",
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.ExtraBold, fontSize = 36.sp, color = BibitGreen)) {
-                            append("Planner")
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Column {
+                            Text(
+                                text = "Welcome to",
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Start
+                            )
+                            Text(
+                                text = buildAnnotatedString {
+                                    withStyle(style = SpanStyle(
+                                        fontWeight = FontWeight.ExtraBold, 
+                                        fontSize = 28.sp, 
+                                        color = MaterialTheme.colorScheme.primary
+                                    )) {
+                                        append("Financial ")
+                                    }
+                                    withStyle(style = SpanStyle(
+                                        fontWeight = FontWeight.ExtraBold, 
+                                        fontSize = 28.sp, 
+                                        color = MaterialTheme.colorScheme.primary
+                                    )) {
+                                        append("Planner")
+                                    }
+                                },
+                                textAlign = TextAlign.Start,
+                                lineHeight = 32.sp
+                            )
                         }
-                    },
-                    textAlign = TextAlign.Start,
-                    lineHeight = 44.sp
-                )
-            }
-            // --- END OF MODIFIED WELCOME TEXT AND IMAGE ---
+                    }
 
-            // Descriptive text
-            Text(
-                text = "Track your expenses, manage budgets, and achieve your financial goals with ease.",
-                fontSize = 16.sp,
-                color = MediumGray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 60.dp) // Padding for spacing before buttons
-            )
+                    // Descriptive text
+                    Text(
+                        text = "Track your expenses, manage budgets, and achieve your financial goals with ease.",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 32.dp)
+                    )
 
-            // Sign in with Google Button
-            Button(
-                onClick = {
-                    signInWithGoogle(context)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BibitGreen,
-                    contentColor = Color.White
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Mail, // Mail icon for Google
-                    contentDescription = "Google Icon",
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text("Sign in with Google", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-            }
-            Spacer(modifier = Modifier.height(20.dp)) // Spacer between buttons
+                    // Sign in with Google Button
+                    Button(
+                        onClick = {
+                            signInWithGoogle(context)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mail,
+                                contentDescription = "Google Icon",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "Sign in with Google", 
+                            fontSize = 18.sp, 
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            // Continue Without Account Button
-            TextButton(
-                onClick = {
-                    Log.d(TAG_LOGIN_SCREEN, "Continue Without Account button clicked")
-                    tokenManager.setNoAccountMode(true) // Activate no-account mode
-                    navigateToDashboard(navController) // Navigate to dashboard
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(contentColor = MediumGray)
-            ) {
-                Text("Continue Without Account", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    // Continue Without Account Button
+                    TextButton(
+                        onClick = {
+                            Log.d(TAG_LOGIN_SCREEN, "Continue Without Account button clicked")
+                            tokenManager.setNoAccountMode(true)
+                            navigateToDashboard(navController)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    ) {
+                        Text(
+                            "Continue Without Account", 
+                            fontSize = 16.sp, 
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
     }
@@ -284,7 +339,17 @@ fun LoginScreen(navController: NavController, tokenManager: TokenManager) {
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 fun LoginScreenPreview() {
-    LoginScreen(navController = rememberNavController(), tokenManager = TokenManager(LocalContext.current))
+    FinancialPlannerAppTheme {
+        LoginScreen(navController = rememberNavController(), tokenManager = TokenManager(LocalContext.current))
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun LoginScreenDarkPreview() {
+    FinancialPlannerAppTheme(darkTheme = true) {
+        LoginScreen(navController = rememberNavController(), tokenManager = TokenManager(LocalContext.current))
+    }
 }
 
 // Helper functions (unchanged logic from your provided code)

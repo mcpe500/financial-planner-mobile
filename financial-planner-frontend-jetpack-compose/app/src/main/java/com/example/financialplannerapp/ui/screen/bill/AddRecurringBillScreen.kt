@@ -50,7 +50,7 @@ fun AddRecurringBillScreen(
     }
 
     var billName by remember { mutableStateOf("") }
-    var estimatedAmount by remember { mutableStateOF("") }
+    var estimatedAmount by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
     var selectedCycle by remember { mutableStateOf(RepeatCycle.MONTHLY) }
     var notes by remember { mutableStateOf("") }
@@ -108,7 +108,7 @@ fun AddRecurringBillScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Enter the details for your recurring bill.", style = MaterialTheme.typography.titleMedium)
+            Text("Enter the details for your recurring bill.", style = MaterialTheme.typography.bodyLarge)
 
             OutlinedTextField(
                 value = billName,
@@ -116,16 +116,24 @@ fun AddRecurringBillScreen(
                 label = { Text("Bill Name (e.g., Netflix)") },
                 isError = nameError,
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Receipt, contentDescription = null) }
+                leadingIcon = { Icon(Icons.Default.Receipt, contentDescription = null) },
+                singleLine = true
             )
             OutlinedTextField(
                 value = estimatedAmount,
-                onValueChange = { estimatedAmount = it; amountError = false },
+                onValueChange = { newValue ->
+                    // Allow only numbers and a single decimal point
+                    if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                        estimatedAmount = newValue
+                    }
+                    amountError = false
+                },
                 label = { Text("Estimated Amount") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 isError = amountError,
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null) }
+                leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null) },
+                singleLine = true
             )
 
             val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
@@ -140,14 +148,15 @@ fun AddRecurringBillScreen(
                 trailingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = "Select Date") }
             )
 
-            CycleDropDown(selectedCycle = selectedCycle, onCycleSelected = { selectedCycle = it })
+            AddBillCycleDropDown(selectedCycle = selectedCycle, onCycleSelected = { selectedCycle = it })
 
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text("Notes (Optional)") },
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null) }
+                leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null) },
+                maxLines = 4
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -186,6 +195,48 @@ fun AddRecurringBillScreen(
                 } else {
                     Text("Save Bill")
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddBillCycleDropDown(
+    selectedCycle: RepeatCycle,
+    onCycleSelected: (RepeatCycle) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        OutlinedTextField(
+            value = selectedCycle.name.lowercase().replaceFirstChar { it.titlecase() },
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Repeat Cycle") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true },
+            trailingIcon = {
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                    contentDescription = "Toggle Dropdown"
+                )
+            }
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            RepeatCycle.values().forEach { cycle ->
+                DropdownMenuItem(
+                    text = { Text(cycle.name.lowercase().replaceFirstChar { it.titlecase() }) },
+                    onClick = {
+                        onCycleSelected(cycle)
+                        expanded = false
+                    }
+                )
             }
         }
     }
