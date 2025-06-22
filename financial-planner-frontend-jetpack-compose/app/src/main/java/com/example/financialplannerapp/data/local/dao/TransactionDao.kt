@@ -36,4 +36,7 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET isSynced = 1 WHERE id IN (:ids)")
     suspend fun markTransactionsAsSynced(ids: List<Long>)
+
+    @Query("SELECT * FROM transactions WHERE backendTransactionId = :backendId LIMIT 1")
+    suspend fun getTransactionByBackendId(backendId: String): TransactionEntity?
 }

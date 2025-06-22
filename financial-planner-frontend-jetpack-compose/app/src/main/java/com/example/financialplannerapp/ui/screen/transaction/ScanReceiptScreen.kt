@@ -31,6 +31,8 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.data.model.ReceiptOCRState
+import com.example.financialplannerapp.ui.viewmodel.DataSyncViewModel
+import com.example.financialplannerapp.ui.viewmodel.DataSyncViewModelFactory
 import com.example.financialplannerapp.ui.viewmodel.ScanReceiptViewModel
 import com.example.financialplannerapp.ui.viewmodel.ScanReceiptViewModelFactory
 
@@ -48,6 +50,10 @@ fun ScanReceiptScreen(navController: NavController) {
             receiptTransactionRepository = application.appContainer.receiptTransactionRepository,
             transactionRepository = application.appContainer.transactionRepository
         )
+    )
+    
+    val dataSyncViewModel: DataSyncViewModel = viewModel(
+        factory = DataSyncViewModelFactory(application)
     )
     
     // Collect state from ViewModel
@@ -110,7 +116,9 @@ fun ScanReceiptScreen(navController: NavController) {
     LaunchedEffect(state) {
         when (val currentState = state) {
             is ReceiptOCRState.Success -> {
-                Toast.makeText(context, "Receipt processed successfully!", Toast.LENGTH_SHORT).show()
+                // After successful scan, trigger transaction sync instead of local insert
+                dataSyncViewModel.syncAll()
+                Toast.makeText(context, "Receipt processed! Syncing transactions...", Toast.LENGTH_SHORT).show()
                 navController.navigateUp()
             }
             is ReceiptOCRState.Error -> {

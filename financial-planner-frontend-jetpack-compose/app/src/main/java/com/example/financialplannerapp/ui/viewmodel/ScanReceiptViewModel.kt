@@ -70,13 +70,8 @@ class ScanReceiptViewModel(
                         Log.d(TAG, "OCR processing successful. Found ${response.data.items.size} items")
                         _state.value = ReceiptOCRState.Success(response.data)
 
-                        // Log extracted data for debugging
-                        Log.d(TAG, "Merchant: ${response.data.merchantName}")
-                        Log.d(TAG, "Total: $${response.data.totalAmount}")
-                        Log.d(TAG, "Items: ${response.data.items.size}")
-                        response.data.items.forEach { item ->
-                            Log.d(TAG, "  - ${item.name}: $${item.price}")
-                        }
+                        // Save to RoomDB as a transaction
+                        saveOcrResultToTransaction(response.data)
                     },
                     onFailure = { exception ->
                         val errorMessage = exception.message ?: "Unknown error occurred"
@@ -224,5 +219,37 @@ class ScanReceiptViewModel(
         Log.d(TAG, "Current State: $currentState")
         Log.d(TAG, "User authenticated: ${tokenManager.isAuthenticated()}")
         Log.d(TAG, "Image URI: $currentImageUri")
+    }
+
+    private fun saveOcrResultToTransaction(ocrData: com.example.financialplannerapp.data.model.ReceiptOCRData) {
+        viewModelScope.launch {
+            val userId = tokenManager.getUserId() ?: "local_user"
+            val localReceiptItems = ocrData.items.map { item ->
+                com.example.financialplannerapp.data.local.model.ReceiptItem(
+                    name = item.name,
+                    price = item.price,
+                    quantity = item.quantity,
+                    category = item.category ?: "Unknown"
+                )
+            }
+            val transaction = com.example.financialplannerapp.data.local.model.TransactionEntity(
+                userId = userId,
+                amount = ocrData.totalAmount,
+                type = if (ocrData.totalAmount >= 0) "INCOME" else "EXPENSE",
+                date = try { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).parse(ocrData.date) ?: java.util.Date() } catch (e: Exception) { java.util.Date() },
+                pocket = "Cash",
+                category = "General",
+                note = "${ocrData.merchantName} - Receipt Transaction",
+                isFromReceipt = true,
+                receiptId = ocrData.receiptId ?: "receipt_${System.currentTimeMillis()}",
+                merchantName = ocrData.merchantName,
+                location = ocrData.location,
+                receiptConfidence = ocrData.confidence,
+                receipt_items = localReceiptItems,
+                isSynced = false
+            )
+            transactionRepository.insertTransaction(transaction)
+            Log.d(TAG, "Saved OCR transaction to RoomDB: $transaction")
+        }
     }
 }

@@ -78,6 +78,14 @@ class ReceiptTransactionRepositoryImpl constructor(
 
     override suspend fun storeReceiptTransactionFromOCR(ocrData: ReceiptOCRData, userId: String): Result<ReceiptTransactionEntity> {
         return try {
+            val receiptId = ocrData.receiptId ?: "receipt_${System.currentTimeMillis()}"
+            
+            // Check if receipt already exists to prevent duplicates
+            val existingReceipt = receiptTransactionDao.getReceiptTransactionByReceiptId(receiptId)
+            if (existingReceipt != null) {
+                return Result.success(existingReceipt)
+            }
+            
             // Convert items to JSON string
             val itemsJson = if (ocrData.items.isNotEmpty()) {
                 val listType = Types.newParameterizedType(List::class.java, Map::class.java)
@@ -102,7 +110,7 @@ class ReceiptTransactionRepositoryImpl constructor(
             }
 
             val receiptTransaction = ReceiptTransactionEntity(
-                receiptId = ocrData.receiptId ?: "receipt_${System.currentTimeMillis()}",
+                receiptId = receiptId,
                 totalAmount = ocrData.totalAmount,
                 merchantName = ocrData.merchantName,
                 date = date,
@@ -194,8 +202,8 @@ class ReceiptTransactionRepositoryImpl constructor(
                     com.example.financialplannerapp.data.local.model.ReceiptItem(
                         name = item.name,
                         price = item.price,
-                        quantity = item.quantity,
-                        category = item.category ?: "Unknown"
+                        category = item.category ?: "Unknown",
+                        quantity = item.quantity
                     )
                 },
                 isSynced = receiptTransaction.isSynced,

@@ -45,9 +45,22 @@ class TransactionRepositoryImpl(
 
     override suspend fun insertTransactions(transactions: List<TransactionEntity>) {
         Log.d("TransactionRepo", "Inserting ${transactions.size} transactions to RoomDB")
-        transactions.forEach {
-            Log.d("TransactionRepo", "Inserting transaction: $it")
-            transactionDao.insertTransaction(it)
+        transactions.forEach { transaction ->
+            // Prevent duplicate by backendTransactionId
+            val backendId = transaction.backendTransactionId
+            if (backendId != null) {
+                val existing = transactionDao.getTransactionByBackendId(backendId)
+                if (existing == null) {
+                    Log.d("TransactionRepo", "Inserting transaction: $transaction")
+                    transactionDao.insertTransaction(transaction)
+                } else {
+                    Log.d("TransactionRepo", "Skipping duplicate transaction with backendId: $backendId")
+                }
+            } else {
+                // Fallback: insert if no backendId (local only)
+                Log.d("TransactionRepo", "Inserting transaction (no backendId): $transaction")
+                transactionDao.insertTransaction(transaction)
+            }
         }
     }
 

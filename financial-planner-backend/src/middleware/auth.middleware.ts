@@ -62,3 +62,6 @@ export const authorize = (...roles: string[]) => {
 
 // Export authenticate as authMiddleware for compatibility
 export const authMiddleware = authenticate;
+
+// Export authenticate as authenticateToken for account routes
+export const authenticateToken = authenticate;

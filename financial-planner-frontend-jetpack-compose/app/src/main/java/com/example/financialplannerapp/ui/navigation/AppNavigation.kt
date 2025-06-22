@@ -21,6 +21,7 @@ import com.example.financialplannerapp.screen.settings.SecuritySettingsScreen
 import com.example.financialplannerapp.ui.screen.settings.DataSyncSettingsScreen
 import com.example.financialplannerapp.ui.screen.settings.ContactSupportScreen
 import com.example.financialplannerapp.ui.screen.settings.HelpCenterScreen
+import com.example.financialplannerapp.ui.screen.settings.DeleteAccountScreen
 import com.example.financialplannerapp.ui.screen.transaction.AddTransactionScreen
 import com.example.financialplannerapp.ui.screen.transaction.ScanReceiptScreen
 import com.example.financialplannerapp.ui.screen.transaction.TransactionHistoryScreen
@@ -107,6 +108,10 @@ fun AppNavigation(
 
         composable("contactSupportSettings") {
             ContactSupportScreen(navController = navController)
+        }
+        
+        composable("deleteAccount") {
+            DeleteAccountScreen(navController = navController)
         }
 
         // Transaction Screens
