@@ -22,7 +22,9 @@ export interface DatabaseAdapter {
     // Tag methods
     createTag(tag: CreateTagPayload): Promise<Tag>;
     getTags(userId: string): Promise<Tag[]>;
-    assignTagsToTransaction(assignments: TransactionTagAssignment[]): Promise<void>;
+    batchAssignTagsToTransactions(assignments: TransactionTagAssignment[]): Promise<void>;
+    assignTagsToTransaction(transactionId: string, tagIds: string[]): Promise<void>;
+    removeAllTagsFromTransaction(transactionId: string): Promise<void>;
 
     // Transaction methods
     createTransaction(transaction: any): Promise<any>;

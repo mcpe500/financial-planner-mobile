@@ -300,3 +300,38 @@ export const processQRCode = async (req: AuthRequest, res: Response): Promise<vo
     });
   }
 };
+
+export const assignTagsToTransaction = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: "Authentication required" });
+            return;
+        }
+        const { id } = req.params;
+        const { tag_ids }: { tag_ids: string[] } = req.body;
+
+        if (!Array.isArray(tag_ids)) {
+            res.status(400).json({ success: false, message: "tag_ids must be an array" });
+            return;
+        }
+
+        const adapter = database.getClient();
+        
+        // First, remove existing tags for this transaction
+        await adapter.removeAllTagsFromTransaction(id);
+
+        // Then, assign new tags
+        if (tag_ids.length > 0) {
+            await adapter.assignTagsToTransaction(id, tag_ids);
+        }
+
+        res.status(200).json({ success: true, message: "Tags assigned successfully" });
+    } catch (error: any) {
+        console.error("Error assigning tags:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to assign tags",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};

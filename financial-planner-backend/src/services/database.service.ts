@@ -73,10 +73,29 @@ class Database {
 				    if (error) throw error;
 				    return data || [];
 				},
-				assignTagsToTransaction: async (assignments) => {
+				// Renamed to avoid conflict with new method
+				batchAssignTagsToTransactions: async (assignments: any[]) => {
 				    const { error } = await supabase
 				        .from('transaction_tags')
 				        .insert(assignments);
+				    if (error) throw error;
+				},
+				// New methods for tag assignment
+				assignTagsToTransaction: async (transactionId: string, tagIds: string[]) => {
+				    const assignments = tagIds.map((tagId: string) => ({
+				        transaction_id: transactionId,
+				        tag_id: tagId
+				    }));
+				    const { error } = await supabase
+				        .from('transaction_tags')
+				        .insert(assignments);
+				    if (error) throw error;
+				},
+				removeAllTagsFromTransaction: async (transactionId: string) => {
+				    const { error } = await supabase
+				        .from('transaction_tags')
+				        .delete()
+				        .eq('transaction_id', transactionId);
 				    if (error) throw error;
 				},
 				

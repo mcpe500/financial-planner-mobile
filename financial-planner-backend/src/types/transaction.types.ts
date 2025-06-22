@@ -21,12 +21,12 @@ export interface TransactionPayload {
     amount: number;
     type: 'expense' | 'income';
     category_id: string;
-    description?: string;
     date: string; // ISO date string
+    description?: string;
     merchant_name?: string;
     location?: string;
     receipt_id?: string;
     items?: any[];
     notes?: string;
-    tags?: string[];
+    tag_ids?: string[]; // Changed from tags to tag_ids
 }

@@ -9,7 +9,8 @@ import {
   processReceiptOCR,
   storeTransactionFromOCR,
   processVoiceInput,
-  processQRCode
+  processQRCode,
+  assignTagsToTransaction
 } from "../controllers/transaction.controller";
 
 const router = Router();
@@ -29,6 +30,10 @@ router.put("/:id", authenticate, updateTransaction);
 
 // DELETE /api/transactions/:id - Delete transaction
 router.delete("/:id", authenticate, deleteTransaction);
+
+// Tag assignment endpoint
+// POST /api/transactions/:id/tags - Assign tags to transaction
+router.post("/:id/tags", authenticate, assignTagsToTransaction);
 
 // Input method endpoints
 // POST /api/transactions/ocr - Process receipt via OCR

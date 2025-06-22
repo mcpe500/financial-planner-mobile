@@ -91,17 +91,31 @@ export class LocalStorageAdapter implements DatabaseAdapter {
         return newTag;
     }
 
-    async assignTagsToTransaction(assignments: TransactionTagAssignment[]): Promise<void> {
-    	const existingAssignments = this.getTagAssignments();
-    	assignments.forEach(assignment => {
-    		if (!existingAssignments.some(a =>
-    			a.transaction_id === assignment.transaction_id &&
-    			a.tag_id === assignment.tag_id
-    		)) {
-    			existingAssignments.push(assignment);
-    		}
-    	});
-    	this.saveTagAssignments(existingAssignments);
+    async batchAssignTagsToTransactions(assignments: TransactionTagAssignment[]): Promise<void> {
+        const existingAssignments = this.getTagAssignments();
+        assignments.forEach(assignment => {
+            if (!existingAssignments.some(a =>
+                a.transaction_id === assignment.transaction_id &&
+                a.tag_id === assignment.tag_id
+            )) {
+                existingAssignments.push(assignment);
+            }
+        });
+        this.saveTagAssignments(existingAssignments);
+    }
+
+    async assignTagsToTransaction(transactionId: string, tagIds: string[]): Promise<void> {
+        const assignments = tagIds.map(tagId => ({
+            transaction_id: transactionId,
+            tag_id: tagId
+        }));
+        await this.batchAssignTagsToTransactions(assignments);
+    }
+
+    async removeAllTagsFromTransaction(transactionId: string): Promise<void> {
+        let assignments = this.getTagAssignments();
+        assignments = assignments.filter(a => a.transaction_id !== transactionId);
+        this.saveTagAssignments(assignments);
     }
    
     // User methods
