@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.financialplannerapp.service.AppProvider
 import com.example.financialplannerapp.ui.navigation.AppNavigation
+import com.example.financialplannerapp.ui.theme.FinancialPlannerAppTheme
 import com.example.financialplannerapp.ui.viewmodel.AuthViewModel
 import com.example.financialplannerapp.ui.viewmodel.AuthViewModelFactory
 
@@ -27,6 +29,9 @@ class MainActivity : ComponentActivity() {
     private var intentUri by mutableStateOf<Uri?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Handle the splash screen transition.
+        installSplashScreen()
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
@@ -36,7 +41,7 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
         
         setContent {
-            AppProvider {
+            FinancialPlannerAppTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
