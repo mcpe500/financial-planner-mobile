@@ -6,7 +6,7 @@ WORKDIR /usr/src/app
 
 # Copy package files and install all dependencies
 COPY package*.json ./
-COPY bun.lockb ./
+COPY bun.lock ./
 RUN bun install
 
 # Copy the rest of the source code
