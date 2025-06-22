@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -24,117 +26,247 @@ import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.GoalEntity
 import com.example.financialplannerapp.ui.viewmodel.GoalViewModel
 import com.example.financialplannerapp.ui.viewmodel.GoalViewModelFactory
+import com.example.financialplannerapp.data.local.model.WalletEntity
+import com.example.financialplannerapp.ui.theme.BibitGreen
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
+import com.example.financialplannerapp.ui.viewmodel.toWalletEntity
 import java.text.NumberFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinancialGoalsMainScreen(navController: NavController) {
-    val context = LocalContext.current
-    val application = context.applicationContext as MainApplication
-    val tokenManager = remember { TokenManager(context) }
-    
+    val application = LocalContext.current.applicationContext as MainApplication
+    val tokenManager = remember { TokenManager(application) }
+    val userId = tokenManager.getUserEmail() ?: "guest"
     val goalViewModel: GoalViewModel = viewModel(
-        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager)
+        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager, application.appContainer.walletRepository)
     )
-
+    val walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
+    )
+    val wallets by walletViewModel.wallets.collectAsState()
     val goals by goalViewModel.goals.collectAsState()
+
+    var goalToEdit by remember { mutableStateOf<GoalEntity?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var goalToDelete by remember { mutableStateOf<GoalEntity?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Financial Goals") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+            TopAppBar(title = { Text("Financial Goals") })
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate("create_goal") },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Create Goal")
+            FloatingActionButton(onClick = { navController.navigate("create_goal") }) {
+                Icon(Icons.Default.Add, contentDescription = "Add Goal")
             }
         }
-    ) { paddingValues ->
+    ) { padding ->
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+                .padding(padding)
+                .fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (goals.isEmpty()) {
                 item {
-                    Box(
-                        modifier = Modifier.fillParentMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No goals created yet.")
+                    Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No goals yet. Tap the '+' button to add one!")
                     }
                 }
             } else {
-                items(goals, key = { it.id }) { goal ->
-                    GoalCard(
+                items(goals) { goal ->
+                    GoalItemCard(
                         goal = goal,
-                        onClick = {
-                            navController.navigate("goal_details/${goal.id}")
+                        onGoalClick = { navController.navigate("goal_details/${goal.id}") },
+                        onEditClick = {
+                            goalToEdit = goal
+                            showEditDialog = true
+                        },
+                        onDeleteClick = {
+                            goalToDelete = goal
+                            showDeleteDialog = true
                         }
                     )
                 }
             }
         }
     }
+
+    if (showEditDialog && goalToEdit != null) {
+        EditGoalDialog(
+            goal = goalToEdit!!,
+            onDismiss = { showEditDialog = false },
+            onSave = { newName, newTarget, newPriority ->
+                goalViewModel.editGoal(goalToEdit!!, newName, newTarget, newPriority)
+                showEditDialog = false
+            }
+        )
+    }
+    if (showDeleteDialog && goalToDelete != null) {
+        val wallet = wallets.find { it.id == goalToDelete!!.walletId }
+        if (wallet != null) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Delete Goal") },
+                text = { Text("Are you sure you want to delete this goal? Current amount will be returned to the wallet.") },
+                confirmButton = {
+                    Button(onClick = {
+                        goalViewModel.deleteGoalAndReturnToWallet(goalToDelete!!, wallet.toWalletEntity(userId))
+                        showDeleteDialog = false
+                    }) { Text("Delete") }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+                }
+            )
+        }
+    }
 }
 
 @Composable
-fun GoalCard(
-    goal: com.example.financialplannerapp.data.local.model.GoalEntity,
-    onClick: () -> Unit
+fun GoalItemCard(
+    goal: GoalEntity,
+    onGoalClick: (Int) -> Unit,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale("id", "ID")) }
     val progress = (goal.currentAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f)
-    val remainingAmount = (goal.targetAmount - goal.currentAmount).coerceAtLeast(0.0)
+    val isAchieved = progress >= 1.0f
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(2.dp)
+            .clickable { onGoalClick(goal.id) },
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(goal.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("Priority: ${goal.priority}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(12.dp))
-            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(goal.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Row {
+                    IconButton(onClick = onEditClick) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    }
+                    IconButton(onClick = onDeleteClick) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+                    }
+                }
+                if (isAchieved) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "Achieved",
+                        tint = BibitGreen
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "${currencyFormat.format(goal.currentAmount)} / ${currencyFormat.format(goal.targetAmount)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = progress,
-                modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = "Current: ${currencyFormat.format(goal.currentAmount)}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = "Target: ${currencyFormat.format(goal.targetAmount)}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            Text(
-                "Remaining: ${currencyFormat.format(remainingAmount)}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Normal
+                modifier = Modifier.fillMaxWidth(),
+                color = if (isAchieved) BibitGreen else MaterialTheme.colorScheme.primary
             )
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditGoalDialog(
+    goal: GoalEntity,
+    onDismiss: () -> Unit,
+    onSave: (String, Double, String) -> Unit
+) {
+    var name by remember { mutableStateOf(goal.name) }
+    var target by remember { mutableStateOf(goal.targetAmount.toString()) }
+    var priority by remember { mutableStateOf(goal.priority) }
+    var isPriorityDropdownExpanded by remember { mutableStateOf(false) }
+    val priorities = listOf("High", "Medium", "Low")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Goal") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Goal Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    textStyle = MaterialTheme.typography.bodyLarge
+                )
+                OutlinedTextField(
+                    value = target,
+                    onValueChange = { target = it },
+                    label = { Text("Target Amount") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    textStyle = MaterialTheme.typography.bodyLarge
+                )
+                ExposedDropdownMenuBox(
+                    expanded = isPriorityDropdownExpanded,
+                    onExpandedChange = { isPriorityDropdownExpanded = !isPriorityDropdownExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = priority,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Priority", style = MaterialTheme.typography.bodyLarge) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriorityDropdownExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        ),
+                        textStyle = MaterialTheme.typography.bodyLarge
+                    )
+                    ExposedDropdownMenu(
+                        expanded = isPriorityDropdownExpanded,
+                        onDismissRequest = { isPriorityDropdownExpanded = false }
+                    ) {
+                        priorities.forEach { selection ->
+                            DropdownMenuItem(
+                                text = { Text(selection, style = MaterialTheme.typography.bodyLarge) },
+                                onClick = {
+                                    priority = selection
+                                    isPriorityDropdownExpanded = false
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val targetValue = target.toDoubleOrNull() ?: goal.targetAmount
+                onSave(name, targetValue, priority)
+            }) { Text("Save") }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }

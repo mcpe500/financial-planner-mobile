@@ -5,8 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -20,12 +23,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.TokenManager
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -35,6 +43,11 @@ import com.example.financialplannerapp.core.util.formatCurrency
 import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
 import com.example.financialplannerapp.data.model.FinancialGoal
 import com.example.financialplannerapp.data.model.generateMockGoals
+import com.example.financialplannerapp.ui.viewmodel.GoalViewModel
+import com.example.financialplannerapp.ui.viewmodel.GoalViewModelFactory
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
+import com.example.financialplannerapp.ui.viewmodel.toWalletEntity
 
 data class GoalTransaction(
     val id: String,
@@ -51,113 +64,142 @@ enum class GoalTransactionType {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GoalDetailsScreen(navController: NavController, goalId: String?) {
-    val goals = remember { generateMockGoals() }
-    val goal = remember(goalId) {
-        goals.find { it.id.toString() == goalId } ?: goals.firstOrNull()
-    }
-    
-    var showAddFundsDialog by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+fun GoalDetailsScreen(
+    navController: NavController,
+    goalId: String?
+) {
+    val application = LocalContext.current.applicationContext as MainApplication
+    val tokenManager = remember { TokenManager(application) }
+    val userId = tokenManager.getUserEmail() ?: "guest"
+    val goalViewModel: GoalViewModel = viewModel(
+        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager, application.appContainer.walletRepository)
+    )
+    val walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
+    )
+    val goals by goalViewModel.goals.collectAsState()
+    val wallets by walletViewModel.wallets.collectAsState()
 
-    if (goal == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Goal not found")
+    val goal = goals.find { it.id.toString() == goalId }
+    val wallet = wallets.find { it.id == goal?.walletId }
+
+    var showEditDialog by remember { mutableStateOf(false) }
+    var addAmount by remember { mutableStateOf("") }
+    var subtractAmount by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    if (goal == null || wallet == null) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Goal not found.")
         }
         return
     }
 
+    val isComplete = goal.currentAmount >= goal.targetAmount
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(goal.name) },
+                title = { Text("Goal Details") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                },
-                actions = {
-                    IconButton(onClick = { showEditDialog = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit")
-                    }
-                    IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
-                    }
                 }
             )
         }
-    ) { paddingValues ->
-        LazyColumn(
+    ) { padding ->
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
-                GoalHeaderCard(goal = goal)
+            // Detail
+            Text("Name: ${goal.name}", style = MaterialTheme.typography.titleLarge)
+            Text("Target: ${goal.targetAmount}", style = MaterialTheme.typography.bodyLarge)
+            Text("Current: ${goal.currentAmount}", style = MaterialTheme.typography.bodyLarge)
+            Text("Priority: ${goal.priority}", style = MaterialTheme.typography.bodyLarge)
+            Text("Wallet: ${wallet.name}", style = MaterialTheme.typography.bodyLarge)
+            LinearProgressIndicator(
+                progress = (goal.currentAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Edit button
+            Button(onClick = { showEditDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Edit Goal")
             }
-            
-            item {
-                GoalProgressCard(goal = goal)
+
+            // Tambah currentAmount
+            OutlinedTextField(
+                value = addAmount,
+                onValueChange = { addAmount = it },
+                label = { Text("Add to Goal (from wallet)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Button(
+                onClick = {
+                    val amount = addAmount.toDoubleOrNull() ?: 0.0
+                    if (amount > 0 && wallet.balance >= amount) {
+                        goalViewModel.addToGoalAmount(goal, wallet.toWalletEntity(userId), amount)
+                        addAmount = ""
+                        errorMessage = null
+                    } else {
+                        errorMessage = "Insufficient wallet balance or invalid amount."
+                    }
+                },
+                enabled = addAmount.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Add Amount") }
+
+            // Kurangi currentAmount
+            OutlinedTextField(
+                value = subtractAmount,
+                onValueChange = { subtractAmount = it },
+                label = { Text("Subtract from Goal (return to wallet)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Button(
+                onClick = {
+                    val amount = subtractAmount.toDoubleOrNull() ?: 0.0
+                    if (amount > 0 && goal.currentAmount >= amount) {
+                        goalViewModel.subtractFromGoalAmount(goal, wallet.toWalletEntity(userId), amount)
+                        subtractAmount = ""
+                        errorMessage = null
+                    } else {
+                        errorMessage = "Insufficient goal amount or invalid amount."
+                    }
+                },
+                enabled = subtractAmount.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Subtract Amount") }
+
+            // Error message
+            if (errorMessage != null) {
+                Text(errorMessage!!, color = Color.Red)
             }
-            
-            item {
-                GoalDetailsCard(goal = goal)
-            }
-            
-            item {
-                GoalActionsCard(
-                    onAddFunds = { showAddFundsDialog = true },
-                    onEdit = { showEditDialog = true },
-                    onDelete = { showDeleteDialog = true }
-                )
-            }
+
+            // Complete button
+            Button(
+                onClick = { /* TODO: Implement complete logic */ },
+                enabled = isComplete,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Complete Goal") }
         }
     }
 
-    // Dialogs
-    if (showAddFundsDialog) {
-        AddFundsBottomSheet(
-            goal = goal,
-            onDismiss = { showAddFundsDialog = false },
-            onAddFunds = { amount ->
-                // TODO: Implement add funds logic
-                showAddFundsDialog = false
-            }
-        )
-    }
-
+    // Edit dialog
     if (showEditDialog) {
-        // TODO: Implement edit dialog
-        showEditDialog = false
-    }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Goal") },
-            text = { Text("Are you sure you want to delete '${goal.name}'?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        // TODO: Implement delete logic
-                        showDeleteDialog = false
-                        navController.popBackStack()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                Button(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
+        EditGoalDialog(
+            goal = goal,
+            onDismiss = { showEditDialog = false },
+            onSave = { newName, newTarget, newPriority ->
+                goalViewModel.editGoal(goal, newName, newTarget, newPriority)
+                showEditDialog = false
             }
         )
     }
