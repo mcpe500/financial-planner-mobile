@@ -107,31 +107,37 @@ private fun RecurringBillsMainContent(
     var selectedFilter by remember { mutableStateOf(BillFilter.ALL) }
     var billToEdit by remember { mutableStateOf<BillEntity?>(null) }
     var billToDelete by remember { mutableStateOf<BillEntity?>(null) }
-    var billToView by remember { mutableStateOf<BillEntity?>(null) }
-    var billToPay by remember { mutableStateOf<BillEntity?>(null) }
+
+    // State management refactored
+    var selectedBill by remember { mutableStateOf<BillEntity?>(null) }
+    var showDetailDialog by remember { mutableStateOf(false) }
+    var showPayDialog by remember { mutableStateOf(false) }
 
     val billEntities by viewModel.localBills.collectAsState()
 
-    if (billToView != null) {
+    // --- Dialogs ---
+    if (showDetailDialog && selectedBill != null) {
         BillDetailDialog(
-            bill = RecurringBill.fromEntity(billToView!!),
-            onDismiss = { billToView = null },
+            bill = RecurringBill.fromEntity(selectedBill!!),
+            onDismiss = { showDetailDialog = false },
             onPay = {
-                billToPay = billToView
-                billToView = null
+                // Transition from detail to pay dialog
+                showDetailDialog = false
+                showPayDialog = true
             }
         )
     }
 
-    if (billToPay != null) {
+    if (showPayDialog && selectedBill != null) {
         val wallets by viewModel.wallets.collectAsState()
         PayBillDialog(
-            bill = billToPay!!,
+            bill = selectedBill!!,
             wallets = wallets,
-            onDismiss = { billToPay = null },
+            onDismiss = { showPayDialog = false },
             onConfirm = { wallet ->
-                viewModel.payBill(billToPay!!, wallet)
-                billToPay = null
+                viewModel.payBill(selectedBill!!, wallet)
+                showPayDialog = false
+                selectedBill = null // Clear selection after action
             }
         )
     }
@@ -158,10 +164,11 @@ private fun RecurringBillsMainContent(
         )
     }
 
+    // --- Main Content ---
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant) // Use theme color
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -195,7 +202,10 @@ private fun RecurringBillsMainContent(
             items(filteredEntities, key = { it.uuid }) { entity ->
                 BillCard(
                     bill = RecurringBill.fromEntity(entity),
-                    onCardClick = { billToView = entity },
+                    onCardClick = {
+                        selectedBill = entity
+                        showDetailDialog = true
+                    },
                     onEditClick = { billToEdit = entity },
                     onDeleteClick = { billToDelete = entity }
                 )
