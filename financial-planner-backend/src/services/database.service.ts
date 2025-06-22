@@ -70,6 +70,14 @@ class Database {
 
 	// Transaction methods
 	async createTransaction(userId: string, payload: TransactionPayload): Promise<TransactionType> {
+		// Validate walletId if provided
+		if (payload.walletId) {
+			const isValidWallet = await this.validateWalletId(payload.walletId, userId);
+			if (!isValidWallet) {
+				throw new Error('Invalid walletId provided');
+			}
+		}
+
 		const { data, error } = await this.supabase
 			.from('transactions')
 			.insert([{ ...payload, user_id: userId }])
@@ -186,50 +194,116 @@ class Database {
 			.select('*')
 			.eq('user_id', userId);
 		if (error) throw error;
-		return data || [];
+		// Map database response to use walletId as the main ID
+		return (data || []).map(wallet => ({
+			...wallet,
+			id: wallet.walletId || wallet.id.toString() // Use walletId as primary ID
+		}));
 	}
 
 	async syncWallets(userId: string, wallets: any[]): Promise<any[]> {
+		const walletsToSync = wallets.map(wallet => ({
+			name: wallet.name,
+			type: wallet.type,
+			balance: wallet.balance,
+			color_hex: wallet.color_hex,
+			icon_name: wallet.icon_name,
+			walletId: wallet.id, // Frontend ID becomes walletId
+			user_id: userId,
+			updated_at: new Date().toISOString()
+		}));
+
 		const { data, error } = await this.supabase
 			.from('wallets')
-			.upsert(wallets.map(wallet => ({
-				...wallet,
-				user_id: userId,
-				updated_at: new Date().toISOString()
-			})))
+			.upsert(walletsToSync, { onConflict: 'walletId' })
 			.select();
 		if (error) throw error;
-		return data || [];
+		// Map response to use walletId as main ID
+		return (data || []).map(wallet => ({
+			...wallet,
+			id: wallet.walletId
+		}));
 	}
 
 	async createWallet(userId: string, wallet: any): Promise<any> {
+		const walletData = {
+			name: wallet.name,
+			type: wallet.type,
+			balance: wallet.balance,
+			color_hex: wallet.color_hex,
+			icon_name: wallet.icon_name,
+			walletId: wallet.id, // Frontend ID becomes walletId
+			user_id: userId,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString()
+		};
+
 		const { data, error } = await this.supabase
 			.from('wallets')
-			.insert({
-				...wallet,
-				user_id: userId,
-				created_at: new Date().toISOString(),
-				updated_at: new Date().toISOString()
-			})
+			.insert(walletData)
 			.select()
 			.single();
 		if (error) throw error;
-		return data;
+		// Return with walletId as main ID
+		return {
+			...data,
+			id: data.walletId
+		};
 	}
 
 	async updateWallet(userId: string, walletId: string, wallet: any): Promise<any> {
+		const updateData = {
+			name: wallet.name,
+			type: wallet.type,
+			balance: wallet.balance,
+			color_hex: wallet.color_hex,
+			icon_name: wallet.icon_name,
+			updated_at: new Date().toISOString()
+		};
+
 		const { data, error } = await this.supabase
 			.from('wallets')
-			.update({
-				...wallet,
-				updated_at: new Date().toISOString()
-			})
-			.eq('id', walletId)
+			.update(updateData)
+			.eq('walletId', walletId) // Use walletId for lookup
 			.eq('user_id', userId)
 			.select()
 			.single();
 		if (error) throw error;
-		return data;
+		// Return with walletId as main ID
+		return {
+			...data,
+			id: data.walletId
+		};
+	}
+
+	async getWalletByWalletId(walletId: string): Promise<any> {
+		const { data, error } = await this.supabase
+			.from('wallets')
+			.select('*')
+			.eq('walletId', walletId)
+			.single();
+		if (error && error.code !== 'PGRST116') throw error;
+		if (!data) return null;
+		// Return with walletId as main ID
+		return {
+			...data,
+			id: data.walletId
+		};
+	}
+
+	// Helper method to validate walletId exists for transactions
+	async validateWalletId(walletId: string, userId: string): Promise<boolean> {
+		try {
+			const { data, error } = await this.supabase
+				.from('wallets')
+				.select('id')
+				.eq('walletId', walletId)
+				.eq('user_id', userId)
+				.single();
+			return !error && !!data;
+		} catch (error) {
+			return false;
+		}
 	}
 }
 

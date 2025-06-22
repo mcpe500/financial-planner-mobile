@@ -8,6 +8,7 @@ export interface TransactionType {
     category: string;
     note?: string;
     tags?: string[];
+    walletId?: string; // Frontend wallet UUID
     // Receipt-related fields
     is_from_receipt: boolean;
     receipt_id?: string;
@@ -31,6 +32,7 @@ export interface TransactionPayload {
     category: string;
     note?: string;
     tags?: string[];
+    walletId?: string; // Frontend wallet UUID
     // Receipt-related fields (optional)
     is_from_receipt?: boolean;
     receipt_id?: string;

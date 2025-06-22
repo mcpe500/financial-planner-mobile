@@ -74,7 +74,12 @@ export const requestAccountDeletion = async (req: Request, res: Response) => {
     }, 3600000); // 1 hour
 
     // Send email with deletion link and OTP
-    await sendAccountDeletionEmail(email, token, otp);
+    try {
+      await sendAccountDeletionEmail(email, token, otp);
+    } catch (emailError) {
+      console.error('Failed to send email:', emailError);
+      // Continue without failing the request for security
+    }
 
     // Show success message
     return res.render("account/delete-request", {
@@ -237,7 +242,16 @@ export const apiRequestDeletion = async (req: AuthRequest, res: Response): Promi
     }, 3600000); // 1 hour
 
     // Send email with OTP
-    await sendAccountDeletionEmail(email, token, otp);
+    try {
+      await sendAccountDeletionEmail(email, token, otp);
+    } catch (emailError) {
+      console.error('Failed to send email:', emailError);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to send verification email" 
+      });
+      return;
+    }
 
     res.status(200).json({ 
       success: true, 

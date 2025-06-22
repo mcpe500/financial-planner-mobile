@@ -5,6 +5,8 @@ import com.example.financialplannerapp.data.local.model.WalletEntity
 import com.example.financialplannerapp.data.model.WalletData
 import com.example.financialplannerapp.data.remote.WalletApiService
 import kotlinx.coroutines.flow.Flow
+import com.example.financialplannerapp.data.model.toWalletData
+import com.example.financialplannerapp.data.model.toEntity
 
 class WalletRepositoryImpl(
     private val walletDao: WalletDao,
@@ -33,7 +35,15 @@ class WalletRepositoryImpl(
     }
 
     override suspend fun insertWallet(wallet: WalletEntity): Long {
-        return walletDao.insertWallet(wallet)
+        return try {
+            // Try to save to backend first
+            val backendWallet = walletApiService.createWallet(wallet.toWalletData())
+            // Insert backend wallet (with backend id) to RoomDB
+            walletDao.insertWallet(backendWallet.toEntity())
+        } catch (e: Exception) {
+            // If backend fails, insert locally only
+            walletDao.insertWallet(wallet)
+        }
     }
 
     override suspend fun updateWallet(wallet: WalletEntity) {
