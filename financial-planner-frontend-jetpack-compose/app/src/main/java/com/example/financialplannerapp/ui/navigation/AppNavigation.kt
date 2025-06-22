@@ -9,6 +9,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.ui.screen.auth.LoginScreen
 import com.example.financialplannerapp.ui.screen.dashboard.DashboardScreen
@@ -186,6 +188,13 @@ fun AppNavigation(
         }
         composable("reports") {
             FinancialReportsMainScreen(navController = navController)
+        }
+        composable(
+            route = "transaction_detail/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getLong("id")
+            com.example.financialplannerapp.ui.screen.transaction.TransactionDetailScreen(navController = navController, transactionId = id)
         }
     }
 }
