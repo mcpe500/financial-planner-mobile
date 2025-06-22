@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 class GoalRepositoryImpl(private val goalDao: GoalDao) : GoalRepository {
 
-    override fun getGoalsForWallet(walletId: String): Flow<List<GoalEntity>> {
+    override fun getGoalsForWallet(walletId: String, user_email: String): Flow<List<GoalEntity>> {
         return goalDao.getGoalsForWallet(walletId)
     }
 

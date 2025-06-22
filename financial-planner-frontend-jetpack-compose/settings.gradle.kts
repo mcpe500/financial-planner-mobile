@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Financial Planner App"
+rootProject.name = "SolFin"
 include(":app")
  

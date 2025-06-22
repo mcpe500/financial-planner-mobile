@@ -28,7 +28,8 @@ class GoalViewModel(
 
     fun loadGoals(walletId: String) {
         viewModelScope.launch {
-            repository.getGoalsForWallet(walletId).collect { goalList ->
+            val user_email = tokenManager.getUserEmail() ?: "guest"
+            repository.getGoalsForWallet(walletId, user_email).collect { goalList ->
                 _goals.value = goalList
             }
         }
