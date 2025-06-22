@@ -70,6 +70,7 @@ class WalletViewModel(
             if (rowId != -1L) {
                 _successMessage.value = "Wallet added successfully!"
                 Log.d("WalletViewModel", "Wallet inserted successfully with ID: $rowId")
+                loadWallets() // Reload wallets after adding
                 true
             } else {
                 _error.value = "Wallet insertion failed!"

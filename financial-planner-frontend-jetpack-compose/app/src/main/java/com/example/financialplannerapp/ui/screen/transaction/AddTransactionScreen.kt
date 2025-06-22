@@ -29,6 +29,8 @@ import com.example.financialplannerapp.ui.model.Wallet
 import com.example.financialplannerapp.ui.viewmodel.AddTransactionViewModel
 import com.example.financialplannerapp.ui.viewmodel.AddTransactionViewModelFactory
 import com.example.financialplannerapp.ui.viewmodel.toWalletUiModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
 import java.util.*
 
 enum class TransactionType {
@@ -55,13 +57,19 @@ fun AddTransactionScreen(navController: NavController) {
     var selectedPocket by remember { mutableStateOf("Cash") }
     var selectedCategory by remember { mutableStateOf("Food") }
     var note by remember { mutableStateOf("") }
-    var selectedWallet: Wallet? by remember { mutableStateOf<Wallet?>(null) }
+    val walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(
+            repository = application.appContainer.walletRepository,
+            tokenManager = application.appContainer.tokenManager
+        )
+    )
+    val wallets by walletViewModel.wallets.collectAsState()
+    var selectedWallet by remember { mutableStateOf<Wallet?>(null) }
+    var isWalletDropdownExpanded by remember { mutableStateOf(false) }
 
     val tokenManager = application.appContainer.tokenManager
     val userId = tokenManager.getUserId() ?: "local_user"
     val userEmail = tokenManager.getUserEmail() ?: "guest"
-    val walletEntities by application.appContainer.walletRepository.getWalletsByUserEmail(userEmail).collectAsState(initial = emptyList())
-    val wallets = walletEntities.map { it.toWalletUiModel() }
 
     // Handle state changes
     LaunchedEffect(state) {
@@ -74,6 +82,10 @@ fun AddTransactionScreen(navController: NavController) {
                 Toast.makeText(context, state.error, Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        walletViewModel.loadWallets()
     }
 
     Scaffold(
@@ -129,15 +141,40 @@ fun AddTransactionScreen(navController: NavController) {
                 onDateChange = { selectedDate = it }
             )
 
-            // Wallet Selection Dropdown (insert before Pocket Selection)
-            DropdownCard(
-                title = "Wallet",
-                selectedValue = selectedWallet?.name ?: "Select Wallet",
-                options = wallets.map { wallet -> wallet.name },
-                onValueChange = { name ->
-                    selectedWallet = wallets.find { wallet -> wallet.name == name }
+            // Wallet Dropdown (refactored to match CreateGoalScreen)
+            ExposedDropdownMenuBox(
+                expanded = isWalletDropdownExpanded,
+                onExpandedChange = { isWalletDropdownExpanded = !isWalletDropdownExpanded }
+            ) {
+                OutlinedTextField(
+                    value = selectedWallet?.name ?: "Select a Wallet",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Wallet", style = MaterialTheme.typography.bodyLarge) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isWalletDropdownExpanded) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    textStyle = MaterialTheme.typography.bodyLarge
+                )
+                ExposedDropdownMenu(
+                    expanded = isWalletDropdownExpanded,
+                    onDismissRequest = { isWalletDropdownExpanded = false }
+                ) {
+                    wallets.forEach { wallet ->
+                        DropdownMenuItem(
+                            text = { Text(wallet.name, style = MaterialTheme.typography.bodyLarge) },
+                            onClick = {
+                                selectedWallet = wallet
+                                isWalletDropdownExpanded = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
-            )
+            }
 
             // Pocket Selection
             DropdownCard(
