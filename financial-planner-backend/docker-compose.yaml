@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: financial_planner_backend_prod
+    ports:
+      - "3000:3000"
+    command: bun start
+    env_file:
+      - .env
+    # For production, we don't mount volumes to keep the container immutable.
+    # The code is already copied into the image during the build process.
+    restart: unless-stopped
+    # Resource limits for production to ensure low RAM usage
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+networks:
+  default:
+    name: financial_planner_network
