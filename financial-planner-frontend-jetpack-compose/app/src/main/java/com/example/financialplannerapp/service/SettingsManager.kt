@@ -13,6 +13,9 @@ import com.example.financialplannerapp.data.AppSettings
 import com.example.financialplannerapp.data.AppSettingsDatabaseHelper
 import com.example.financialplannerapp.data.toAppSettings
 import com.example.financialplannerapp.data.toAppSettingsEntity
+import com.example.financialplannerapp.data.remote.ApiService
+import com.example.financialplannerapp.data.remote.RetrofitClient
+import com.example.financialplannerapp.MainApplication
 
 /**
  * Settings Manager
@@ -22,9 +25,10 @@ import com.example.financialplannerapp.data.toAppSettingsEntity
  */
 class SettingsManager private constructor(
     private val context: Context,
-    private val themeService: ThemeService
+    private val apiService: ApiService,
+    private val themeService: ThemeService = ThemeService.getInstance()
 ) {
-    private val databaseHelper = AppSettingsDatabaseHelper.getInstance(context)
+    private val databaseHelper = AppSettingsDatabaseHelper.getInstance(context, apiService)
     private val scope = CoroutineScope(Dispatchers.IO)
     
     private val _currentSettings = MutableStateFlow(AppSettings())
@@ -36,11 +40,13 @@ class SettingsManager private constructor(
         
         fun getInstance(
             context: Context,
+            apiService: ApiService,
             themeService: ThemeService = ThemeService.getInstance()
         ): SettingsManager {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: SettingsManager(
                     context.applicationContext,
+                    apiService,
                     themeService
                 ).also { INSTANCE = it }
             }
@@ -136,7 +142,9 @@ class SettingsManager private constructor(
 @Composable
 fun rememberSettingsManager(): SettingsManager {
     val context = LocalContext.current
+    val app = context.applicationContext as MainApplication
+    val apiService = app.appContainer.apiService
     return remember {
-        SettingsManager.getInstance(context)
+        SettingsManager.getInstance(context, apiService)
     }
 }

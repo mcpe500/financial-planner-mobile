@@ -176,7 +176,12 @@ export const getUserTransactions = async (req: AuthRequest, res: Response): Prom
       return;
     }
     const transactions = await database.getUserTransactions(req.user.id);
-    res.status(200).json({ success: true, data: transactions });
+    // Always add 'description' field for frontend compatibility
+    const mapped = transactions.map(tx => ({
+      ...tx,
+      description: typeof tx.note === 'string' ? tx.note : ""
+    }));
+    res.status(200).json({ success: true, data: mapped });
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to get transactions", error });
   }

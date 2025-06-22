@@ -1,11 +1,19 @@
 package com.example.financialplannerapp.data.model
 
 import java.util.Date
+import com.example.financialplannerapp.data.local.model.TransactionEntity
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 
+@JsonClass(generateAdapter = true)
 data class TransactionData(
+    @Json(name = "id")
     val id: Int,
+    @Json(name = "amount")
     val amount: Double,
-    val date: Date,
+    @Json(name = "date")
+    val date: String, // ISO8601 string for Moshi compatibility
+    @Json(name = "description")
     val description: String
 )
 
@@ -53,3 +61,22 @@ object TransactionTags {
         }
     }
 }
+
+fun TransactionEntity.toNetworkModel(): TransactionData = TransactionData(
+    id = this.id.toInt(),
+    amount = this.amount,
+    date = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault()).format(this.date),
+    description = this.note ?: ""
+)
+
+fun TransactionData.toEntity(userId: String): TransactionEntity = TransactionEntity(
+    id = this.id.toLong(),
+    userId = userId,
+    amount = this.amount,
+    type = if (this.amount >= 0) "INCOME" else "EXPENSE",
+    date = try { java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault()).parse(this.date) ?: java.util.Date() } catch (e: Exception) { java.util.Date() },
+    pocket = "Cash",
+    category = "Other",
+    note = this.description,
+    isSynced = true
+)

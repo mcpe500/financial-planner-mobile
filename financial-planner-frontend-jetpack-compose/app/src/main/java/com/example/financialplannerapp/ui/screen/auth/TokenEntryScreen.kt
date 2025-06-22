@@ -104,10 +104,11 @@ private fun verifyAndSaveToken(
             tokenManager.saveToken(token)
             
             // Verify token with backend
+            val apiService = RetrofitClient.getApiService(context)
             val authHeader = tokenManager.getAuthHeader()
             if (authHeader != null) {
                 Log.d(TAG_TOKEN_ENTRY, "Verifying token...")
-                val response = RetrofitClient.authService.getCurrentUser(authHeader)
+                val response = apiService.getCurrentUser(authHeader)
                 
                 if (response.isSuccessful) {
                     // Token is valid, save user info

@@ -1,6 +1,7 @@
 package com.example.financialplannerapp.data
 
 import android.content.Context
+import com.example.financialplannerapp.data.remote.ApiService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.example.financialplannerapp.data.repository.AppSettingsRepository
@@ -13,10 +14,10 @@ import com.example.financialplannerapp.data.local.model.AppSettingsEntity
  * High-level helper for managing app settings with database persistence.
  * Provides a simplified interface for settings operations throughout the app.
  */
-class AppSettingsDatabaseHelper private constructor(context: Context) {
+class AppSettingsDatabaseHelper private constructor(context: Context, apiService: ApiService) {
     
     private val database = DatabaseManager.getDatabase(context)
-    private val repository: AppSettingsRepository = AppSettingsRepositoryImpl(database.appSettingsDao())
+    private val repository: AppSettingsRepository = AppSettingsRepositoryImpl(database.appSettingsDao(), apiService)
     
     companion object {
         @Volatile
@@ -25,9 +26,9 @@ class AppSettingsDatabaseHelper private constructor(context: Context) {
         /**
          * Get singleton instance with application context to prevent memory leaks
          */
-        fun getInstance(context: Context): AppSettingsDatabaseHelper {
+        fun getInstance(context: Context, apiService: ApiService): AppSettingsDatabaseHelper {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: AppSettingsDatabaseHelper(context.applicationContext).also { INSTANCE = it }
+                INSTANCE ?: AppSettingsDatabaseHelper(context.applicationContext, apiService).also { INSTANCE = it }
             }
         }
     }

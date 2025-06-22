@@ -12,4 +12,10 @@ interface TransactionRepository {
     fun getTransactionsByType(userId: String, type: String): Flow<List<TransactionEntity>>
     fun getTransactionsByCategory(userId: String, category: String): Flow<List<TransactionEntity>>
     fun getReceiptTransactions(userId: String): Flow<List<TransactionEntity>>
+    suspend fun getTransactionsFromBackend(): List<com.example.financialplannerapp.data.model.TransactionData>
+    suspend fun getTransactionDetailFromBackend(id: String): com.example.financialplannerapp.data.model.TransactionData?
+    suspend fun uploadTransactionsToBackend(transactions: List<com.example.financialplannerapp.data.model.TransactionData>): Boolean
+    suspend fun getUnsyncedTransactions(userId: String): List<TransactionEntity>
+    suspend fun markTransactionsAsSynced(ids: List<Long>)
+    suspend fun insertTransactions(transactions: List<TransactionEntity>)
 }

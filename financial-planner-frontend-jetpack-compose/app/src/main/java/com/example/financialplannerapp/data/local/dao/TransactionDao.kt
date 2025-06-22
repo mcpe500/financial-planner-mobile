@@ -30,4 +30,10 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions WHERE userId = :userId AND isFromReceipt = 1 ORDER BY date DESC")
     fun getReceiptTransactions(userId: String): Flow<List<TransactionEntity>>
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND isSynced = 0")
+    suspend fun getUnsyncedTransactions(userId: String): List<TransactionEntity>
+
+    @Query("UPDATE transactions SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markTransactionsAsSynced(ids: List<Long>)
 }

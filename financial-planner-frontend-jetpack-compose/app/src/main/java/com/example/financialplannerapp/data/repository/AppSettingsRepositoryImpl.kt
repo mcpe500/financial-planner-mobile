@@ -3,7 +3,8 @@ package com.example.financialplannerapp.data.repository
 import kotlinx.coroutines.flow.Flow
 import com.example.financialplannerapp.data.local.dao.AppSettingsDao
 import com.example.financialplannerapp.data.local.model.AppSettingsEntity
-
+import com.example.financialplannerapp.data.model.HealthResponse
+import com.example.financialplannerapp.data.remote.ApiService
 /**
  * Repository implementation for App Settings
  * 
@@ -11,7 +12,8 @@ import com.example.financialplannerapp.data.local.model.AppSettingsEntity
  * Handles data mapping and business logic for settings operations.
  */
 class AppSettingsRepositoryImpl constructor(
-    private val dao: AppSettingsDao
+    private val dao: AppSettingsDao,
+    private val apiService: ApiService
 ) : AppSettingsRepository {
     
     /**
@@ -88,5 +90,14 @@ class AppSettingsRepositoryImpl constructor(
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis()
         )
+    }
+
+    override suspend fun checkBackendHealth(): Boolean {
+        return try {
+            val response = apiService.healthCheck()
+            response.isSuccessful && response.body()?.status == "ok"
+        } catch (e: Exception) {
+            false
+        }
     }
 }

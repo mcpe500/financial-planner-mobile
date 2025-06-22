@@ -89,6 +89,15 @@ class Database {
 		return data || [];
 	}
 
+	async getTransactionByUserId(id: string): Promise<TransactionType | null> {
+		const { data, error } = await this.supabase
+			.from('transactions')
+			.select('*')
+			.eq('user_id', id)
+			.single();
+		if (error && error.code !== 'PGRST116') throw error;
+		return data;
+	}
 	async getTransactionById(id: string): Promise<TransactionType | null> {
 		const { data, error } = await this.supabase
 			.from('transactions')
@@ -128,6 +137,46 @@ class Database {
 	async removeAllTagsFromTransaction(transactionId: string): Promise<void> {
 		const { error } = await this.supabase.from('transaction_tags').delete().eq('transaction_id', transactionId);
 		if (error) throw error;
+	}
+
+	// CATEGORY METHODS
+	async createCategory(payload: any): Promise<any> {
+		const { data, error } = await this.supabase
+			.from('categories')
+			.insert([payload])
+			.select()
+			.single();
+		if (error) throw error;
+		return data;
+	}
+
+	async updateCategory(id: string, payload: any): Promise<any> {
+		const { data, error } = await this.supabase
+			.from('categories')
+			.update(payload)
+			.eq('id', id)
+			.select()
+			.single();
+		if (error) throw error;
+		return data;
+	}
+
+	async deleteCategory(id: string): Promise<void> {
+		const { error } = await this.supabase
+			.from('categories')
+			.delete()
+			.eq('id', id);
+		if (error) throw error;
+	}
+
+	async getCategoryTree(userId: string): Promise<any[]> {
+		const { data, error } = await this.supabase
+			.from('categories')
+			.select('*')
+			.eq('user_id', userId)
+			.order('name', { ascending: true });
+		if (error) throw error;
+		return data || [];
 	}
 }
 
