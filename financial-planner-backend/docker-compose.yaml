@@ -7,22 +7,22 @@ services:
       dockerfile: Dockerfile
     container_name: financial_planner_backend_prod
     ports:
-      - "3000:3000"
+      - "9001:9001"
     command: bun start
     env_file:
       - .env
     # For production, we don't mount volumes to keep the container immutable.
     # The code is already copied into the image during the build process.
     restart: unless-stopped
-    # Resource limits for production to ensure low RAM usage
+    # Resource limits for a low-memory VPS (e.g., ~1GB RAM)
     deploy:
       resources:
         limits:
-          cpus: '0.50'
-          memory: 256M
+          cpus: '0.50' # Limit to 50% of a single CPU core
+          memory: 192M # Hard memory limit
         reservations:
-          cpus: '0.25'
-          memory: 128M
+          cpus: '0.25' # Reserve 25% of a CPU core
+          memory: 96M  # Reserve memory to ensure it can start
 
 networks:
   default:

@@ -5,6 +5,8 @@ version: '3.8'
 services:
   backend:
     container_name: financial_planner_backend_dev
+    ports:
+      - "9001:9001"
     # Override the production command to use Bun's built-in watcher
     command: bun run dev
     volumes:

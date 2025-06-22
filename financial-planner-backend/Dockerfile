@@ -29,8 +29,8 @@ RUN bun install --production
 # Copy the built application from the 'builder' stage
 COPY --from=builder /usr/src/app/dist ./dist
 
-# Bun serves on port 3000 by default, expose it
-EXPOSE 3000
+# Expose the port the app will run on
+EXPOSE 9001
 
 # The command to run the application
 CMD [ "bun", "start" ]
