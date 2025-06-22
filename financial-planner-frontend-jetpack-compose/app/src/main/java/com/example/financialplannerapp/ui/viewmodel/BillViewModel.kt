@@ -83,7 +83,8 @@ class BillViewModel(
                 // but we record a payment. The BillEntity has `paymentsJson`.
                 // Let's add a simple payment record.
                 val payment = mapOf("date" to Date().time, "amount" to bill.estimatedAmount)
-                val payments = Gson().fromJson(bill.paymentsJson, Array<Map<String, Any>>::class.java).toMutableList()
+                val type = object : com.google.gson.reflect.TypeToken<List<Map<String, Any>>>() {}.type
+                val payments = Gson().fromJson<List<Map<String, Any>>>(bill.paymentsJson, type).toMutableList()
                 payments.add(payment)
                 val updatedBill = bill.copy(paymentsJson = Gson().toJson(payments), lastPaymentDate = Date())
 
