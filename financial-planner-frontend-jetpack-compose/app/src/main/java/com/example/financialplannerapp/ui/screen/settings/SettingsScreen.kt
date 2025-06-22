@@ -6,13 +6,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.ContactSupport
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ContactSupport
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -20,18 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.financialplannerapp.core.util.translate
-import com.example.financialplannerapp.data.model.Translations
 
 private const val TAG_SETTINGS_SCREEN = "SettingsScreen"
-
-// Bibit-inspired color palette (consistent with DashboardScreen)
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val BibitDarkGreen = Color(0xFF388E3C)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
 
 data class SettingItem(
     val title: String,
@@ -48,47 +48,61 @@ fun SettingsScreen(navController: NavController) {
 
     val settingCategories = listOf(
         SettingItem(
-            title = translate(Translations.PersonalProfile),
-            subtitle = translate(Translations.Profile),
+            title = "Personal Profile",
+            subtitle = "Manage your personal information",
             icon = Icons.Filled.Person,
             route = "userProfileSettings"
         ),
         SettingItem(
-            title = translate(Translations.Security),
-            subtitle = translate(Translations.Security),
+            title = "Security",
+            subtitle = "Password, PIN, and security settings",
             icon = Icons.Filled.Security,
             route = "securitySettings"
         ),
         SettingItem(
-            title = translate(Translations.AppSettings),
-            subtitle = translate(Translations.AppInfo),
+            title = "App Settings",
+            subtitle = "Theme, language, and app preferences",
             icon = Icons.Filled.Settings,
             route = "appSettings"
         ),
         SettingItem(
-            title = translate(Translations.DataSync),
-            subtitle = translate(Translations.DataSyncDesc),
+            title = "Data Sync",
+            subtitle = "Sync data across devices",
             icon = Icons.Filled.Sync,
             route = "dataSyncSettings",
             isOnlineRequired = true
         ),
         SettingItem(
-            title = translate(Translations.BackupRestore),
-            subtitle = translate(Translations.BackupRestoreDesc),
+            title = "Backup & Restore",
+            subtitle = "Backup and restore your data",
             icon = Icons.Filled.CloudUpload,
             route = "backupRestoreSettings"
         ),
         SettingItem(
-            title = translate(Translations.HelpCenter),
-            subtitle = translate(Translations.HelpCenterDesc),
+            title = "Help Center",
+            subtitle = "FAQs and user guides",
             icon = Icons.Filled.HelpOutline,
             route = "helpCenterSettings"
         ),
         SettingItem(
-            title = translate(Translations.ContactSupport),
-            subtitle = translate(Translations.ContactSupportDesc),
+            title = "Contact Support",
+            subtitle = "Get help from our support team",
             icon = Icons.Filled.ContactSupport,
             route = "contactSupportSettings",
+            isOnlineRequired = true
+        ),
+        SettingItem(
+            title = "Delete Account",
+            subtitle = "Permanently delete your account and data",
+            icon = Icons.Filled.Delete,
+            route = "deleteAccount",
+            isOnlineRequired = true
+        ),
+        SettingItem(
+            title = "Delete Account",
+            subtitle = "Permanently delete your account and data",
+            icon = Icons.Filled.Delete,
+            route = "deleteAccount",
             isOnlineRequired = true
         )
     )
@@ -98,10 +112,10 @@ fun SettingsScreen(navController: NavController) {
             TopAppBar(
                 title = {
                     Text(
-                        text = translate(Translations.Settings),
+                        text = "Settings",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = DarkGray
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
@@ -112,20 +126,20 @@ fun SettingsScreen(navController: NavController) {
                         }
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = translate(Translations.Back),
-                            tint = BibitGreen
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = DarkGray,
-                    navigationIconContentColor = BibitGreen
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        containerColor = SoftGray
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -154,16 +168,10 @@ private fun SettingCard(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 2.dp,
-                shape = RoundedCornerShape(12.dp),
-                ambientColor = Color.Black.copy(alpha = 0.1f),
-                spotColor = Color.Black.copy(alpha = 0.1f)
-            ),
+            .fillMaxWidth(),
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -182,7 +190,7 @@ private fun SettingCard(
                 Icon(
                     imageVector = settingItem.icon,
                     contentDescription = settingItem.title,
-                    tint = BibitGreen,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -197,12 +205,12 @@ private fun SettingCard(
                     text = settingItem.title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = settingItem.subtitle,
                     fontSize = 14.sp,
-                    color = MediumGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
                 )
                 
@@ -211,7 +219,7 @@ private fun SettingCard(
                     Text(
                         text = "Online Required",
                         fontSize = 12.sp,
-                        color = BibitGreen,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -222,7 +230,7 @@ private fun SettingCard(
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = "Navigate",
-                tint = MediumGray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -232,5 +240,7 @@ private fun SettingCard(
 @Preview(showBackground = true)
 @Composable
 fun SettingsScreenPreview() {
-    SettingsScreen(navController = rememberNavController())
+    MaterialTheme {
+        SettingsScreen(navController = rememberNavController())
+    }
 }

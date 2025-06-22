@@ -79,14 +79,6 @@ object FlexibleStringSerializer : KSerializer<String?> {
     }
 }
 
-// Bibit-inspired color palette
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val BibitDarkGreen = Color(0xFF388E3C)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-
 @Serializable
 data class UserProfileUpdateRequest(
     val name: String,
@@ -454,7 +446,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                         text = translate("personal_profile"),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = DarkGray
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
@@ -467,7 +459,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = translate("back"),
-                            tint = BibitGreen
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
@@ -514,7 +506,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                                 Toast.makeText(context, "Data disimpan. Tekan 'Sinkronkan ke Server' untuk menyimpan ke cloud.", Toast.LENGTH_LONG).show()
                             }
                         ) {
-                            Text(translate("save"), color = BibitGreen, fontWeight = FontWeight.Medium)
+                            Text(translate("save"), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                         }
                         
                         // Cancel button
@@ -531,7 +523,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                                 Log.d(TAG_USER_PROFILE, "Edit mode cancelled")
                             }
                         ) {
-                            Text(translate("cancel"), color = MediumGray)
+                            Text(translate("cancel"), color = MaterialTheme.colorScheme.onSurface)
                         }
                     } else {
                         // Edit button
@@ -544,14 +536,14 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                             Icon(
                                 imageVector = Icons.Filled.Edit,
                                 contentDescription = "Edit Profil",
-                                tint = BibitGreen
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = DarkGray
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -569,15 +561,10 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                     verticalArrangement = Arrangement.Center
                 ) {
                     CircularProgressIndicator(
-                        color = BibitGreen,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(48.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Memuat profil...",
-                        fontSize = 16.sp,
-                        color = MediumGray
-                    )
                 }
             }
         } else if (loadError != null) {
@@ -595,7 +582,7 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                     Icon(
                         imageVector = Icons.Filled.ErrorOutline,
                         contentDescription = "Error",
-                        tint = Color.Red,
+                        tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(48.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -603,19 +590,19 @@ fun UserProfileSettingsScreen(navController: NavController, tokenManager: TokenM
                         text = "Gagal memuat profil",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
-                        color = DarkGray
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = loadError ?: "Unknown error",
                         fontSize = 14.sp,
-                        color = MediumGray,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = { loadUserProfile() },
-                        colors = ButtonDefaults.buttonColors(containerColor = BibitGreen)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Text("Coba Lagi")
                     }
@@ -914,7 +901,7 @@ private fun ProfileHeaderCard(
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -930,14 +917,14 @@ private fun ProfileHeaderCard(
                 Box(
                     modifier = Modifier
                         .size(64.dp)
-                        .background(BibitLightGreen, CircleShape),
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = userProfile.name.take(2).uppercase(),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
                 
@@ -948,12 +935,12 @@ private fun ProfileHeaderCard(
                         text = userProfile.name,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = DarkGray
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = userProfile.email,
                         fontSize = 14.sp,
-                        color = MediumGray
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -971,7 +958,7 @@ private fun ProfileHeaderCard(
                         modifier = Modifier
                             .size(12.dp)
                             .background(
-                                if (isConnected) BibitGreen else Color.Red,
+                                if (isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                 CircleShape
                             )
                     )
@@ -979,13 +966,13 @@ private fun ProfileHeaderCard(
                     Text(
                         text = if (isConnected) "Online" else "Offline",
                         fontSize = 14.sp,
-                        color = DarkGray,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Medium
                     )
                 }
                 
                 TextButton(onClick = onConnectionCheck) {
-                    Text("Cek Koneksi", color = BibitGreen)
+                    Text("Check Connection", color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -1003,7 +990,7 @@ private fun ProfileInfoCard(
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -1018,7 +1005,7 @@ private fun ProfileInfoCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = BibitGreen,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -1026,7 +1013,7 @@ private fun ProfileInfoCard(
                     text = title,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             
@@ -1054,7 +1041,7 @@ private fun ProfileTextField(
         Text(
             text = label,
             fontSize = 12.sp,
-            color = MediumGray,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 4.dp)
         )
         
@@ -1065,18 +1052,18 @@ private fun ProfileTextField(
                 modifier = Modifier.fillMaxWidth(),
                 maxLines = maxLines,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BibitGreen,
-                    unfocusedBorderColor = MediumGray
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         } else {
             Text(
                 text = value,
                 fontSize = 16.sp,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(SoftGray, RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
                     .padding(12.dp),
                 maxLines = maxLines
             )
@@ -1084,7 +1071,7 @@ private fun ProfileTextField(
                 Text(
                     text = translate("email_readonly"),
                     fontSize = 10.sp,
-                    color = MediumGray,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -1107,7 +1094,7 @@ private fun SyncStatusCard(
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -1122,7 +1109,7 @@ private fun SyncStatusCard(
                 Icon(
                     imageVector = Icons.Filled.CloudSync,
                     contentDescription = translate("sync_data"),
-                    tint = BibitGreen,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -1130,7 +1117,7 @@ private fun SyncStatusCard(
                     text = translate("sync_data"),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             
@@ -1141,12 +1128,12 @@ private fun SyncStatusCard(
                 Text(
                     text = translate("last_sync"),
                     fontSize = 12.sp,
-                    color = MediumGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = userProfile.lastSyncTime,
                     fontSize = 14.sp,
-                    color = DarkGray,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium
                 )
                 
@@ -1158,14 +1145,14 @@ private fun SyncStatusCard(
                         Icon(
                             imageVector = Icons.Filled.Warning,
                             contentDescription = translate("unsaved_changes"),
-                            tint = Color(0xFFFF9800),
+                            tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = translate("unsaved_changes"),
                             fontSize = 12.sp,
-                            color = Color(0xFFFF9800)
+                            color = MaterialTheme.colorScheme.tertiary
                         )
                     }
                 }
@@ -1177,16 +1164,16 @@ private fun SyncStatusCard(
                 enabled = isConnected && !isSyncing,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = BibitGreen,
-                    contentColor = Color.White,
-                    disabledContainerColor = MediumGray
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.onSurface
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 if (isSyncing) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -1215,7 +1202,7 @@ private fun SyncStatusCard(
                 Text(
                     text = translate("offline_notice"),
                     fontSize = 12.sp,
-                    color = MediumGray,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 8.dp),
                     textAlign = TextAlign.Center
                 )

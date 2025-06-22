@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -14,547 +17,513 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.financialplannerapp.data.model.RecurringBill
-import com.example.financialplannerapp.data.model.BillPayment
-import com.example.financialplannerapp.data.model.RepeatCycle
-import com.example.financialplannerapp.data.model.BillStatus
+import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.data.local.model.BillEntity
 import com.example.financialplannerapp.data.model.BillFilter
+import com.example.financialplannerapp.data.model.BillStatus
+import com.example.financialplannerapp.data.model.RecurringBill
+import com.example.financialplannerapp.data.model.RepeatCycle
+import com.example.financialplannerapp.ui.viewmodel.BillViewModel
+import com.example.financialplannerapp.ui.viewmodel.BillViewModelFactory
+import com.example.financialplannerapp.core.util.formatCurrency
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.financialplannerapp.TokenManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecurringBillsMainScreen(
-    onNavigateToAdd: () -> Unit = {},
-    onNavigateToCalendar: () -> Unit = {},
-    onNavigateToDetails: (String) -> Unit = {}
-) {
-    var selectedFilter by remember { mutableStateOf(BillFilter.ALL) }
-    var showMarkAsPaidDialog by remember { mutableStateOf<RecurringBill?>(null) }
-    var showDeleteDialog by remember { mutableStateOf<RecurringBill?>(null) }
+fun RecurringBillsMainScreen(navController: NavController, tokenManager: TokenManager) {
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    val billViewModel: BillViewModel = viewModel(
+        factory = BillViewModelFactory(application.appContainer.billRepository, tokenManager)
+    )
+    val isLoading by billViewModel.isLoading.collectAsState()
+    val error by billViewModel.error.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Mock Data
-    val bills = remember {
-        listOf(
-            RecurringBill(
-                id = "1",
-                name = "Listrik PLN",
-                estimatedAmount = 450000.0,
-                dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 5) }.time,
-                repeatCycle = "MONTHLY",
-                notes = "Tagihan listrik rumah",
-                payments = listOf(
-                    BillPayment("p1", 420000.0, Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -25) }.time)
-                )
-            ),
-            RecurringBill(
-                id = "2",
-                name = "Internet IndiHome",
-                estimatedAmount = 350000.0,
-                dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -2) }.time,
-                repeatCycle = "MONTHLY",
-                notes = "Paket 50 Mbps"
-            ),
-            RecurringBill(
-                id = "3",
-                name = "BPJS Kesehatan",
-                estimatedAmount = 150000.0,
-                dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 12) }.time,
-                repeatCycle = "MONTHLY",
-                notes = "Keluarga 4 orang"
-            ),
-            RecurringBill(
-                id = "4",
-                name = "Asuransi Mobil",
-                estimatedAmount = 2500000.0,
-                dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 45) }.time,
-                repeatCycle = "YEARLY",
-                notes = "Asuransi comprehensive"
-            ),
-            RecurringBill(
-                id = "5",
-                name = "Netflix Subscription",
-                estimatedAmount = 169000.0,
-                dueDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 8) }.time,
-                repeatCycle = "MONTHLY",
-                notes = "Premium plan",
-                payments = listOf(
-                    BillPayment("p2", 169000.0, Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -22) }.time)
-                )
-            )
-        )
-    }
-
-    val filteredBills = bills.filter { bill ->
-        when (selectedFilter) {
-            BillFilter.ALL -> true
-            BillFilter.UPCOMING -> bill.status == BillStatus.UPCOMING || bill.status == BillStatus.DUE_SOON
-            BillFilter.PAID -> bill.status == BillStatus.PAID
-            BillFilter.UNPAID -> bill.status != BillStatus.PAID
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(message = it, duration = SnackbarDuration.Short)
+            billViewModel.clearError()
         }
     }
 
-    // Colors
-    val BibitGreen = Color(0xFF4CAF50)
-    val BibitDarkGreen = Color(0xFF2E7D32)
-    val LightGreen = Color(0xFFE8F5E8)
-    val LightRed = Color(0xFFFFEBEE)
-    val LightOrange = Color(0xFFFFF3E0)
-    val LightBlue = Color(0xFFE3F2FD)
-
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Tagihan Rutin",
-                        fontWeight = FontWeight.Bold,
-                        color = BibitDarkGreen
-                    )
-                },
-                actions = {
-                    IconButton(onClick = onNavigateToCalendar) {
-                        Icon(
-                            Icons.Default.CalendarMonth,
-                            contentDescription = "Calendar View",
-                            tint = BibitGreen
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
-        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {  },
-                containerColor = BibitGreen,
-                contentColor = Color.White
+                onClick = { navController.navigate("add_bill") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Tambah Tagihan")
+                Icon(Icons.Default.Add, contentDescription = "Add Bill")
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            // Summary Cards
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Total Bills Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(containerColor = LightBlue),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = bills.size.toString(),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1976D2)
-                            )
-                            Text(
-                                text = "Total Tagihan",
-                                fontSize = 12.sp,
-                                color = Color(0xFF1976D2)
-                            )
-                        }
-                    }
-
-                    // Upcoming Bills Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(containerColor = LightOrange),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = bills.count { it.status == BillStatus.DUE_SOON }.toString(),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFF9800)
-                            )
-                            Text(
-                                text = "Jatuh Tempo",
-                                fontSize = 12.sp,
-                                color = Color(0xFFFF9800)
-                            )
-                        }
-                    }
-
-                    // Overdue Bills Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(containerColor = LightRed),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = bills.count { it.status == BillStatus.OVERDUE }.toString(),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFE53E3E)
-                            )
-                            Text(
-                                text = "Terlambat",
-                                fontSize = 12.sp,
-                                color = Color(0xFFE53E3E)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Filter Chips
-            item {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp)
-                ) {
-                    items(BillFilter.entries.toTypedArray()) { filter ->
-                        FilterChip(
-                            onClick = { selectedFilter = filter },
-                            label = {
-                                Text(
-                                    "${filter.label} (${
-                                        when (filter) {
-                                            BillFilter.ALL -> bills.size
-                                            BillFilter.UPCOMING -> bills.count { it.status == BillStatus.UPCOMING || it.status == BillStatus.DUE_SOON }
-                                            BillFilter.PAID -> bills.count { it.status == BillStatus.PAID }
-                                            BillFilter.UNPAID -> bills.count { it.status != BillStatus.PAID }
-                                        }
-                                    })"
-                                )
-                            },
-                            selected = selectedFilter == filter,
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = BibitGreen,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                    }
-                }
-            }
-
-            // Bills List
-            items(filteredBills) { bill ->
-                BillCard(
-                    bill = bill,
-                    onMarkAsPaid = { showMarkAsPaidDialog = bill },
-                    onEdit = { onNavigateToDetails(bill.id) },
-                    onDelete = { showDeleteDialog = bill },
-                    onClick = { onNavigateToDetails(bill.id) }
-                )
-            }
-
-            // Empty State
-            if (filteredBills.isEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "📋",
-                                fontSize = 48.sp
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "Tidak ada tagihan",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF666666)
-                            )
-                            Text(
-                                text = "Tambah tagihan rutin pertama Anda",
-                                fontSize = 14.sp,
-                                color = Color(0xFF999999)
-                            )
-                        }
-                    }
-                }
+        Box(modifier = Modifier.fillMaxSize()) {
+            RecurringBillsMainContent(
+                navController = navController,
+                viewModel = billViewModel,
+                modifier = Modifier.padding(paddingValues)
+            )
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }
-    }
-
-    // Mark as Paid Dialog
-    showMarkAsPaidDialog?.let { bill ->
-        AlertDialog(
-            onDismissRequest = { showMarkAsPaidDialog = null },
-            title = { Text("Tandai Sebagai Lunas") },
-            text = {
-                Text("Apakah Anda yakin ingin menandai tagihan \"${bill.name}\" sebagai sudah dibayar?")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        // TODO: Mark as paid logic
-                        showMarkAsPaidDialog = null
-                    }
-                ) {
-                    Text("Ya", color = BibitGreen)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showMarkAsPaidDialog = null }) {
-                    Text("Batal")
-                }
-            }
-        )
-    }
-
-    // Delete Dialog
-    showDeleteDialog?.let { bill ->
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = null },
-            title = { Text("Hapus Tagihan") },
-            text = {
-                Text("Apakah Anda yakin ingin menghapus tagihan \"${bill.name}\"? Tindakan ini tidak dapat dibatalkan.")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        // TODO: Delete logic
-                        showDeleteDialog = null
-                    }
-                ) {
-                    Text("Hapus", color = Color(0xFFE53E3E))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = null }) {
-                    Text("Batal")
-                }
-            }
-        )
     }
 }
 
 @Composable
-fun BillCard(
-    bill: RecurringBill,
-    onMarkAsPaid: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    onClick: () -> Unit
+private fun RecurringBillsMainContent(
+    navController: NavController,
+    viewModel: BillViewModel,
+    modifier: Modifier = Modifier
 ) {
-    val currencyFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-    val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale("id", "ID"))
+    var selectedFilter by remember { mutableStateOf(BillFilter.ALL) }
+    var billToEdit by remember { mutableStateOf<BillEntity?>(null) }
+    var billToDelete by remember { mutableStateOf<BillEntity?>(null) }
+    var billToView by remember { mutableStateOf<BillEntity?>(null) }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (bill.status == BillStatus.PAID) Color(0xFFF8F8F8) else Color.White
+    val billEntities by viewModel.localBills.collectAsState()
+
+    if (billToView != null) {
+        BillDetailDialog(
+            bill = RecurringBill.fromEntity(billToView!!),
+            onDismiss = { billToView = null },
+            onPay = {
+                // TODO: Implement payment logic
+                billToView = null
+            }
         )
+    }
+
+    if (billToEdit != null) {
+        EditBillDialog(
+            bill = billToEdit!!,
+            onDismiss = { billToEdit = null },
+            onSave = { updatedBill ->
+                viewModel.updateBill(updatedBill)
+                billToEdit = null
+            }
+        )
+    }
+
+    if (billToDelete != null) {
+        DeleteConfirmationDialog(
+            billName = billToDelete!!.name,
+            onDismiss = { billToDelete = null },
+            onConfirm = {
+                viewModel.deleteBill(billToDelete!!.uuid)
+                billToDelete = null
+            }
+        )
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceVariant) // Use theme color
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        BillHeaderSection(
+            onBackClick = { navController.popBackStack() },
+            onCalendarClick = { navController.navigate("bill_calendar") }
+        )
+
+        val bills = billEntities.map { RecurringBill.fromEntity(it) }
+        BillSummaryCards(bills = bills)
+
+        FilterChips(
+            selectedFilter = selectedFilter,
+            onFilterSelected = { selectedFilter = it },
+            bills = bills
+        )
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 80.dp)
         ) {
-            // Header Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+            val filteredEntities = billEntities.filter { entity ->
+                val bill = RecurringBill.fromEntity(entity)
+                when (selectedFilter) {
+                    BillFilter.ALL -> true
+                    BillFilter.UPCOMING -> bill.status == BillStatus.UPCOMING || bill.status == BillStatus.DUE_SOON
+                    BillFilter.PAID -> bill.status == BillStatus.PAID
+                    BillFilter.UNPAID -> bill.status != BillStatus.PAID
+                }
+            }
+            items(filteredEntities, key = { it.uuid }) { entity ->
+                BillCard(
+                    bill = RecurringBill.fromEntity(entity),
+                    onCardClick = { billToView = entity },
+                    onEditClick = { billToEdit = entity },
+                    onDeleteClick = { billToDelete = entity }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DeleteConfirmationDialog(
+    billName: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete Bill") },
+        text = { Text("Are you sure you want to delete '$billName'?") },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = bill.name,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (bill.status == BillStatus.PAID) Color(0xFF999999) else Color(0xFF333333)
-                    )
-                    Text(
-                        text = currencyFormat.format(bill.estimatedAmount),
-                        fontSize = 14.sp,
-                        color = if (bill.status == BillStatus.PAID) Color(0xFF999999) else Color(0xFF666666)
+                Text("Delete")
+            }
+        },
+        dismissButton = { Button(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditBillDialog(
+    bill: BillEntity,
+    onDismiss: () -> Unit,
+    onSave: (BillEntity) -> Unit
+) {
+    var name by remember(bill) { mutableStateOf(bill.name) }
+    var amount by remember(bill) { mutableStateOf(bill.estimatedAmount.toLong().toString()) }
+    val initialDate = remember(bill) { Calendar.getInstance().apply { time = bill.dueDate } }
+    var selectedDate by remember(bill) { mutableStateOf(initialDate) }
+    val initialCycle = remember(bill) {
+        try { RepeatCycle.valueOf(bill.repeatCycle) } catch (e: Exception) { RepeatCycle.MONTHLY }
+    }
+    var selectedCycle by remember(bill) { mutableStateOf(initialCycle) }
+
+    var nameError by remember { mutableStateOf(false) }
+    var amountError by remember { mutableStateOf(false) }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.timeInMillis)
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        selectedDate = Calendar.getInstance().apply { timeInMillis = it }
+                    }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Edit Recurring Bill", style = MaterialTheme.typography.headlineSmall)
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it; nameError = false },
+                    label = { Text("Bill Name") },
+                    isError = nameError,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it; amountError = false },
+                    label = { Text("Estimated Amount") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    isError = amountError,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
+                val dateFormatted = remember(selectedDate) {
+                    dateFormat.format(selectedDate.time)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true } // klik di luar OutlinedTextField
+                ) {
+                    OutlinedTextField(
+                        value = dateFormatted,
+                        onValueChange = {},
+                        readOnly = true,
+                        enabled = false, // ini penting agar tidak trigger keyboard/focus
+                        label = { Text("Next Due Date") },
+                        trailingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                // Status Badge
+
+                CycleDropDown(selectedCycle = selectedCycle, onCycleSelected = { selectedCycle = it })
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = {
+                        nameError = name.isBlank()
+                        val parsedAmount = amount.toDoubleOrNull()
+                        amountError = parsedAmount == null || parsedAmount <= 0
+                        if (!nameError && !amountError) {
+                            val updatedBill = bill.copy(
+                                name = name,
+                                estimatedAmount = parsedAmount!!,
+                                dueDate = selectedDate.time,
+                                repeatCycle = selectedCycle.name
+                            )
+                            onSave(updatedBill)
+                        }
+                    }) {
+                        Text("Save")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BillHeaderSection(onBackClick: () -> Unit, onCalendarClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+        Text(
+            "Recurring Bills",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        IconButton(onClick = onCalendarClick) { Icon(Icons.Default.CalendarToday, contentDescription = "Calendar View") }
+    }
+}
+
+@Composable
+fun BillSummaryCards(bills: List<RecurringBill>) {
+    val totalBills = bills.size
+    val upcomingBills = bills.count { it.status == BillStatus.DUE_SOON || it.status == BillStatus.UPCOMING }
+    val overdueBills = bills.count { it.status == BillStatus.OVERDUE }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            SummaryItem("Total", totalBills.toString(), MaterialTheme.colorScheme.onSurface)
+            SummaryItem("Upcoming", upcomingBills.toString(), MaterialTheme.colorScheme.tertiary)
+            SummaryItem("Overdue", overdueBills.toString(), MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+@Composable
+fun SummaryItem(label: String, value: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.headlineMedium.copy(color = color))
+        Text(label, style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FilterChips(selectedFilter: BillFilter, onFilterSelected: (BillFilter) -> Unit, bills: List<RecurringBill>) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(BillFilter.values()) { filter ->
+            val count = when (filter) {
+                BillFilter.ALL -> bills.size
+                BillFilter.UPCOMING -> bills.count { it.status == BillStatus.UPCOMING || it.status == BillStatus.DUE_SOON }
+                BillFilter.PAID -> bills.count { it.status == BillStatus.PAID }
+                BillFilter.UNPAID -> bills.count { it.status != BillStatus.PAID }
+            }
+            FilterChip(
+                selected = selectedFilter == filter,
+                onClick = { onFilterSelected(filter) },
+                label = { Text("${filter.label} ($count)") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun BillCard(bill: RecurringBill, onCardClick: () -> Unit, onEditClick: () -> Unit, onDeleteClick: () -> Unit) {
+    val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    val statusColor = when (bill.status) {
+        BillStatus.PAID -> MaterialTheme.colorScheme.primary
+        BillStatus.DUE_SOON -> MaterialTheme.colorScheme.tertiary
+        BillStatus.OVERDUE -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onCardClick),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Receipt,
+                    "Bill",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(40.dp)
+                )
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        bill.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        "Amount: ${formatCurrency(bill.estimatedAmount)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Box(
                     modifier = Modifier
-                        .background(
-                            color = bill.status.color.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .background(statusColor.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = bill.status.label,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = bill.status.color
+                        bill.status.name,
+                        color = statusColor,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Due Date and Cycle
+            Spacer(Modifier.height(16.dp))
+            Divider()
+            Spacer(Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = "Jatuh tempo: ${dateFormat.format(bill.nextDueDate)}",
-                        fontSize = 12.sp,
-                        color = if (bill.status == BillStatus.PAID) Color(0xFF999999) else Color(0xFF666666)
-                    )
-                    Text(
-                        text = "${getRepeatCycleIcon(bill.repeatCycle)} ${getRepeatCycleLabel(bill.repeatCycle)}",
-                        fontSize = 12.sp,
-                        color = if (bill.status == BillStatus.PAID) Color(0xFF999999) else Color(0xFF666666)
-                    )
-                }
-
-                // Days to Due
-                if (bill.status != BillStatus.PAID) {
-                    Text(
-                        text = when {
-                            bill.isOverdue -> "${Math.abs(bill.daysToDue)} hari terlambat"
-                            bill.daysToDue == 0 -> "Hari ini"
-                            bill.daysToDue == 1 -> "Besok"
-                            else -> "${bill.daysToDue} hari lagi"
-                        },
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = when (bill.status) {
-                            BillStatus.OVERDUE -> Color(0xFFE53E3E)
-                            BillStatus.DUE_SOON -> Color(0xFFFF9800)
-                            else -> Color(0xFF666666)
-                        }
-                    )
-                }
-            }
-
-            // Notes
-            if (bill.notes.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = bill.notes,
-                    fontSize = 12.sp,
-                    color = Color(0xFF999999),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    "Next Due: ${dateFormat.format(bill.nextDueDate)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
-            }
-
-            // Action Buttons
-            if (bill.status != BillStatus.PAID) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Mark as Paid Button
-                    Button(
-                        onClick = onMarkAsPaid,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF38A169)
-                        )
-                    ) {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Bayar", fontSize = 12.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(onClick = onEditClick, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Edit, "Edit Bill", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-
-                    // Edit Button
-                    OutlinedButton(
-                        onClick = onEdit,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Edit", fontSize = 12.sp)
+                    IconButton(onClick = onDeleteClick, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Delete, "Delete Bill", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                }
-            } else {
-                // Paid Status
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = Color(0xFF38A169),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Sudah dibayar",
-                        fontSize = 12.sp,
-                        color = Color(0xFF38A169),
-                        fontWeight = FontWeight.Medium
-                    )
                 }
             }
         }
     }
 }
 
-// Helper functions to get RepeatCycle properties from string
-private fun getRepeatCycleIcon(repeatCycle: String): String {
-    return when (repeatCycle) {
-        "DAILY" -> "📅"
-        "WEEKLY" -> "📅"
-        "MONTHLY" -> "📅"
-        "YEARLY" -> "📅"
-        "CUSTOM" -> "⚙️"
-        else -> "📅"
-    }
-}
+@Composable
+fun BillDetailDialog(
+    bill: RecurringBill,
+    onDismiss: () -> Unit,
+    onPay: () -> Unit
+) {
+    val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
 
-private fun getRepeatCycleLabel(repeatCycle: String): String {
-    return when (repeatCycle) {
-        "DAILY" -> "Daily"
-        "WEEKLY" -> "Weekly"
-        "MONTHLY" -> "Monthly"
-        "YEARLY" -> "Yearly"
-        "CUSTOM" -> "Custom"
-        else -> "Unknown"
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = bill.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Divider()
+                Row {
+                    Text("Amount: ", fontWeight = FontWeight.Bold)
+                    Text(formatCurrency(bill.estimatedAmount))
+                }
+                Row {
+                    Text("Due Date: ", fontWeight = FontWeight.Bold)
+                    Text(dateFormat.format(bill.dueDate))
+                }
+                Row {
+                    Text("Status: ", fontWeight = FontWeight.Bold)
+                    Text(bill.status.name, color = bill.status.color)
+                }
+                Row {
+                    Text("Cycle: ", fontWeight = FontWeight.Bold)
+                    Text(bill.repeatCycle)
+                }
+                if (bill.notes.isNotBlank()) {
+                    Row {
+                        Text("Notes: ", fontWeight = FontWeight.Bold)
+                        Text(bill.notes)
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onPay,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Pay")
+                }
+            }
+        }
     }
 }

@@ -1,11 +1,11 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { config } from "../config/config";
 import { UserType, UserProfileUpdatePayload } from "../types/user.types";
 import { TransactionPayload, TransactionType } from "../types/transaction.types";
 
 class Database {
 	private static instance: Database;
-	private supabase: SupabaseClient;
+	private supabase;
 
 	private constructor() {
 		this.supabase = createClient(config.supabase.url, config.supabase.anon_key);
@@ -18,122 +18,50 @@ class Database {
 		return Database.instance;
 	}
 
-	public getClient(): SupabaseClient {
-		return this.supabase;
-	}
-
-	//UserType methods
+	// User methods
 	async findUserByEmail(email: string): Promise<UserType | null> {
-		const { data, error } = await this.supabase
-			.from("users")
-			.select("*")
-			.eq("email", email)
-			.single();
-
-		if (error && error.code !== "PGRST116") {
-			throw error;
-		}
-
-		return data as UserType | null;
+		const { data, error } = await this.supabase.from('users').select('*').eq('email', email).single();
+		if (error && error.code !== 'PGRST116') throw error;
+		return data;
 	}
 
 	async findUserByGoogleId(googleId: string): Promise<UserType | null> {
-		const { data, error } = await this.supabase
-			.from("users")
-			.select("*")
-			.eq("google_id", googleId)
-			.single();
-
-		if (error && error.code !== "PGRST116") {
-			throw error;
-		}
-
-		return data as UserType | null;
+		const { data, error } = await this.supabase.from('users').select('*').eq('google_id', googleId).single();
+		if (error && error.code !== 'PGRST116') throw error;
+		return data;
 	}
 
-	async createUser(userData: Partial<UserType>): Promise<UserType> {
-		const { data, error } = await this.supabase
-			.from("users")
-			.insert([userData])
-			.select()
-			.single();
-
-		if (error) {
-			throw error;
-		}
-
-		return data as UserType;
+	async createUser(userData: { email: string; name: string; google_id: string; avatar_url: string; role?: "user" | "admin"; }): Promise<UserType> {
+		const { data, error } = await this.supabase.from('users').insert([userData]).select().single();
+		if (error) throw error;
+		return data;
 	}
 
 	async getUserById(id: string): Promise<UserType | null> {
-		const { data, error } = await this.supabase
-			.from("users")
-			.select("*")
-			.eq("id", id)
-			.single();
-
-		if (error) {
-			throw error;
-		}
-
-		return data as UserType | null;
+		const { data, error } = await this.supabase.from('users').select('*').eq('id', id).single();
+		if (error && error.code !== 'PGRST116') throw error;
+		return data;
 	}
 	
 	async deleteUser(email: string): Promise<void> {
-		// First, check if the user exists
 		const user = await this.findUserByEmail(email);
-		
 		if (!user) {
 			throw new Error("User not found");
 		}
-		
-		// Delete the user
-		const { error } = await this.supabase
-			.from("users")
-			.delete()
-			.eq("email", email);
-		
-		if (error) {
-			throw error;
-		}
+		const { error } = await this.supabase.from('users').delete().eq('id', user.id);
+		if (error) throw error;
 	}
 
 	async updateUserProfile(userId: string, profileData: UserProfileUpdatePayload): Promise<UserType | null> {
 		try {
-			console.log(`Updating user profile for ID: ${userId}`);
-			
-			// Prepare update data - map frontend fields to database columns
-			const updateData: Partial<UserType> = {};
-			
-			if (profileData.name) updateData.name = profileData.name;
-			if (profileData.phone) updateData.phone = profileData.phone;
-			if (profileData.date_of_birth) updateData.date_of_birth = profileData.date_of_birth;
-			if (profileData.occupation) updateData.occupation = profileData.occupation;
-			if (profileData.monthly_income) updateData.monthly_income = profileData.monthly_income;
-			if (profileData.financial_goals) updateData.financial_goals = profileData.financial_goals;
-			
-			// Add updated timestamp
-			updateData.updated_at = new Date().toISOString();
+			const updateData: Partial<UserType> = {
+				...profileData,
+				updated_at: new Date().toISOString()
+			};
 
-			const { data, error } = await this.supabase
-				.from('users')
-				.update(updateData)
-				.eq('id', userId)
-				.select()
-				.single();
-
-			if (error) {
-				console.error('Supabase error updating user profile:', error);
-				throw error;
-			}
-
-			if (!data) {
-				console.log('No user found with ID:', userId);
-				return null;
-			}
-
-			console.log('User profile updated successfully:', data);
-			return data as UserType;
+			const { data, error } = await this.supabase.from('users').update(updateData).eq('id', userId).select().single();
+			if (error) throw error;
+			return data;
 		} catch (error) {
 			console.error('Error in updateUserProfile:', error);
 			throw error;
@@ -141,128 +69,116 @@ class Database {
 	}
 
 	// Transaction methods
-	async createTransaction(userIdOrData: string | any, payload?: TransactionPayload): Promise<TransactionType | any> {
-		try {
-			let transactionData: any;
-			
-			// Handle both old and new method signatures
-			if (typeof userIdOrData === 'string' && payload) {
-				// Old signature: createTransaction(userId: string, payload: TransactionPayload)
-				transactionData = { ...payload, user_id: userIdOrData };
-			} else {
-				// New signature: createTransaction(transactionData: any)
-				transactionData = userIdOrData;
-			}
-
-			console.log('Creating transaction in database:', transactionData);
-			
-			const { data, error } = await this.supabase
-				.from('transactions')
-				.insert([transactionData])
-				.select()
-				.single();
-
-			if (error) {
-				console.error('Supabase error creating transaction:', error);
-				throw error;
-			}
-
-			console.log('Transaction created successfully:', data);
-			return data;
-		} catch (error) {
-			console.error('Error in createTransaction:', error);
-			throw error;
-		}
+	async createTransaction(userId: string, payload: TransactionPayload): Promise<TransactionType> {
+		const { data, error } = await this.supabase
+			.from('transactions')
+			.insert([{ ...payload, user_id: userId }])
+			.select()
+			.single();
+		if (error) throw error;
+		return data;
 	}
 
 	async getUserTransactions(userId: string): Promise<TransactionType[]> {
-		try {
-			const { data, error } = await this.supabase
-				.from('transactions')
-				.select('*')
-				.eq('user_id', userId)
-				.order('date', { ascending: false });
-
-			if (error) {
-				throw error;
-			}
-			return data as TransactionType[];
-		} catch (error) {
-			console.error('Error in getUserTransactions:', error);
-			throw error;
-		}
+		const { data, error } = await this.supabase
+			.from('transactions')
+			.select('*')
+			.eq('user_id', userId)
+			.order('date', { ascending: false });
+		if (error) throw error;
+		return data || [];
 	}
 
+	async getTransactionByUserId(id: string): Promise<TransactionType | null> {
+		const { data, error } = await this.supabase
+			.from('transactions')
+			.select('*')
+			.eq('user_id', id)
+			.single();
+		if (error && error.code !== 'PGRST116') throw error;
+		return data;
+	}
 	async getTransactionById(id: string): Promise<TransactionType | null> {
 		const { data, error } = await this.supabase
 			.from('transactions')
 			.select('*')
 			.eq('id', id)
 			.single();
-
-		if (error && error.code !== 'PGRST116') {
-			throw error;
-		}
-		return data as TransactionType | null;
+		if (error && error.code !== 'PGRST116') throw error;
+		return data;
 	}
-
-	async getTransactionsByUserId(userId: string): Promise<any[]> {
-		try {
-			const { data, error } = await this.supabase
-				.from('transactions')
-				.select('*')
-				.eq('user_id', userId)
-				.order('created_at', { ascending: false });
-
-			if (error) {
-				console.error('Supabase error fetching transactions:', error);
-				throw error;
-			}
-
-			return data || [];
-		} catch (error) {
-			console.error('Error in getTransactionsByUserId:', error);
-			throw error;
-		}
+	
+	async updateTransaction(transactionId: string, updateData: Partial<TransactionPayload>): Promise<TransactionType | null> {
+		const { data, error } = await this.supabase
+			.from('transactions')
+			.update(updateData)
+			.eq('id', transactionId)
+			.select()
+			.single();
+		if (error) throw error;
+		return data;
 	}
-
-	async updateTransaction(transactionId: string, updateData: any): Promise<any | null> {
-		try {
-			const { data, error } = await this.supabase
-				.from('transactions')
-				.update(updateData)
-				.eq('id', transactionId)
-				.select()
-				.single();
-
-			if (error) {
-				console.error('Supabase error updating transaction:', error);
-				throw error;
-			}
-
-			return data;
-		} catch (error) {
-			console.error('Error in updateTransaction:', error);
-			throw error;
-		}
-	}
-
+	
 	async deleteTransaction(transactionId: string): Promise<void> {
-		try {
-			const { error } = await this.supabase
-				.from('transactions')
-				.delete()
-				.eq('id', transactionId);
+		const { error } = await this.supabase
+			.from('transactions')
+			.delete()
+			.eq('id', transactionId);
+		if (error) throw error;
+	}
 
-			if (error) {
-				console.error('Supabase error deleting transaction:', error);
-				throw error;
-			}
-		} catch (error) {
-			console.error('Error in deleteTransaction:', error);
-			throw error;
-		}
+	// Tag methods for transaction controller
+	async assignTagsToTransaction(transactionId: string, tagIds: string[]): Promise<void> {
+		const assignments = tagIds.map(tagId => ({ transaction_id: transactionId, tag_id: tagId }));
+		const { error } = await this.supabase.from('transaction_tags').insert(assignments);
+		if (error) throw error;
+	}
+
+	async removeAllTagsFromTransaction(transactionId: string): Promise<void> {
+		const { error } = await this.supabase.from('transaction_tags').delete().eq('transaction_id', transactionId);
+		if (error) throw error;
+	}
+
+	// CATEGORY METHODS
+	async createCategory(payload: any): Promise<any> {
+		const { data, error } = await this.supabase
+			.from('categories')
+			.insert([payload])
+			.select()
+			.single();
+		if (error) throw error;
+		return data;
+	}
+
+	async updateCategory(id: string, payload: any): Promise<any> {
+		const { data, error } = await this.supabase
+			.from('categories')
+			.update(payload)
+			.eq('id', id)
+			.select()
+			.single();
+		if (error) throw error;
+		return data;
+	}
+
+	async deleteCategory(id: string): Promise<void> {
+		const { error } = await this.supabase
+			.from('categories')
+			.delete()
+			.eq('id', id);
+		if (error) throw error;
+	}
+
+	async getCategoryTree(userId: string): Promise<any[]> {
+		const { data, error } = await this.supabase
+			.from('categories')
+			.select('*')
+			.eq('user_id', userId)
+			.order('name', { ascending: true });
+		if (error) throw error;
+		return data || [];
 	}
 }
 
-export default Database.getInstance();
+const database = Database.getInstance();
+export default database;

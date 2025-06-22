@@ -10,8 +10,6 @@ import com.example.financialplannerapp.data.repository.AppSettingsRepository
 import com.example.financialplannerapp.data.repository.AppSettingsRepositoryImpl
 import com.example.financialplannerapp.data.repository.AuthRepository
 import com.example.financialplannerapp.data.repository.AuthRepositoryImpl
-import com.example.financialplannerapp.data.repository.CategoryRepository
-import com.example.financialplannerapp.data.repository.CategoryRepositoryImpl
 import com.example.financialplannerapp.data.repository.ReceiptTransactionRepository
 import com.example.financialplannerapp.data.repository.ReceiptTransactionRepositoryImpl
 import com.example.financialplannerapp.data.repository.SecurityRepository
@@ -31,6 +29,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import com.example.financialplannerapp.data.repository.BillRepository
+import com.example.financialplannerapp.data.repository.BillRepositoryImpl
+import com.example.financialplannerapp.data.repository.BudgetRepository
+import com.example.financialplannerapp.data.repository.BudgetRepositoryImpl
+import com.example.financialplannerapp.data.repository.GoalRepository
+import com.example.financialplannerapp.data.repository.GoalRepositoryImpl
+import com.example.financialplannerapp.data.repository.WalletRepository
+import com.example.financialplannerapp.data.repository.WalletRepositoryImpl
 
 class MainApplication : Application() {
 
@@ -65,7 +71,7 @@ class AppContainer(private val applicationContext: Context) {
     private val appDatabase: AppDatabase by lazy {
         Room.databaseBuilder(
             applicationContext,
-            AppDatabase::class.java, "financial_planner_db"
+            AppDatabase::class.java, "financial-planner-db"
         ).build()
     }
 
@@ -75,15 +81,19 @@ class AppContainer(private val applicationContext: Context) {
     }
 
     // API Service
-    private val apiService = RetrofitClient.apiService
+    val apiService by lazy { RetrofitClient.getApiService(applicationContext) }
+    val accountService by lazy { RetrofitClient.getAccountService(applicationContext) }
 
     // DAOs from AppDatabase - only use DAOs that actually exist
     private val transactionDao by lazy { appDatabase.transactionDao() }
     private val receiptTransactionDao by lazy { appDatabase.receiptTransactionDao() }
-    private val categoryDao by lazy { appDatabase.categoryDao() }
     private val appSettingsDao by lazy { appDatabase.appSettingsDao() }
     private val userProfileDao by lazy { appDatabase.userProfileDao() }
     private val securitySettingsDao by lazy { appDatabase.securitySettingsDao() }
+    private val billDao by lazy { appDatabase.billDao() }
+    private val walletDao by lazy { appDatabase.walletDao() }
+    private val budgetDao by lazy { appDatabase.budgetDao() }
+    private val goalDao by lazy { appDatabase.goalDao() }
 
     // Services
     val translationProvider: TranslationProvider by lazy {
@@ -95,7 +105,7 @@ class AppContainer(private val applicationContext: Context) {
     }
     
     val appSettingsDatabaseHelper: AppSettingsDatabaseHelper by lazy {
-        AppSettingsDatabaseHelper.getInstance(applicationContext)
+        AppSettingsDatabaseHelper.getInstance(applicationContext, apiService)
     }
     
     val reactiveSettingsService: ReactiveSettingsService by lazy {
@@ -105,10 +115,6 @@ class AppContainer(private val applicationContext: Context) {
     // Repositories
     val authRepository: AuthRepository by lazy {
         AuthRepositoryImpl(apiService, com.example.financialplannerapp.core.datastore.DataStoreHelper(applicationContext))
-    }
-
-    val categoryRepository: CategoryRepository by lazy {
-        CategoryRepositoryImpl(categoryDao, apiService)
     }
 
     val transactionRepository: TransactionRepository by lazy {
@@ -133,11 +139,27 @@ class AppContainer(private val applicationContext: Context) {
         SecurityRepositoryImpl(securitySettingsDao)
     }
     val appSettingsRepository: AppSettingsRepository by lazy {
-        AppSettingsRepositoryImpl(appSettingsDao)
+        AppSettingsRepositoryImpl(appSettingsDao, apiService)
     }
     
     // Receipt Service
     val receiptService: com.example.financialplannerapp.data.service.ReceiptService by lazy {
         com.example.financialplannerapp.data.service.ReceiptService(apiService, tokenManager, applicationContext)
+    }
+
+    val billRepository: BillRepository by lazy {
+        BillRepositoryImpl(billDao)
+    }
+
+    val budgetRepository: BudgetRepository by lazy {
+        BudgetRepositoryImpl(budgetDao)
+    }
+
+    val goalRepository: GoalRepository by lazy {
+        GoalRepositoryImpl(goalDao)
+    }
+
+    val walletRepository: WalletRepository by lazy {
+        WalletRepositoryImpl(walletDao)
     }
 }

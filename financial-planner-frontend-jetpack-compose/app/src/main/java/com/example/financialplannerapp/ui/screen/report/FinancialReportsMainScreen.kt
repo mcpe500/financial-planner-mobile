@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.report
 
 import android.util.Log
 import androidx.compose.foundation.Canvas
@@ -37,6 +37,7 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.*
+import com.example.financialplannerapp.core.util.formatCurrency
 
 private const val TAG_REPORTS = "FinancialReportsMainScreen"
 
@@ -350,7 +351,7 @@ private fun CashFlowSummaryCard(data: CashFlowData) {
                         color = MediumGray
                     )
                     Text(
-                        text = formatCurrency(data.netCashFlow),
+                        text = formatCurrencyAmount(data.netCashFlow),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = netFlowColor
@@ -400,12 +401,12 @@ private fun CashFlowChart(data: CashFlowData) {
                 ChartLegendItem(
                     color = IncomeGreen,
                     label = "Pemasukan",
-                    amount = formatCurrency(data.totalIncome)
+                    amount = formatCurrencyAmount(data.totalIncome)
                 )
                 ChartLegendItem(
                     color = ExpenseRed,
                     label = "Pengeluaran",
-                    amount = formatCurrency(data.totalExpenses)
+                    amount = formatCurrencyAmount(data.totalExpenses)
                 )
             }
         }
@@ -503,7 +504,7 @@ private fun CashFlowDetailRow(
         }
 
         Text(
-            text = formatCurrency(amount),
+            text = formatCurrencyAmount(amount),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = color
@@ -577,7 +578,7 @@ private fun CategoryPieChart(categories: List<CategorySpending>) {
                 color = MediumGray
             )
             Text(
-                text = formatCurrency(categories.sumOf { it.amount }),
+                text = formatCurrencyAmount(categories.sumOf { it.amount }),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = DarkGray
@@ -648,7 +649,7 @@ private fun CategorySpendingItem(category: CategorySpending) {
         }
 
         Text(
-            text = formatCurrency(category.amount),
+            text = formatCurrencyAmount(category.amount),
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
             color = category.color
@@ -832,14 +833,14 @@ private fun TrendSummary(data: List<TrendData>) {
                 TrendSummaryItem(
                     icon = "💰",
                     label = "Rata-rata Pemasukan",
-                    value = formatCurrency(avgIncome),
+                    value = formatCurrencyAmount(avgIncome),
                     color = IncomeGreen
                 )
 
                 TrendSummaryItem(
                     icon = "💸",
                     label = "Rata-rata Pengeluaran",
-                    value = formatCurrency(avgExpenses),
+                    value = formatCurrencyAmount(avgExpenses),
                     color = ExpenseRed
                 )
             }
@@ -949,7 +950,7 @@ private fun NetWorthSummaryCard(data: NetWorthData) {
             )
 
             Text(
-                text = formatCurrency(data.netWorth),
+                text = formatCurrencyAmount(data.netWorth),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -967,7 +968,7 @@ private fun NetWorthSummaryCard(data: NetWorthData) {
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "${if (netWorthChange >= 0) "+" else ""}${formatCurrency(netWorthChange)} (${String.format("%.1f", changePercentage)}%)",
+                    text = "${if (netWorthChange >= 0) "+" else ""}${formatCurrencyAmount(netWorthChange)} (${String.format("%.1f", changePercentage)}%)",
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.9f)
                 )
@@ -1018,7 +1019,7 @@ private fun AssetsLiabilitiesCard(data: NetWorthData) {
                     )
                 }
                 Text(
-                    text = formatCurrency(data.totalAssets),
+                    text = formatCurrencyAmount(data.totalAssets),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = IncomeGreen
@@ -1049,7 +1050,7 @@ private fun AssetsLiabilitiesCard(data: NetWorthData) {
                     )
                 }
                 Text(
-                    text = formatCurrency(data.totalLiabilities),
+                    text = formatCurrencyAmount(data.totalLiabilities),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = ExpenseRed
@@ -1084,7 +1085,7 @@ private fun AssetsLiabilitiesCard(data: NetWorthData) {
                     )
                 }
                 Text(
-                    text = formatCurrency(data.netWorth),
+                    text = formatCurrencyAmount(data.netWorth),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = NetWorthBlue
@@ -1136,7 +1137,7 @@ private fun NetWorthTrendCard(data: NetWorthData) {
                         color = MediumGray
                     )
                     Text(
-                        text = formatCurrency(data.previousNetWorth),
+                        text = formatCurrencyAmount(data.previousNetWorth),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = DarkGray
@@ -1152,7 +1153,7 @@ private fun NetWorthTrendCard(data: NetWorthData) {
                         color = MediumGray
                     )
                     Text(
-                        text = formatCurrency(data.netWorth),
+                        text = formatCurrencyAmount(data.netWorth),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = NetWorthBlue
@@ -1347,9 +1348,9 @@ private fun ChartLegendItem(
 }
 
 // Utility function for currency formatting
-private fun formatCurrency(amount: Double): String {
-    val formatter = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-    return formatter.format(amount).replace("IDR", "Rp").replace(",00", "")
+@Composable
+private fun formatCurrencyAmount(amount: Double): String {
+    return formatCurrency(amount)
 }
 
 @Preview(showBackground = true)

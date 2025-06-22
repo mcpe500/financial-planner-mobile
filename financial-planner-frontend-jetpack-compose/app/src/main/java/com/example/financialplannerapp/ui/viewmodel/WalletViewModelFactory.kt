@@ -1,19 +1,19 @@
+package com.example.financialplannerapp.ui.viewmodel
 
-    package com.example.financialplannerapp.ui.viewmodel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.financialplannerapp.TokenManager
+import com.example.financialplannerapp.data.repository.WalletRepository
 
-    import androidx.lifecycle.ViewModel
-    import androidx.lifecycle.ViewModelProvider
-    import com.example.financialplannerapp.data.repository.WalletRepository
-
-    class WalletViewModelFactory(
-        private val walletRepository: WalletRepository,
-        private val userId: String
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(WalletViewModel::class.java)) {
-                return WalletViewModel(walletRepository, userId) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
+class WalletViewModelFactory(
+    private val repository: WalletRepository,
+    private val tokenManager: TokenManager
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(WalletViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return WalletViewModel(repository, tokenManager) as T
         }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
+}

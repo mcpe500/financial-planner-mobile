@@ -3,6 +3,7 @@ import authRoutes from "./auth.routes";
 import accountRoutes from "./account.routes";
 import profileRoutes from "./profile.routes";
 import transactionRoutes from "./transaction.routes";
+import { healthCheck } from '../controllers/health.controller';
 // import accountApiRoutes from "./account-api.routes";
 
 const apiRouter = Router();
@@ -22,9 +23,13 @@ apiRouter.use("/api/auth", authRoutes);
 apiRouter.use("/api/profile", profileRoutes);
 apiRouter.use("/api/transactions", transactionRoutes);
 apiRouter.use("/api/receipts", transactionRoutes);
-// apiRouter.use("/api/account", accountApiRoutes);
+apiRouter.use("/api/account", accountRoutes);
+apiRouter.use("/api/account", accountRoutes);
 
 // Web routes
 apiRouter.use("/account", accountRoutes);
+
+// Health check endpoint
+apiRouter.get('/api/health', healthCheck);
 
 export default apiRouter;

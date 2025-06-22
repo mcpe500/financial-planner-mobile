@@ -24,6 +24,7 @@ import androidx.compose.ui.window.Dialog
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.financialplannerapp.core.util.formatCurrency
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -367,8 +368,7 @@ private fun AmountDetail(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-                .format(amount).replace("IDR", "Rp"),
+            text = formatCurrency(amount),
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             color = color,
@@ -644,8 +644,7 @@ private fun PaymentItem(payment: Payment) {
 
             Column {
                 Text(
-                    text = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-                        .format(payment.amount).replace("IDR", "Rp"),
+                    text = formatCurrency(payment.amount),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1A202C)
@@ -737,7 +736,7 @@ private fun AddPaymentDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = showValidationError && !isAmountValid,
                     supportingText = if (showValidationError && !isAmountValid) {
-                        { Text("Masukkan jumlah yang valid (max: ${NumberFormat.getCurrencyInstance(Locale("id", "ID")).format(maxAmount).replace("IDR", "Rp")})", color = Color(0xFFE53E3E)) }
+                        { Text("Masukkan jumlah yang valid (max: ${formatCurrency(maxAmount)})", color = Color(0xFFE53E3E)) }
                     } else null,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -865,7 +864,7 @@ private fun WithdrawDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = showValidationError && !isAmountValid,
                     supportingText = if (showValidationError && !isAmountValid) {
-                        { Text("Masukkan jumlah yang valid (max: ${NumberFormat.getCurrencyInstance(Locale("id", "ID")).format(maxAmount).replace("IDR", "Rp")})", color = Color(0xFFE53E3E)) }
+                        { Text("Masukkan jumlah yang valid (max: ${formatCurrency(maxAmount)})", color = Color(0xFFE53E3E)) }
                     } else null,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(

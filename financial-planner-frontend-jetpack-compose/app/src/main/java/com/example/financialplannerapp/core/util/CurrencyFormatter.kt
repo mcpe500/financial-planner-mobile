@@ -1,25 +1,30 @@
 package com.example.financialplannerapp.core.util
 
 import androidx.compose.runtime.*
-import com.example.financialplannerapp.service.LocalReactiveSettingsService
-import kotlinx.coroutines.flow.StateFlow
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financialplannerapp.ui.viewmodel.AppSettingsViewModel
+import com.example.financialplannerapp.ui.viewmodel.SettingsViewModelFactory
 import java.text.NumberFormat
 import java.util.*
 
 @Composable
 fun formatCurrency(amount: Double): String {
-    val settingsService = LocalReactiveSettingsService.current
-    val currentSettings by settingsService.currentSettings.collectAsState()
+    val context = LocalContext.current
+    val appSettingsViewModel: AppSettingsViewModel = viewModel(factory = SettingsViewModelFactory(context))
+    val currentCurrency by appSettingsViewModel.currency.collectAsState()
+    val currentLanguage by appSettingsViewModel.language.collectAsState()
     
-    return formatCurrencyWithCode(amount, currentSettings.currency, currentSettings.language)
+    return formatCurrencyWithCode(amount, currentCurrency, currentLanguage)
 }
 
 @Composable
 fun getCurrentCurrencySymbol(): String {
-    val settingsService = LocalReactiveSettingsService.current
-    val currentSettings by settingsService.currentSettings.collectAsState()
+    val context = LocalContext.current
+    val appSettingsViewModel: AppSettingsViewModel = viewModel(factory = SettingsViewModelFactory(context))
+    val currentCurrency by appSettingsViewModel.currency.collectAsState()
     
-    return getCurrencySymbol(currentSettings.currency)
+    return getCurrencySymbol(currentCurrency)
 }
 
 fun formatCurrencyWithCode(amount: Double, currencyCode: String, languageCode: String): String {

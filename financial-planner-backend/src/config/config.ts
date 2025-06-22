@@ -5,19 +5,20 @@ dotenv.config();
 
 // Define config interface
 interface Config {
-    server: {
-        port: number;
-        nodeEnv: string;
-    };
-    jwt: {
-        secret: string;
-        expiresIn: string;
-    };
-    supabase: {
-        url: string;
-        anon_key: string;
-    };
-    google: {
+	server: {
+		port: number;
+		nodeEnv: string;
+	};
+	jwt: {
+		secret: string;
+		expiresIn: string;
+	};
+	supabase: {
+		url: string;
+		anon_key: string;
+	};
+	useLocalStorage: boolean;
+	google: {
         clientId: string;
         clientSecret: string;
         callbackUrl: string;
@@ -45,9 +46,10 @@ export const config: Config = {
         expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     },
     supabase: {
-        url: process.env.SUPABASE_URL || "",
-        anon_key: process.env.SUPABASE_ANON_KEY || "",
+    	url: process.env.SUPABASE_URL || "",
+    	anon_key: process.env.SUPABASE_ANON_KEY || "",
     },
+    useLocalStorage: false,
     google: {
         clientId: process.env.GOOGLE_CLIENT_ID || "",
         clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",

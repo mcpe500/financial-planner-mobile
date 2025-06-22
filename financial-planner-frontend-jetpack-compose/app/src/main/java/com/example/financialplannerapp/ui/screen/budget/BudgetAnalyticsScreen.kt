@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.budget
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -23,17 +23,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.data.model.Budget
+import com.example.financialplannerapp.data.model.generateMockBudgets
 import kotlin.math.cos
 import kotlin.math.sin
-
-// Bibit-inspired color palette
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-private val WarningOrange = Color(0xFFFF9800)
-private val DangerRed = Color(0xFFFF5722)
+import com.example.financialplannerapp.ui.theme.BibitGreen
+import com.example.financialplannerapp.ui.theme.BibitLightGreen
+import com.example.financialplannerapp.ui.theme.MediumGray
+import com.example.financialplannerapp.ui.theme.DangerRed
+import com.example.financialplannerapp.ui.theme.WarningOrange
+import com.example.financialplannerapp.ui.theme.MotivationalOrange
+import com.example.financialplannerapp.ui.theme.DarkGray
+import com.example.financialplannerapp.ui.theme.SoftGray
 
 data class BudgetInsight(
     val title: String,
@@ -45,6 +46,18 @@ data class BudgetInsight(
 enum class InsightType {
     SUCCESS, WARNING, DANGER, INFO
 }
+
+// Chart colors - defined locally for chart purposes
+private val ChartColors = listOf(
+    Color(0xFF4CAF50), // Green
+    Color(0xFFFF9800), // Orange
+    Color(0xFFF44336), // Red
+    Color(0xFF2196F3), // Blue
+    Color(0xFF9C27B0), // Purple
+    Color(0xFFFF5722), // Deep Orange
+    Color(0xFF795548), // Brown
+    Color(0xFF607D8B)  // Blue Grey
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,8 +80,8 @@ fun BudgetAnalyticsScreen(navController: NavController) {
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = DarkGray
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -76,7 +89,7 @@ fun BudgetAnalyticsScreen(navController: NavController) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(SoftGray)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -102,7 +115,7 @@ fun BudgetAnalyticsScreen(navController: NavController) {
                     text = "Wawasan & Rekomendasi",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -120,7 +133,7 @@ private fun BudgetDistributionCard(budgets: List<Budget>) {
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -129,7 +142,7 @@ private fun BudgetDistributionCard(budgets: List<Budget>) {
                 text = "Distribusi Anggaran",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -164,13 +177,69 @@ private fun BudgetDistributionCard(budgets: List<Budget>) {
 }
 
 @Composable
+private fun BudgetLegendItem(budget: Budget, color: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(12.dp)
+                .background(color, RoundedCornerShape(2.dp))
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = budget.name,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = "${budget.progressPercentage * 100}%",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+private fun getBudgetColor(index: Int): Color {
+    return ChartColors[index % ChartColors.size]
+}
+
+private fun DrawScope.drawBudgetPieChart(budgets: List<Budget>) {
+    val totalAmount = budgets.sumOf { it.amount }
+    if (totalAmount <= 0) return
+
+    var startAngle = 0f
+    val center = Offset(size.width / 2, size.height / 2)
+    val radius = minOf(size.width, size.height) / 2 * 0.8f
+
+    budgets.forEachIndexed { index, budget ->
+        val sweepAngle = (budget.amount / totalAmount * 360).toFloat()
+        val color = getBudgetColor(index)
+        
+        drawArc(
+            color = color,
+            startAngle = startAngle,
+            sweepAngle = sweepAngle,
+            useCenter = true,
+            topLeft = Offset(center.x - radius, center.y - radius),
+            size = Size(radius * 2, radius * 2)
+        )
+        
+        startAngle += sweepAngle
+    }
+}
+
+@Composable
 private fun MonthlyComparisonCard() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -179,7 +248,7 @@ private fun MonthlyComparisonCard() {
                 text = "Perbandingan Bulanan",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -201,32 +270,6 @@ private fun MonthlyComparisonCard() {
                     color = MediumGray
                 )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Comparison indicator
-            val difference = 3740000.0 - 3450000.0
-            val percentageChange = (difference / 3450000.0) * 100
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    if (difference > 0) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
-                    contentDescription = "Trend",
-                    tint = if (difference > 0) DangerRed else BibitGreen,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "${if (difference > 0) "+" else ""}${String.format("%.1f", percentageChange)}% dari bulan lalu",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (difference > 0) DangerRed else BibitGreen
-                )
-            }
         }
     }
 }
@@ -244,20 +287,18 @@ private fun MonthComparisonItem(
         Text(
             text = title,
             fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = DarkGray
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = "Rp ${String.format("%,.0f", amount)}",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = color,
-            modifier = Modifier.padding(vertical = 4.dp)
+            color = color
         )
         Text(
             text = subtitle,
             fontSize = 12.sp,
-            color = MediumGray
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -269,7 +310,7 @@ private fun BudgetPerformanceCard(budgets: List<Budget>) {
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -278,13 +319,15 @@ private fun BudgetPerformanceCard(budgets: List<Budget>) {
                 text = "Performa Anggaran",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
             budgets.forEach { budget ->
                 BudgetPerformanceItem(budget)
-                Spacer(modifier = Modifier.height(12.dp))
+                if (budget != budgets.last()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
         }
     }
@@ -292,6 +335,12 @@ private fun BudgetPerformanceCard(budgets: List<Budget>) {
 
 @Composable
 private fun BudgetPerformanceItem(budget: Budget) {
+    val progressColor = when {
+        budget.progressPercentage > 1.0f -> DangerRed
+        budget.progressPercentage > 0.8f -> WarningOrange
+        else -> BibitGreen
+    }
+
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -301,193 +350,134 @@ private fun BudgetPerformanceItem(budget: Budget) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = budget.categoryIcon,
-                    fontSize = 20.sp,
-                    modifier = Modifier.padding(end = 8.dp)
+                Icon(
+                    imageVector = budget.categoryIcon,
+                    contentDescription = budget.category,
+                    tint = progressColor,
+                    modifier = Modifier.size(20.dp)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = budget.category,
+                    text = budget.name,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
-
             Text(
                 text = "${(budget.progressPercentage * 100).toInt()}%",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = when (budget.status) {
-                    BudgetStatus.SAFE -> BibitGreen
-                    BudgetStatus.WARNING -> WarningOrange
-                    BudgetStatus.EXCEEDED -> DangerRed
-                }
+                fontWeight = FontWeight.SemiBold,
+                color = progressColor
             )
         }
-
+        
         Spacer(modifier = Modifier.height(4.dp))
-
+        
         LinearProgressIndicator(
             progress = budget.progressPercentage,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(6.dp),
-            color = when (budget.status) {
-                BudgetStatus.SAFE -> BibitGreen
-                BudgetStatus.WARNING -> WarningOrange
-                BudgetStatus.EXCEEDED -> DangerRed
-            },
-            trackColor = SoftGray
+            color = progressColor,
+            trackColor = MaterialTheme.colorScheme.background
         )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Terpakai: Rp ${String.format("%,.0f", budget.spentAmount)}",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "Limit: Rp ${String.format("%,.0f", budget.amount)}",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
 @Composable
 private fun InsightCard(insight: BudgetInsight) {
+    val backgroundColor = when (insight.type) {
+        InsightType.SUCCESS -> Color(0xFFE8F5E8)
+        InsightType.WARNING -> Color(0xFFFFF3E0)
+        InsightType.DANGER -> Color(0xFFFFEBEE)
+        InsightType.INFO -> Color(0xFFE3F2FD)
+    }
+    
+    val iconColor = when (insight.type) {
+        InsightType.SUCCESS -> BibitGreen
+        InsightType.WARNING -> WarningOrange
+        InsightType.DANGER -> DangerRed
+        InsightType.INFO -> Color(0xFF2196F3)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .shadow(2.dp, RoundedCornerShape(8.dp)),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                insight.icon,
-                contentDescription = insight.title,
-                tint = when (insight.type) {
-                    InsightType.SUCCESS -> BibitGreen
-                    InsightType.WARNING -> WarningOrange
-                    InsightType.DANGER -> DangerRed
-                    InsightType.INFO -> Color(0xFF2196F3)
-                },
+                imageVector = insight.icon,
+                contentDescription = null,
+                tint = iconColor,
                 modifier = Modifier.size(24.dp)
             )
-
             Spacer(modifier = Modifier.width(12.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = insight.title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = insight.description,
                     fontSize = 12.sp,
-                    color = MediumGray,
-                    lineHeight = 16.sp,
-                    modifier = Modifier.padding(top = 4.dp)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
     }
 }
 
-@Composable
-private fun BudgetLegendItem(
-    budget: Budget,
-    color: Color
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .background(color, androidx.compose.foundation.shape.CircleShape)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "${budget.categoryIcon} ${budget.category}",
-                fontSize = 12.sp,
-                color = DarkGray
-            )
-        }
-        Text(
-            text = "Rp ${String.format("%,.0f", budget.limit)}",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = DarkGray
-        )
-    }
-}
-
-private fun DrawScope.drawBudgetPieChart(budgets: List<Budget>) {
-    val total = budgets.sumOf { it.limit }
-    var startAngle = 0f
-
-    budgets.forEachIndexed { index, budget ->
-        val sweepAngle = (budget.limit / total * 360).toFloat()
-        val color = getBudgetColor(index)
-
-        drawArc(
-            color = color,
-            startAngle = startAngle,
-            sweepAngle = sweepAngle,
-            useCenter = true,
-            topLeft = Offset(size.width * 0.1f, size.height * 0.1f),
-            size = Size(size.width * 0.8f, size.height * 0.8f)
-        )
-
-        startAngle += sweepAngle
-    }
-}
-
-private fun getBudgetColor(index: Int): Color {
-    val colors = listOf(
-        BibitGreen,
-        Color(0xFF2196F3),
-        WarningOrange,
-        Color(0xFF9C27B0),
-        DangerRed,
-        Color(0xFF00BCD4),
-        Color(0xFF795548),
-        Color(0xFF607D8B)
-    )
-    return colors[index % colors.size]
-}
-
 private fun generateBudgetInsights(): List<BudgetInsight> {
     return listOf(
         BudgetInsight(
-            title = "Anggaran Hiburan Terlampaui",
-            description = "Anda telah melebihi anggaran hiburan sebesar Rp 20.000. Pertimbangkan untuk mengurangi pengeluaran hiburan minggu depan.",
-            type = InsightType.DANGER,
-            icon = Icons.Default.Warning
+            title = "Anggaran Makanan Terlampaui",
+            description = "Anda telah menghabiskan 90% dari anggaran makanan bulan ini. Pertimbangkan untuk mengurangi pengeluaran di kategori ini.",
+            type = InsightType.WARNING,
+            icon = Icons.Default.Restaurant
         ),
         BudgetInsight(
-            title = "Pengeluaran Transportasi Meningkat",
-            description = "Pengeluaran transportasi Anda meningkat 15% dari bulan lalu. Mungkin saatnya mencari alternatif transportasi yang lebih hemat.",
-            type = InsightType.WARNING,
+            title = "Tabungan Meningkat",
+            description = "Tabungan Anda meningkat 15% dibanding bulan lalu. Pertahankan kebiasaan baik ini!",
+            type = InsightType.SUCCESS,
             icon = Icons.Default.TrendingUp
         ),
         BudgetInsight(
-            title = "Anggaran Makanan Terkendali",
-            description = "Selamat! Anda berhasil menghemat 12% dari anggaran makanan bulan ini. Pertahankan kebiasaan baik ini.",
+            title = "Anggaran Transportasi Optimal",
+            description = "Pengeluaran transportasi masih dalam batas wajar. Anda menghemat 20% dari anggaran yang dialokasikan.",
             type = InsightType.SUCCESS,
-            icon = Icons.Default.CheckCircle
-        ),
-        BudgetInsight(
-            title = "Saran Optimasi Anggaran",
-            description = "Berdasarkan pola pengeluaran Anda, pertimbangkan untuk menaikkan anggaran transportasi dan menurunkan anggaran belanja.",
-            type = InsightType.INFO,
-            icon = Icons.Default.Lightbulb
+            icon = Icons.Default.DirectionsCar
         )
     )
 }
 
-@Preview(showBackground = true)
+@Preview
 @Composable
 fun BudgetAnalyticsScreenPreview() {
     BudgetAnalyticsScreen(rememberNavController())

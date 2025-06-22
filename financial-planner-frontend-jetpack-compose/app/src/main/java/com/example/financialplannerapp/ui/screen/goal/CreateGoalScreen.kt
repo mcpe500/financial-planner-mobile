@@ -1,7 +1,12 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.goal
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,16 +28,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.TokenManager
+import com.example.financialplannerapp.data.model.GoalCategory
+import com.example.financialplannerapp.ui.model.Wallet
+import com.example.financialplannerapp.ui.viewmodel.GoalViewModel
+import com.example.financialplannerapp.ui.viewmodel.GoalViewModelFactory
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.*
-
-// Bibit-inspired color palette
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-private val MotivationalOrange = Color(0xFFFF9800)
+import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
+import com.example.financialplannerapp.ui.theme.BibitGreen
+import com.example.financialplannerapp.ui.theme.BibitLightGreen
+import com.example.financialplannerapp.ui.theme.MediumGray
+import com.example.financialplannerapp.ui.theme.DangerRed
+import com.example.financialplannerapp.ui.theme.WarningOrange
+import com.example.financialplannerapp.ui.theme.MotivationalOrange
+import com.example.financialplannerapp.ui.theme.DarkGray
+import com.example.financialplannerapp.ui.theme.SoftGray
 
 data class GoalTemplate(
     val id: String,
@@ -45,144 +61,236 @@ data class GoalTemplate(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateGoalScreen(navController: NavController, goalId: String? = null) {
+fun CreateGoalScreen(navController: NavController) {
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    val tokenManager = remember { TokenManager(application) }
+    val userId = tokenManager.getUserEmail() ?: "guest"
+    val goalViewModel: GoalViewModel = viewModel(
+        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager, application.appContainer.walletRepository)
+    )
+    val walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
+    )
+
+    // State
+    val wallets by walletViewModel.wallets.collectAsState()
+    var selectedWallet by remember { mutableStateOf<Wallet?>(null) }
     var goalName by remember { mutableStateOf("") }
     var targetAmount by remember { mutableStateOf("") }
-    var targetDate by remember { mutableStateOf("31 Desember 2024") }
-    var selectedWallet by remember { mutableStateOf("BCA Savings") }
-    var selectedTemplate by remember { mutableStateOf<GoalTemplate?>(null) }
-    var showSuccessDialog by remember { mutableStateOf(false) }
+    var currentAmount by remember { mutableStateOf("0") }
+    var selectedCategory by remember { mutableStateOf(GoalCategory.SAVINGS) }
+    var targetDate by remember { mutableStateOf(Date()) }
+    var priority by remember { mutableStateOf("Medium") }
+    var isPriorityDropdownExpanded by remember { mutableStateOf(false) }
+    val priorities = listOf("High", "Medium", "Low")
+    var description by remember { mutableStateOf("") }
 
-    val templates = remember { generateGoalTemplates() }
-    val wallets = listOf("Cash Wallet", "BCA Savings", "GoPay", "Dana", "Emergency Fund")
-    val isEditing = goalId != null
+    var isWalletDropdownExpanded by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showCategorySelector by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = targetDate.time)
+
+    LaunchedEffect(Unit) {
+        walletViewModel.loadWallets()
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        targetDate = Date(it)
+                    }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        if (isEditing) "Edit Tujuan" else "Buat Tujuan Baru",
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
+                title = { Text("Create New Goal") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = DarkGray
-                )
+                }
             )
         }
-    ) { paddingValues ->
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(SoftGray)
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Preview Card
-            GoalPreviewCard(
-                name = goalName.ifEmpty { selectedTemplate?.name ?: "Tujuan Baru" },
-                targetAmount = targetAmount.toDoubleOrNull() ?: selectedTemplate?.suggestedAmount ?: 0.0,
-                targetDate = targetDate,
-                wallet = selectedWallet,
-                icon = selectedTemplate?.icon ?: "🎯"
-            )
-
-            // Goal Templates
-            if (!isEditing) {
-                GoalTemplatesCard(
-                    templates = templates,
-                    selectedTemplate = selectedTemplate,
-                    onTemplateSelect = { template ->
-                        selectedTemplate = template
-                        goalName = template.name
-                        template.suggestedAmount?.let {
-                            targetAmount = it.toInt().toString()
-                        }
-                    }
-                )
-            }
-
-            // Goal Name Input
-            GoalNameCard(
-                name = goalName,
-                onNameChange = { goalName = it },
-                selectedTemplate = selectedTemplate
-            )
-
-            // Target Amount Input
-            TargetAmountCard(
-                amount = targetAmount,
-                onAmountChange = { targetAmount = it },
-                suggestedAmount = selectedTemplate?.suggestedAmount
-            )
-
-            // Target Date Selection
-            TargetDateCard(
-                date = targetDate,
-                onDateChange = { targetDate = it }
-            )
-
-            // Wallet Selection
-            WalletSelectionCard(
-                selectedWallet = selectedWallet,
-                wallets = wallets,
-                onWalletChange = { selectedWallet = it }
-            )
-
-            // Motivation Card
-            MotivationCard(selectedTemplate)
-
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            // Wallet Dropdown
+            ExposedDropdownMenuBox(
+                expanded = isWalletDropdownExpanded,
+                onExpandedChange = { isWalletDropdownExpanded = !isWalletDropdownExpanded }
             ) {
-                OutlinedButton(
-                    onClick = { navController.navigateUp() },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = BibitGreen
-                    )
+                OutlinedTextField(
+                    value = selectedWallet?.name ?: "Select a Wallet",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Wallet", style = MaterialTheme.typography.bodyLarge) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isWalletDropdownExpanded) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    textStyle = MaterialTheme.typography.bodyLarge
+                )
+                ExposedDropdownMenu(
+                    expanded = isWalletDropdownExpanded,
+                    onDismissRequest = { isWalletDropdownExpanded = false }
                 ) {
-                    Text("Batal")
-                }
-
-                Button(
-                    onClick = { showSuccessDialog = true },
-                    modifier = Modifier.weight(1f),
-                    enabled = goalName.isNotEmpty() && targetAmount.isNotEmpty(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = BibitGreen,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(if (isEditing) "Update" else "Buat Tujuan")
+                    wallets.forEach { wallet ->
+                        DropdownMenuItem(
+                            text = { Text(wallet.name, style = MaterialTheme.typography.bodyLarge) },
+                            onClick = {
+                                selectedWallet = wallet
+                                isWalletDropdownExpanded = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Goal Name
+            OutlinedTextField(
+                value = goalName,
+                onValueChange = { goalName = it },
+                label = { Text("Goal Name (e.g., New Laptop)", style = MaterialTheme.typography.bodyLarge) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                ),
+                textStyle = MaterialTheme.typography.bodyLarge
+            )
+
+            // Target Amount
+            OutlinedTextField(
+                value = targetAmount,
+                onValueChange = { targetAmount = it },
+                label = { Text("Target Amount", style = MaterialTheme.typography.bodyLarge) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                ),
+                textStyle = MaterialTheme.typography.bodyLarge
+            )
+
+            // Target Date
+            OutlinedTextField(
+                value = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(targetDate),
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Target Date", style = MaterialTheme.typography.bodyLarge) },
+                trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                ),
+                textStyle = MaterialTheme.typography.bodyLarge
+            )
+            
+            StringCycleDropDown(
+                label = "Priority",
+                options = priorities,
+                selected = priority,
+                onSelected = { priority = it },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Button(
+                onClick = {
+                    val amount = targetAmount.toDoubleOrNull()
+                    if (selectedWallet != null && goalName.isNotBlank() && amount != null) {
+                        goalViewModel.addGoal(
+                            walletId = selectedWallet!!.id,
+                            name = goalName,
+                            targetAmount = amount,
+                            currentAmount = 0.0,
+                            targetDate = targetDate,
+                            priority = priority
+                        )
+                        navController.popBackStack()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = selectedWallet != null && goalName.isNotBlank() && targetAmount.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text("Save Goal", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onPrimary)
+            }
         }
     }
+}
 
-    // Success Dialog
-    if (showSuccessDialog) {
-        GoalSuccessDialog(
-            isEditing = isEditing,
-            goalName = goalName,
-            onDismiss = {
-                showSuccessDialog = false
-                navController.navigateUp()
-            }
+@Composable
+fun StringCycleDropDown(
+    label: String,
+    options: List<String>,
+    selected: String,
+    onSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label, style = MaterialTheme.typography.bodyLarge) },
+            trailingIcon = {
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge
         )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option, style = MaterialTheme.typography.bodyLarge) },
+                    onClick = {
+                        onSelected(option)
+                        expanded = false
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
     }
 }
 
@@ -199,7 +307,7 @@ private fun GoalPreviewCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = BibitGreen)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -208,7 +316,7 @@ private fun GoalPreviewCard(
             Text(
                 text = "Preview Tujuan",
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -224,7 +332,7 @@ private fun GoalPreviewCard(
                 text = name,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
 
@@ -233,13 +341,13 @@ private fun GoalPreviewCard(
             Text(
                 text = "Target",
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
             Text(
-                text = "Rp ${String.format("%,.0f", targetAmount)}",
+                text = getCurrentCurrencySymbol() + " ${String.format("%,.0f", targetAmount)}",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onPrimary
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -247,12 +355,12 @@ private fun GoalPreviewCard(
             Text(
                 text = "Deadline: $targetDate",
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
             Text(
                 text = "Wallet: $wallet",
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
         }
     }
@@ -269,7 +377,7 @@ private fun GoalTemplatesCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -278,7 +386,7 @@ private fun GoalTemplatesCard(
                 text = "Template Tujuan",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -322,9 +430,9 @@ private fun GoalTemplateOption(
             ),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) BibitLightGreen.copy(alpha = 0.2f) else SoftGray
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
         ),
-        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, BibitGreen) else null
+        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -339,14 +447,14 @@ private fun GoalTemplateOption(
                 text = template.name,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (isSelected) BibitGreen else DarkGray,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             template.suggestedAmount?.let { amount ->
                 Text(
-                    text = "~Rp ${String.format("%,.0f", amount)}",
+                    text = "~" + getCurrentCurrencySymbol() + " ${String.format("%,.0f", amount)}",
                     fontSize = 10.sp,
-                    color = MediumGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -364,7 +472,7 @@ private fun GoalNameCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -373,7 +481,7 @@ private fun GoalNameCard(
                 text = "Nama Tujuan",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
@@ -384,8 +492,8 @@ private fun GoalNameCard(
                 placeholder = { Text("e.g., Liburan ke Bali") },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BibitGreen,
-                    focusedLabelColor = BibitGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
                 )
             )
 
@@ -393,7 +501,7 @@ private fun GoalNameCard(
                 Text(
                     text = template.description,
                     fontSize = 12.sp,
-                    color = MediumGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -412,7 +520,7 @@ private fun TargetAmountCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -421,7 +529,7 @@ private fun TargetAmountCard(
                 text = "Target Jumlah",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
@@ -432,17 +540,17 @@ private fun TargetAmountCard(
                 placeholder = { Text("0") },
                 leadingIcon = {
                     Text(
-                        "Rp",
+                        getCurrentCurrencySymbol(),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = BibitGreen
+                        color = MaterialTheme.colorScheme.primary
                     )
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BibitGreen,
-                    focusedLabelColor = BibitGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
                 )
             )
 
@@ -454,14 +562,14 @@ private fun TargetAmountCard(
                     Icon(
                         Icons.Default.Lightbulb,
                         contentDescription = "Suggestion",
-                        tint = MotivationalOrange,
+                        tint = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Saran: Rp ${String.format("%,.0f", suggested)}",
+                        text = "Saran: " + getCurrentCurrencySymbol() + " ${String.format("%,.0f", suggested)}",
                         fontSize = 12.sp,
-                        color = MotivationalOrange
+                        color = MaterialTheme.colorScheme.secondary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(
@@ -471,7 +579,7 @@ private fun TargetAmountCard(
                         Text(
                             "Gunakan",
                             fontSize = 10.sp,
-                            color = BibitGreen
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -490,7 +598,7 @@ private fun TargetDateCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -499,7 +607,7 @@ private fun TargetDateCard(
                 text = "Target Tanggal",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
@@ -515,15 +623,15 @@ private fun TargetDateCard(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BibitGreen,
-                    focusedLabelColor = BibitGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
                 )
             )
 
             Text(
                 text = "Pilih tanggal yang realistis untuk mencapai tujuan Anda",
                 fontSize = 12.sp,
-                color = MediumGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
@@ -544,7 +652,7 @@ private fun WalletSelectionCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -553,7 +661,7 @@ private fun WalletSelectionCard(
                 text = "Wallet Tujuan",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
@@ -571,8 +679,8 @@ private fun WalletSelectionCard(
                         .menuAnchor()
                         .fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BibitGreen,
-                        focusedLabelColor = BibitGreen
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
                     )
                 )
                 ExposedDropdownMenu(
@@ -701,7 +809,7 @@ private fun generateGoalTemplates(): List<GoalTemplate> {
             id = "2",
             name = "Dana Darurat",
             icon = "🛡️",
-            category = GoalCategory.EMERGENCY,
+            category = GoalCategory.EMERGENCY_FUND,
             suggestedAmount = 50000000.0,
             description = "Siapkan dana untuk keadaan darurat"
         ),
@@ -709,7 +817,7 @@ private fun generateGoalTemplates(): List<GoalTemplate> {
             id = "3",
             name = "Beli Rumah",
             icon = "🏠",
-            category = GoalCategory.HOUSE,
+            category = GoalCategory.HOME,
             suggestedAmount = 500000000.0,
             description = "Wujudkan impian memiliki rumah"
         ),
@@ -717,7 +825,7 @@ private fun generateGoalTemplates(): List<GoalTemplate> {
             id = "4",
             name = "Beli Mobil",
             icon = "🚗",
-            category = GoalCategory.CAR,
+            category = GoalCategory.VEHICLE,
             suggestedAmount = 200000000.0,
             description = "Dapatkan kendaraan impian Anda"
         ),
@@ -743,9 +851,9 @@ private fun generateGoalTemplates(): List<GoalTemplate> {
 private fun getMotivationalTip(category: GoalCategory?): String {
     return when (category) {
         GoalCategory.VACATION -> "Buat rencana detail dan mulai menabung sedikit demi sedikit setiap bulan."
-        GoalCategory.EMERGENCY -> "Dana darurat sebaiknya 6-12 kali pengeluaran bulanan Anda."
-        GoalCategory.HOUSE -> "Pertimbangkan untuk menabung minimal 20% dari harga rumah sebagai DP."
-        GoalCategory.CAR -> "Jangan lupa hitung biaya pajak, asuransi, dan perawatan kendaraan."
+        GoalCategory.EMERGENCY_FUND -> "Dana darurat sebaiknya 6-12 kali pengeluaran bulanan Anda."
+        GoalCategory.HOME -> "Pertimbangkan untuk menabung minimal 20% dari harga rumah sebagai DP."
+        GoalCategory.VEHICLE -> "Jangan lupa hitung biaya pajak, asuransi, dan perawatan kendaraan."
         GoalCategory.EDUCATION -> "Investasi terbaik adalah investasi untuk diri sendiri dan masa depan."
         GoalCategory.INVESTMENT -> "Mulai dengan jumlah kecil dan tingkatkan secara bertahap."
         else -> "Konsistensi adalah kunci sukses mencapai tujuan finansial Anda."

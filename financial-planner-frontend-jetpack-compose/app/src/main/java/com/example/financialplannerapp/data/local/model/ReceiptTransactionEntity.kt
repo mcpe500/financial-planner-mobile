@@ -28,13 +28,3 @@ data class ReceiptTransactionEntity(
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
-
-/**
- * Helper data class for receipt items
- */
-data class ReceiptItemData(
-    val name: String,
-    val price: Double,
-    val quantity: Int = 1,
-    val category: String? = null
-)

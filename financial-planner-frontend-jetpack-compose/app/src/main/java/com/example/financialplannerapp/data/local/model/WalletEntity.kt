@@ -24,15 +24,9 @@ data class WalletEntity(
     @ColumnInfo(name = "color_hex") // Store color as a hex string (e.g., "#4CAF50")
     val colorHex: String,
 
-    @ColumnInfo(name = "is_shared")
-    val isShared: Boolean = false,
-
-    @ColumnInfo(name = "member_count")
-    val memberCount: Int = 1,
-
     // Add other fields relevant to your wallet (e.g., userId if wallets are per-user)
-    @ColumnInfo(name = "user_id")
-    val userId: String, 
+    @ColumnInfo(name = "user_email")
+    val userEmail: String, 
 
     @ColumnInfo(name = "icon_name")
     val iconName: String 

@@ -27,75 +27,44 @@ import com.example.financialplannerapp.data.model.BillStatus
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financialplannerapp.ui.viewmodel.BillViewModel
+import com.example.financialplannerapp.data.model.BillPayment
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import androidx.navigation.NavController
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.ui.viewmodel.BillViewModelFactory
+import androidx.compose.ui.platform.LocalContext
+import com.example.financialplannerapp.TokenManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BillCalendarScreen(
-    onNavigateBack: () -> Unit = {},
-    onNavigateToAdd: () -> Unit = {},
-    onBillClick: (String) -> Unit = {}
-) {
+fun BillCalendarScreen(navController: NavController, tokenManager: TokenManager) {
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    val billViewModel: BillViewModel = viewModel(
+        factory = BillViewModelFactory(application.appContainer.billRepository, tokenManager)
+    )
     var currentMonth by remember { mutableStateOf(Calendar.getInstance()) }
     var selectedDate by remember { mutableStateOf<Date?>(null) }
 
-    // Colors
-    val BibitGreen = Color(0xFF4CAF50)
-    val BibitDarkGreen = Color(0xFF2E7D32)
-    val LightGreen = Color(0xFFE8F5E8)
-
-    // Mock bills data
-    val bills = remember {
-        listOf(
-            RecurringBill(
-                id = "1",
-                name = "Listrik PLN",
-                estimatedAmount = 450000.0,
-                dueDate = Calendar.getInstance().apply {
-                    set(Calendar.DAY_OF_MONTH, 5)
-                    set(Calendar.MONTH, currentMonth.get(Calendar.MONTH))
-                }.time,
-                repeatCycle = "MONTHLY"
-            ),
-            RecurringBill(
-                id = "2",
-                name = "Internet IndiHome",
-                estimatedAmount = 350000.0,
-                dueDate = Calendar.getInstance().apply {
-                    set(Calendar.DAY_OF_MONTH, 10)
-                    set(Calendar.MONTH, currentMonth.get(Calendar.MONTH))
-                }.time,
-                repeatCycle = "MONTHLY"
-            ),
-            RecurringBill(
-                id = "3",
-                name = "BPJS Kesehatan",
-                estimatedAmount = 150000.0,
-                dueDate = Calendar.getInstance().apply {
-                    set(Calendar.DAY_OF_MONTH, 15)
-                    set(Calendar.MONTH, currentMonth.get(Calendar.MONTH))
-                }.time,
-                repeatCycle = "MONTHLY"
-            ),
-            RecurringBill(
-                id = "4",
-                name = "Netflix",
-                estimatedAmount = 169000.0,
-                dueDate = Calendar.getInstance().apply {
-                    set(Calendar.DAY_OF_MONTH, 20)
-                    set(Calendar.MONTH, currentMonth.get(Calendar.MONTH))
-                }.time,
-                repeatCycle = "MONTHLY"
-            ),
-            RecurringBill(
-                id = "5",
-                name = "Spotify",
-                estimatedAmount = 54000.0,
-                dueDate = Calendar.getInstance().apply {
-                    set(Calendar.DAY_OF_MONTH, 25)
-                    set(Calendar.MONTH, currentMonth.get(Calendar.MONTH))
-                }.time,
-                repeatCycle = "MONTHLY"
-            )
+    val billEntities by billViewModel.localBills.collectAsState()
+    val bills = billEntities.map { entity ->
+        RecurringBill(
+            id = entity.uuid,
+            name = entity.name,
+            estimatedAmount = entity.estimatedAmount,
+            dueDate = entity.dueDate,
+            repeatCycle = entity.repeatCycle,
+            category = entity.category,
+            notes = entity.notes,
+            isActive = entity.isActive,
+            payments = Gson().fromJson<List<BillPayment>>(entity.paymentsJson, object : TypeToken<List<BillPayment>>() {}.type) ?: emptyList(),
+            autoPay = entity.autoPay,
+            notificationEnabled = entity.notificationEnabled,
+            lastPaymentDate = entity.lastPaymentDate,
+            creationDate = entity.creationDate
         )
     }
 
@@ -134,29 +103,29 @@ fun BillCalendarScreen(
                     Text(
                         "Kalender Tagihan",
                         fontWeight = FontWeight.Bold,
-                        color = BibitDarkGreen
+                        color = MaterialTheme.colorScheme.primary
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Kembali",
-                            tint = BibitGreen
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNavigateToAdd) {
+                    IconButton(onClick = { navController.navigate("add_bill") }) {
                         Icon(
                             Icons.Default.Add,
                             contentDescription = "Tambah Tagihan",
-                            tint = BibitGreen
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         }
@@ -171,7 +140,7 @@ fun BillCalendarScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                colors = CardDefaults.cardColors(containerColor = LightGreen)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Row(
                     modifier = Modifier
@@ -191,7 +160,7 @@ fun BillCalendarScreen(
                         Icon(
                             Icons.Default.ChevronLeft,
                             contentDescription = "Bulan Sebelumnya",
-                            tint = BibitDarkGreen
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -199,7 +168,7 @@ fun BillCalendarScreen(
                         text = monthFormat.format(currentMonth.time),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = BibitDarkGreen
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     IconButton(
@@ -213,7 +182,7 @@ fun BillCalendarScreen(
                         Icon(
                             Icons.Default.ChevronRight,
                             contentDescription = "Bulan Berikutnya",
-                            tint = BibitDarkGreen
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -233,12 +202,12 @@ fun BillCalendarScreen(
                             text = monthlyCount.toString(),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = BibitDarkGreen
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Text(
                             text = "Tagihan",
                             fontSize = 12.sp,
-                            color = Color(0xFF666666)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -247,12 +216,12 @@ fun BillCalendarScreen(
                             text = currencyFormat.format(monthlyTotal).replace("Rp", "").trim(),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = BibitDarkGreen
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Text(
                             text = "Total Estimasi",
                             fontSize = 12.sp,
-                            color = Color(0xFF666666)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -278,7 +247,7 @@ fun BillCalendarScreen(
                                 text = day,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF666666),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.weight(1f)
                             )
@@ -334,7 +303,7 @@ fun BillCalendarScreen(
                             text = "Tagihan ${SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID")).format(selectedDate!!)}",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = BibitDarkGreen
+                            color = MaterialTheme.colorScheme.primary
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -343,7 +312,7 @@ fun BillCalendarScreen(
                             Text(
                                 text = "Tidak ada tagihan pada tanggal ini",
                                 fontSize = 14.sp,
-                                color = Color(0xFF666666),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 16.dp)
                             )
                         } else {
@@ -355,9 +324,9 @@ fun BillCalendarScreen(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable { onBillClick(bill.id) }
+                                            .clickable { navController.navigate("bill_details/${bill.id}") }
                                             .background(
-                                                color = Color(0xFFF8F9FA),
+                                                color = MaterialTheme.colorScheme.surfaceVariant,
                                                 shape = RoundedCornerShape(8.dp)
                                             )
                                             .padding(12.dp),
@@ -373,7 +342,7 @@ fun BillCalendarScreen(
                                             Text(
                                                 text = currencyFormat.format(bill.estimatedAmount),
                                                 fontSize = 12.sp,
-                                                color = Color(0xFF666666)
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
 
@@ -402,7 +371,7 @@ fun BillCalendarScreen(
                                 text = "Total: ${currencyFormat.format(selectedDateBills.sumOf { it.estimatedAmount })}",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = BibitDarkGreen
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -429,16 +398,14 @@ fun CalendarDayCell(
     isCurrentMonth: Boolean,
     onClick: () -> Unit
 ) {
-    val BibitGreen = Color(0xFF4CAF50)
-
     Box(
         modifier = Modifier
             .size(40.dp)
             .clickable { onClick() }
             .background(
                 color = when {
-                    isSelected -> BibitGreen
-                    isToday -> BibitGreen.copy(alpha = 0.2f)
+                    isSelected -> MaterialTheme.colorScheme.primary
+                    isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                     else -> Color.Transparent
                 },
                 shape = CircleShape
@@ -453,10 +420,10 @@ fun CalendarDayCell(
                 fontSize = 12.sp,
                 fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                 color = when {
-                    isSelected -> Color.White
-                    !isCurrentMonth -> Color(0xFFCCCCCC)
-                    isToday -> BibitGreen
-                    else -> Color(0xFF333333)
+                    isSelected -> MaterialTheme.colorScheme.onPrimary
+                    !isCurrentMonth -> MaterialTheme.colorScheme.onSurfaceVariant
+                    isToday -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface
                 }
             )
 
@@ -470,7 +437,7 @@ fun CalendarDayCell(
                             modifier = Modifier
                                 .size(3.dp)
                                 .background(
-                                    color = if (isSelected) Color.White else bill.status.color,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else bill.status.color,
                                     shape = CircleShape
                                 )
                         )
@@ -479,7 +446,7 @@ fun CalendarDayCell(
                         Text(
                             text = "+",
                             fontSize = 6.sp,
-                            color = if (isSelected) Color.White else Color(0xFF666666)
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

@@ -70,13 +70,8 @@ class ScanReceiptViewModel(
                         Log.d(TAG, "OCR processing successful. Found ${response.data.items.size} items")
                         _state.value = ReceiptOCRState.Success(response.data)
 
-                        // Log extracted data for debugging
-                        Log.d(TAG, "Merchant: ${response.data.merchantName}")
-                        Log.d(TAG, "Total: $${response.data.totalAmount}")
-                        Log.d(TAG, "Items: ${response.data.items.size}")
-                        response.data.items.forEach { item ->
-                            Log.d(TAG, "  - ${item.name}: $${item.price}")
-                        }
+                        // Save to RoomDB as a transaction
+                        saveOcrResultToTransaction(response.data)
                     },
                     onFailure = { exception ->
                         val errorMessage = exception.message ?: "Unknown error occurred"
@@ -151,9 +146,24 @@ class ScanReceiptViewModel(
                         
                         // If user is authenticated, also sync to backend
                         if (isAuthenticated) {
-                            syncToBackend(receiptTransaction)
+                            // Sync to backend, then convert to regular transaction
+                            val syncResult = receiptTransactionRepository.syncReceiptTransactionToBackend(receiptTransaction)
+                            syncResult.fold(
+                                onSuccess = { backendId ->
+                                    Log.d(TAG, "Receipt transaction synced successfully with backend ID: $backendId")
+                                    // Now convert to regular transaction in RoomDB
+                                    convertReceiptToTransaction(receiptTransaction.id)
+                                },
+                                onFailure = { exception ->
+                                    Log.e(TAG, "Failed to sync to backend: ${exception.message}", exception)
+                                    // Still convert to regular transaction in RoomDB
+                                    convertReceiptToTransaction(receiptTransaction.id)
+                                }
+                            )
                         } else {
                             Log.d(TAG, "User not authenticated, data stored only locally")
+                            // Convert to regular transaction in RoomDB
+                            convertReceiptToTransaction(receiptTransaction.id)
                         }
                     },
                     onFailure = { exception ->
@@ -169,26 +179,19 @@ class ScanReceiptViewModel(
         }
     }
 
-    /**
-     * Sync receipt transaction to backend
-     */
-    private suspend fun syncToBackend(receiptTransaction: com.example.financialplannerapp.data.local.model.ReceiptTransactionEntity) {
+    private suspend fun convertReceiptToTransaction(receiptTransactionId: Int) {
         try {
-            Log.d(TAG, "Syncing receipt transaction to backend: ${receiptTransaction.id}")
-            
-            val syncResult = receiptTransactionRepository.syncReceiptTransactionToBackend(receiptTransaction)
-            
-            syncResult.fold(
-                onSuccess = { backendId ->
-                    Log.d(TAG, "Receipt transaction synced successfully with backend ID: $backendId")
+            val result = receiptTransactionRepository.convertReceiptToRegularTransaction(receiptTransactionId)
+            result.fold(
+                onSuccess = { transactionId ->
+                    Log.d(TAG, "Receipt transaction converted to regular transaction with ID: $transactionId")
                 },
                 onFailure = { exception ->
-                    Log.e(TAG, "Failed to sync to backend: ${exception.message}", exception)
-                    // Note: Data is still saved locally, sync can be retried later
+                    Log.e(TAG, "Failed to convert receipt to transaction: ${exception.message}", exception)
                 }
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error syncing to backend: ${e.message}", e)
+            Log.e(TAG, "Unexpected error converting receipt to transaction: ${e.message}", e)
         }
     }
 
@@ -216,5 +219,37 @@ class ScanReceiptViewModel(
         Log.d(TAG, "Current State: $currentState")
         Log.d(TAG, "User authenticated: ${tokenManager.isAuthenticated()}")
         Log.d(TAG, "Image URI: $currentImageUri")
+    }
+
+    private fun saveOcrResultToTransaction(ocrData: com.example.financialplannerapp.data.model.ReceiptOCRData) {
+        viewModelScope.launch {
+            val userId = tokenManager.getUserId() ?: "local_user"
+            val localReceiptItems = ocrData.items.map { item ->
+                com.example.financialplannerapp.data.local.model.ReceiptItem(
+                    name = item.name,
+                    price = item.price,
+                    quantity = item.quantity,
+                    category = item.category ?: "Unknown"
+                )
+            }
+            val transaction = com.example.financialplannerapp.data.local.model.TransactionEntity(
+                userId = userId,
+                amount = ocrData.totalAmount,
+                type = if (ocrData.totalAmount >= 0) "INCOME" else "EXPENSE",
+                date = try { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).parse(ocrData.date) ?: java.util.Date() } catch (e: Exception) { java.util.Date() },
+                pocket = "Cash",
+                category = "General",
+                note = "${ocrData.merchantName} - Receipt Transaction",
+                isFromReceipt = true,
+                receiptId = ocrData.receiptId ?: "receipt_${System.currentTimeMillis()}",
+                merchantName = ocrData.merchantName,
+                location = ocrData.location,
+                receiptConfidence = ocrData.confidence,
+                receipt_items = localReceiptItems,
+                isSynced = false
+            )
+            transactionRepository.insertTransaction(transaction)
+            Log.d(TAG, "Saved OCR transaction to RoomDB: $transaction")
+        }
     }
 }

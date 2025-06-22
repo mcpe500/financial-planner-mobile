@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WalletDao {
+    @Query("SELECT * FROM wallets WHERE user_email = :userEmail ORDER BY name ASC")
+    fun getWalletsByUserEmail(userEmail: String): Flow<List<WalletEntity>>
+
     @Query("SELECT * FROM wallets ORDER BY name ASC")
     fun getAllWallets(): Flow<List<WalletEntity>>
 
@@ -22,10 +25,4 @@ interface WalletDao {
 
     @Update
     suspend fun updateWallet(wallet: WalletEntity)
-
-    @Delete
-    suspend fun deleteWallet(wallet: WalletEntity)
-
-    @Query("DELETE FROM wallets WHERE id = :walletId")
-    suspend fun deleteWalletById(walletId: String)
 }

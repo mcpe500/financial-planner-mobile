@@ -15,14 +15,12 @@ data class Wallet(
     val type: WalletType,
     val balance: Double,
     val icon: ImageVector, // Directly store ImageVector for UI
-    val color: Color,      // Directly store Color for UI
-    val isShared: Boolean = false,
-    val memberCount: Int = 1
+    val color: Color      // Directly store Color for UI
 )
 
 // --- WalletType Enum ---
 enum class WalletType {
-    CASH, BANK, E_WALLET, INVESTMENT, DEBT
+    CASH, BANK, E_WALLET, INVESTMENT
 }
 
 // --- WalletType.icon Extension Property (for default icon based on type) ---
@@ -32,7 +30,6 @@ val WalletType.icon: ImageVector
         WalletType.BANK -> Icons.Default.AccountBalance
         WalletType.E_WALLET -> Icons.Default.Smartphone
         WalletType.INVESTMENT -> Icons.Default.TrendingUp
-        WalletType.DEBT -> Icons.Default.CreditCard
     }
 
 // --- Helper Functions for String/Hex Conversion ---

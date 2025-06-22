@@ -7,55 +7,36 @@ import java.util.Date
 
 @Dao
 interface TransactionDao {
-    
-    @Query("SELECT * FROM transactions ORDER BY date DESC")
-    fun getAllTransactions(): Flow<List<TransactionEntity>>
-    
-    @Query("SELECT * FROM transactions WHERE userId = :userId ORDER BY date DESC")
-    fun getTransactionsByUserId(userId: String): Flow<List<TransactionEntity>>
-    
-    @Query("SELECT * FROM transactions WHERE id = :id")
-    suspend fun getTransactionById(id: Int): TransactionEntity?
-    
-    @Query("SELECT * FROM transactions WHERE type = :type ORDER BY date DESC")
-    fun getTransactionsByType(type: String): Flow<List<TransactionEntity>>
-    
-    @Query("SELECT * FROM transactions WHERE categoryId = :categoryId ORDER BY date DESC")
-    fun getTransactionsByCategory(categoryId: Int): Flow<List<TransactionEntity>>
-    
-    @Query("SELECT * FROM transactions WHERE date BETWEEN :startDate AND :endDate ORDER BY date DESC")
-    fun getTransactionsByDateRange(startDate: Date, endDate: Date): Flow<List<TransactionEntity>>
-    
-    @Query("SELECT * FROM transactions WHERE userId = :userId AND date BETWEEN :startDate AND :endDate ORDER BY date DESC")
-    fun getUserTransactionsByDateRange(userId: String, startDate: Date, endDate: Date): Flow<List<TransactionEntity>>
-    
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'income' AND userId = :userId")
-    suspend fun getTotalIncomeByUser(userId: String): Double?
-    
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'expense' AND userId = :userId")
-    suspend fun getTotalExpenseByUser(userId: String): Double?
-    
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = :type AND date BETWEEN :startDate AND :endDate AND userId = :userId")
-    suspend fun getTotalAmountByTypeAndDateRange(userId: String, type: String, startDate: Date, endDate: Date): Double?
-    
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: TransactionEntity): Long
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTransactions(transactions: List<TransactionEntity>): List<Long>
-    
+
     @Update
     suspend fun updateTransaction(transaction: TransactionEntity)
-    
+
     @Delete
     suspend fun deleteTransaction(transaction: TransactionEntity)
-    
-    @Query("DELETE FROM transactions WHERE id = :id")
-    suspend fun deleteTransactionById(id: Int)
-    
-    @Query("DELETE FROM transactions WHERE userId = :userId")
-    suspend fun deleteAllUserTransactions(userId: String)
-    
-    @Query("DELETE FROM transactions")
-    suspend fun deleteAllTransactions()
+
+    @Query("SELECT * FROM transactions WHERE id = :id")
+    suspend fun getTransactionById(id: Long): TransactionEntity?
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId ORDER BY date DESC")
+    fun getTransactionsByUserId(userId: String): Flow<List<TransactionEntity>>
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND type = :type ORDER BY date DESC")
+    fun getTransactionsByType(userId: String, type: String): Flow<List<TransactionEntity>>
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND category = :category ORDER BY date DESC")
+    fun getTransactionsByCategory(userId: String, category: String): Flow<List<TransactionEntity>>
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND isFromReceipt = 1 ORDER BY date DESC")
+    fun getReceiptTransactions(userId: String): Flow<List<TransactionEntity>>
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND isSynced = 0")
+    suspend fun getUnsyncedTransactions(userId: String): List<TransactionEntity>
+
+    @Query("UPDATE transactions SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markTransactionsAsSynced(ids: List<Long>)
+
+    @Query("SELECT * FROM transactions WHERE backendTransactionId = :backendId LIMIT 1")
+    suspend fun getTransactionByBackendId(backendId: String): TransactionEntity?
 }

@@ -9,6 +9,7 @@ enum class RepeatCycle(val label: String, val icon: String) : Parcelable {
     WEEKLY("Weekly", "📅"),
     MONTHLY("Monthly", "📅"),
     YEARLY("Yearly", "📅"),
+    NONE("None", "📅"),
     CUSTOM("Custom", "⚙️"); // Added a Custom option for more flexibility
 
     companion object {

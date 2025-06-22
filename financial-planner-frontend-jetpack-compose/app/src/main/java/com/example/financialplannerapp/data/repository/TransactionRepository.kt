@@ -1,27 +1,23 @@
 package com.example.financialplannerapp.data.repository
 
 import com.example.financialplannerapp.data.local.model.TransactionEntity
-import com.example.financialplannerapp.data.model.TransactionData
 import kotlinx.coroutines.flow.Flow
-import java.util.Date
 
 interface TransactionRepository {
-    fun getAllTransactions(): Flow<List<TransactionEntity>>
-    fun getTransactionsByUserId(userId: String): Flow<List<TransactionEntity>>
-    suspend fun getTransactionById(id: Int): TransactionEntity?
-    fun getTransactionsByType(type: String): Flow<List<TransactionEntity>>
-    fun getTransactionsByCategory(categoryId: Int): Flow<List<TransactionEntity>>
-    fun getTransactionsByDateRange(startDate: Date, endDate: Date): Flow<List<TransactionEntity>>
-    fun getUserTransactionsByDateRange(userId: String, startDate: Date, endDate: Date): Flow<List<TransactionEntity>>
-    suspend fun getTotalIncomeByUser(userId: String): Double?
-    suspend fun getTotalExpenseByUser(userId: String): Double?
-    suspend fun getTotalAmountByTypeAndDateRange(userId: String, type: String, startDate: Date, endDate: Date): Double?
     suspend fun insertTransaction(transaction: TransactionEntity): Long
-    suspend fun insertTransactions(transactions: List<TransactionEntity>): List<Long>
     suspend fun updateTransaction(transaction: TransactionEntity)
     suspend fun deleteTransaction(transaction: TransactionEntity)
-    suspend fun deleteTransactionById(id: Int)
-    suspend fun deleteAllUserTransactions(userId: String)
-    suspend fun syncTransactionsFromRemote(userId: String): Result<List<TransactionData>>
-    suspend fun uploadTransactionsToRemote(transactions: List<TransactionEntity>): Result<Unit>
+    suspend fun getTransactionById(id: Long): TransactionEntity?
+    fun getTransactionsByUserId(userId: String): Flow<List<TransactionEntity>>
+    fun getTransactionsByType(userId: String, type: String): Flow<List<TransactionEntity>>
+    fun getTransactionsByCategory(userId: String, category: String): Flow<List<TransactionEntity>>
+    fun getReceiptTransactions(userId: String): Flow<List<TransactionEntity>>
+    suspend fun getTransactionsFromBackend(): List<com.example.financialplannerapp.data.model.TransactionData>
+    suspend fun getTransactionDetailFromBackend(id: String): com.example.financialplannerapp.data.model.TransactionData?
+    suspend fun uploadTransactionsToBackend(transactions: List<com.example.financialplannerapp.data.model.TransactionData>): Boolean
+    suspend fun getUnsyncedTransactions(userId: String): List<TransactionEntity>
+    suspend fun markTransactionsAsSynced(ids: List<Long>)
+    suspend fun insertTransactions(transactions: List<TransactionEntity>)
+    suspend fun createTransactionRemote(transaction: com.example.financialplannerapp.data.model.TransactionData): com.example.financialplannerapp.data.model.TransactionData?
+    fun getCurrentUserId(): String?
 }

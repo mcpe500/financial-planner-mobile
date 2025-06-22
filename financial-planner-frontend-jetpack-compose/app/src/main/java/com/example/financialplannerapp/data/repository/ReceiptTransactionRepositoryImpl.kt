@@ -78,6 +78,14 @@ class ReceiptTransactionRepositoryImpl constructor(
 
     override suspend fun storeReceiptTransactionFromOCR(ocrData: ReceiptOCRData, userId: String): Result<ReceiptTransactionEntity> {
         return try {
+            val receiptId = ocrData.receiptId ?: "receipt_${System.currentTimeMillis()}"
+            
+            // Check if receipt already exists to prevent duplicates
+            val existingReceipt = receiptTransactionDao.getReceiptTransactionByReceiptId(receiptId)
+            if (existingReceipt != null) {
+                return Result.success(existingReceipt)
+            }
+            
             // Convert items to JSON string
             val itemsJson = if (ocrData.items.isNotEmpty()) {
                 val listType = Types.newParameterizedType(List::class.java, Map::class.java)
@@ -102,7 +110,7 @@ class ReceiptTransactionRepositoryImpl constructor(
             }
 
             val receiptTransaction = ReceiptTransactionEntity(
-                receiptId = ocrData.receiptId ?: "receipt_${System.currentTimeMillis()}",
+                receiptId = receiptId,
                 totalAmount = ocrData.totalAmount,
                 merchantName = ocrData.merchantName,
                 date = date,
@@ -162,18 +170,46 @@ class ReceiptTransactionRepositoryImpl constructor(
             val receiptTransaction = getReceiptTransactionById(receiptTransactionId)
                 ?: return Result.failure(Exception("Receipt transaction not found"))
 
+            // Parse items JSON to List<ReceiptItem>
+            val items: List<com.example.financialplannerapp.data.model.ReceiptItem>? = receiptTransaction.items?.let { itemsJson ->
+                val moshi = com.squareup.moshi.Moshi.Builder()
+                    .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory())
+                    .build()
+                val type = com.squareup.moshi.Types.newParameterizedType(
+                    List::class.java, com.example.financialplannerapp.data.model.ReceiptItem::class.java
+                )
+                val adapter = moshi.adapter<List<com.example.financialplannerapp.data.model.ReceiptItem>>(type)
+                adapter.fromJson(itemsJson)
+            }
+
             // Create regular transaction from receipt data
             val transaction = TransactionEntity(
-                amount = receiptTransaction.totalAmount,
-                date = receiptTransaction.date,
-                description = "${receiptTransaction.merchantName} - Receipt Transaction",
-                categoryId = null, // You might want to map category names to IDs
-                type = if (receiptTransaction.totalAmount >= 0) "income" else "expense",
                 userId = receiptTransaction.userId,
+                amount = receiptTransaction.totalAmount,
+                type = if (receiptTransaction.totalAmount >= 0) "INCOME" else "EXPENSE",
+                date = receiptTransaction.date,
+                pocket = "Cash", // Default or infer if you have logic
+                category = receiptTransaction.category ?: "Other",
+                note = receiptTransaction.notes ?: "${receiptTransaction.merchantName} - Receipt Transaction",
+                tags = null, // Could parse from items/category if needed
+                isFromReceipt = true,
+                receiptId = receiptTransaction.receiptId,
+                merchantName = receiptTransaction.merchantName,
                 location = receiptTransaction.location,
                 receiptImagePath = null, // Could store image path if needed
-                tags = receiptTransaction.category?.let { "[$it]" }, // Convert category to tags
-                isRecurring = false
+                receiptConfidence = receiptTransaction.confidence,
+                receipt_items = items?.map { item ->
+                    com.example.financialplannerapp.data.local.model.ReceiptItem(
+                        name = item.name,
+                        price = item.price,
+                        category = item.category ?: "Unknown",
+                        quantity = item.quantity
+                    )
+                },
+                isSynced = receiptTransaction.isSynced,
+                backendTransactionId = receiptTransaction.backendTransactionId,
+                createdAt = receiptTransaction.createdAt,
+                updatedAt = receiptTransaction.updatedAt
             )
 
             val transactionId = transactionDao.insertTransaction(transaction)

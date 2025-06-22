@@ -1,33 +1,37 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/auth.middleware";
 import {
-  createTransaction,
-  getUserTransactions,
-  getTransactionById,
-  processReceiptOCR,
-  storeTransactionFromOCR
+	createTransaction,
+	deleteTransaction,
+	getTransactionById,
+	getUserTransactions,
+	updateTransaction,
+	processReceiptOCR,
+	storeTransactionFromOCR,
+	assignTagsToTransaction,
+	processVoiceInput,
+	processQRCode
 } from "../controllers/transaction.controller";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
-// Transaction CRUD operations
-// POST /api/transactions - Create a new transaction
-router.post("/", authenticate, createTransaction);
+router.use(authMiddleware);
 
-// GET /api/transactions - Get all transactions for user
-router.get("/", authenticate, getUserTransactions);
+router.post("/receipt-ocr", processReceiptOCR);
+router.post("/from-ocr", storeTransactionFromOCR);
+router.post("/voice", processVoiceInput);
+router.post("/qr-code", processQRCode);
 
-// GET /api/transactions/:id - Get transaction by ID
-router.get("/:id", authenticate, getTransactionById);
+router.route("/")
+	.get(getUserTransactions)
+	.post(createTransaction);
 
-// Receipt processing endpoints
-// POST /api/transactions/receipt-ocr - Process receipt image for OCR
-router.post("/receipt-ocr", authenticate, processReceiptOCR);
+router.route("/:id")
+	.get(getTransactionById)
+	.put(updateTransaction)
+	.delete(deleteTransaction);
 
-// POST /api/transactions/process - Process receipts (Android)
-router.post("/process", authenticate, processReceiptOCR);
+router.post("/:id/tags", assignTagsToTransaction);
 
-// POST /api/transactions/store - Store transaction from OCR data
-router.post("/store", authenticate, storeTransactionFromOCR);
 
 export default router;

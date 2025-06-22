@@ -65,4 +65,9 @@ class TokenManager(context: Context) {
     fun clear() {
         prefs.edit().clear().apply()
     }
+
+    // Alias for compatibility
+    fun clearTokens() {
+        clear()
+    }
 }
