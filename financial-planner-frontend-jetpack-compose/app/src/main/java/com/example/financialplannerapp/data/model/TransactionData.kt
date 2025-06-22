@@ -17,7 +17,9 @@ data class TransactionData(
     @Json(name = "description")
     val description: String,
     @Json(name = "receipt_items")
-    val receipt_items: List<ReceiptItem>? = null
+    val receipt_items: List<ReceiptItem>? = null,
+    @Json(name = "wallet_id")
+    val walletId: String
 )
 
 data class TransactionPayload(
@@ -70,7 +72,8 @@ fun TransactionEntity.toNetworkModel(): TransactionData = TransactionData(
     amount = this.amount,
     date = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault()).format(this.date),
     description = this.note ?: "",
-    receipt_items = this.receipt_items
+    receipt_items = this.receipt_items,
+    walletId = this.walletId
 )
 
 fun TransactionData.toEntity(userId: String): TransactionEntity = TransactionEntity(
@@ -83,5 +86,6 @@ fun TransactionData.toEntity(userId: String): TransactionEntity = TransactionEnt
     category = "Other",
     note = this.description,
     receipt_items = this.receipt_items,
-    isSynced = true
+    isSynced = true,
+    walletId = this.walletId
 )

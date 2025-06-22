@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -208,6 +209,16 @@ fun AppSettingsScreen(
                         subtitle = "Version and app details",
                         icon = Icons.Default.Info,
                         onClick = { navController.navigate("app_info") }
+                    )
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
+                    )
+                    SettingsItemCard(
+                        title = "Delete Account",
+                        subtitle = "Permanently delete your account and data",
+                        icon = Icons.Default.Delete,
+                        onClick = { navController.navigate("deleteAccount") }
                     )
                 }
             }

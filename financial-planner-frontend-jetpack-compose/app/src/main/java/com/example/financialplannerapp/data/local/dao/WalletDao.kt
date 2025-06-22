@@ -23,6 +23,9 @@ interface WalletDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWallet(wallet: WalletEntity) : Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(wallets: List<WalletEntity>)
+
     @Update
     suspend fun updateWallet(wallet: WalletEntity)
 }
