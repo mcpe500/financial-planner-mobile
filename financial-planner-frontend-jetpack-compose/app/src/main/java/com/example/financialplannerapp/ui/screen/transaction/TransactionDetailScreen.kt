@@ -2,7 +2,9 @@ package com.example.financialplannerapp.ui.screen.transaction
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -130,29 +132,36 @@ fun TransactionDetailScreen(navController: NavController, transactionId: Long?) 
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            transaction?.receipt_items?.forEach { item ->
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                    )
-                                ) {
-                                    Row(
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 300.dp)
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                transaction?.receipt_items?.forEach { item ->
+                                    Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(12.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
+                                            .padding(vertical = 4.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                        )
                                     ) {
-                                        Column {
-                                            Text(item.name, fontWeight = FontWeight.SemiBold)
-                                            Text("Category: ${item.category}", fontSize = 12.sp)
-                                        }
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text("Qty: ${item.quantity}", fontSize = 12.sp)
-                                            Text("Price: ${item.price}", fontSize = 12.sp)
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column {
+                                                Text(item.name, fontWeight = FontWeight.SemiBold)
+                                                Text("Category: ${item.category}", fontSize = 12.sp)
+                                            }
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text("Qty: ${item.quantity}", fontSize = 12.sp)
+                                                Text("Price: ${item.price}", fontSize = 12.sp)
+                                            }
                                         }
                                     }
                                 }
