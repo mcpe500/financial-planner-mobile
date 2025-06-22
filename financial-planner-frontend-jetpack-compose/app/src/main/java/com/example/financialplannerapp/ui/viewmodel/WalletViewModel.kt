@@ -96,18 +96,6 @@ class WalletViewModel(
         }
     }
 
-    fun deleteWallet(walletId: String) {
-        viewModelScope.launch {
-            try {
-                _error.value = null
-                walletRepository.deleteWalletById(walletId)
-                _successMessage.value = "Wallet deleted successfully!"
-            } catch (e: Exception) {
-                _error.value = "Error deleting wallet: ${e.localizedMessage}"
-            }
-        }
-    }
-
     fun clearMessages() {
         _error.value = null
         _successMessage.value = null

@@ -24,12 +24,4 @@ class WalletRepositoryImpl(private val walletDao: WalletDao) : WalletRepository 
     override suspend fun updateWallet(wallet: WalletEntity) {
         walletDao.updateWallet(wallet)
     }
-
-    override suspend fun deleteWallet(wallet: WalletEntity) {
-        walletDao.deleteWallet(wallet)
-    }
-
-    override suspend fun deleteWalletById(walletId: String) {
-        walletDao.deleteWalletById(walletId)
-    }
 }

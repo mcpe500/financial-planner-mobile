@@ -34,7 +34,6 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.example.financialplannerapp.screen.AddWalletScreen
 import com.example.financialplannerapp.screen.EditWalletScreen
-import com.example.financialplannerapp.screen.DebtReceivableMainScreen
 import com.example.financialplannerapp.screen.WalletsMainScreen
 import com.example.financialplannerapp.ui.screen.budget.BudgetMainScreen
 import com.example.financialplannerapp.ui.screen.budget.CreateBudgetScreen

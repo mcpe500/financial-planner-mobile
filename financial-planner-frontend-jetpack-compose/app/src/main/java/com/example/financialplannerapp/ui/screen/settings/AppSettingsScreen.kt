@@ -45,7 +45,7 @@ import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.model.Currency
 import com.example.financialplannerapp.data.model.LanguageOption
 import com.example.financialplannerapp.data.model.ThemeSetting
-import com.example.financialplannerapp.service.LocalTranslationProvider
+import com.example.financialplannerapp.service.LocalReactiveSettingsService
 import com.example.financialplannerapp.ui.viewmodel.AppSettingsViewModel
 import com.example.financialplannerapp.ui.viewmodel.SettingsViewModelFactory
 import androidx.compose.foundation.lazy.LazyListScope
@@ -55,9 +55,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 @Composable
 fun AppSettingsScreen(
     navController: NavController,
-    tokenManager: com.example.financialplannerapp.TokenManager,
-    appSettingsViewModel: AppSettingsViewModel = viewModel(factory = SettingsViewModelFactory(LocalContext.current))
+    tokenManager: TokenManager
 ) {
+    val context = LocalContext.current
+    val appSettingsViewModel: AppSettingsViewModel = viewModel(
+        factory = SettingsViewModelFactory(context)
+    )
+
     val currentTheme by appSettingsViewModel.theme.collectAsState()
     val currentLanguage by appSettingsViewModel.language.collectAsState()
     val currentCurrency by appSettingsViewModel.currency.collectAsState()
@@ -67,7 +71,13 @@ fun AppSettingsScreen(
     val themeEnum = ThemeSetting.fromString(currentTheme)
     val currencyEnum = Currency.fromCode(currentCurrency) ?: Currency.USD
 
-    val translationProvider = LocalTranslationProvider.current
+    // Hardcoded language options instead of using TranslationProvider
+    val availableLanguages = listOf(
+        LanguageOption("en", "English"),
+        LanguageOption("id", "Bahasa Indonesia"),
+        LanguageOption("es", "Español"),
+        LanguageOption("zh", "中文")
+    )
 
     var showThemeDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
@@ -275,7 +285,7 @@ fun AppSettingsScreen(
 
         if (showLanguageDialog) {
             LanguageSelectionDialog(
-                availableLanguages = translationProvider.getAvailableLanguages(),
+                availableLanguages = availableLanguages,
                 currentLanguageCode = currentLanguage,
                 onDismiss = { showLanguageDialog = false },
                 onLanguageSelected = {

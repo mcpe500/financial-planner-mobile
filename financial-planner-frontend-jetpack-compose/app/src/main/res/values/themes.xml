@@ -5,11 +5,11 @@
 
     <!-- Splash Screen Theme -->
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <!-- Set the splash screen background to the system background. -->
+        <!-- Set the splash screen background to the theme's background color. -->
         <item name="windowSplashScreenBackground">?android:attr/colorBackground</item>
         
         <!-- Use an icon as the splash screen destination. -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo_splash</item>
         
         <!-- Set the theme of the Activity that follows your splash screen. -->
         <item name="postSplashScreenTheme">@style/Theme.FinancialPlannerApp</item>

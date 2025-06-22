@@ -11,6 +11,4 @@ interface WalletRepository {
     suspend fun getWalletById(walletId: String): WalletEntity?
     suspend fun insertWallet(wallet: WalletEntity): Long
     suspend fun updateWallet(wallet: WalletEntity)
-    suspend fun deleteWallet(wallet: WalletEntity)
-    suspend fun deleteWalletById(walletId: String)
 }

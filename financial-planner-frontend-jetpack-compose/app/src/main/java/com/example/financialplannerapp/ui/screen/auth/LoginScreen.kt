@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.R
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.config.Config
 import com.example.financialplannerapp.data.remote.RetrofitClient
@@ -217,18 +220,13 @@ fun LoginScreen(navController: NavController, tokenManager: TokenManager) {
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(64.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                    shape = CircleShape
-                                ),
+                                .size(64.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountBalanceWallet,
-                                contentDescription = "Wallet Icon",
-                                modifier = Modifier.size(32.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                            Image(
+                                painter = painterResource(id = R.drawable.logo),
+                                contentDescription = "App Logo",
+                                modifier = Modifier.size(48.dp),
                             )
                         }
                         Spacer(modifier = Modifier.width(16.dp))
@@ -247,14 +245,7 @@ fun LoginScreen(navController: NavController, tokenManager: TokenManager) {
                                         fontSize = 28.sp, 
                                         color = MaterialTheme.colorScheme.primary
                                     )) {
-                                        append("Financial ")
-                                    }
-                                    withStyle(style = SpanStyle(
-                                        fontWeight = FontWeight.ExtraBold, 
-                                        fontSize = 28.sp, 
-                                        color = MaterialTheme.colorScheme.primary
-                                    )) {
-                                        append("Planner")
+                                        append("SolFin")
                                     }
                                 },
                                 textAlign = TextAlign.Start,
