@@ -38,6 +38,7 @@ import com.example.financialplannerapp.ui.model.WalletType
 import com.example.financialplannerapp.ui.model.icon
 import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
 import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
+import com.example.financialplannerapp.MainApplication
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +46,7 @@ fun WalletsMainScreen(
     navController: NavController
 ) {
     val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
     val tokenManager = remember { TokenManager(context) }
     
     val userEmail = remember {
@@ -56,10 +58,7 @@ fun WalletsMainScreen(
     }
 
     val walletViewModel: WalletViewModel = viewModel(
-        factory = WalletViewModelFactory(
-            walletRepository = WalletRepositoryImpl(AppDatabase.getDatabase(context).walletDao()),
-            userEmail = userEmail
-        )
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
     )
 
     val allWallets by walletViewModel.wallets.collectAsState()

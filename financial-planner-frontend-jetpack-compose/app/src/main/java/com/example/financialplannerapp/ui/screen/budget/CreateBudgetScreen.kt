@@ -37,7 +37,7 @@ fun CreateBudgetScreen(navController: NavController) {
 
     // ViewModels
     val walletViewModel: WalletViewModel = viewModel(
-        factory = WalletViewModelFactory(application.appContainer.walletRepository, userId)
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
     )
     val budgetViewModel: BudgetViewModel = viewModel(
         factory = BudgetViewModelFactory(application.appContainer.budgetRepository, tokenManager)

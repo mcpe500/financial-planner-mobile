@@ -36,14 +36,15 @@ import androidx.navigation.NavController
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.ui.viewmodel.BillViewModelFactory
 import androidx.compose.ui.platform.LocalContext
+import com.example.financialplannerapp.TokenManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BillCalendarScreen(navController: NavController) {
+fun BillCalendarScreen(navController: NavController, tokenManager: TokenManager) {
     val context = LocalContext.current
     val application = context.applicationContext as MainApplication
     val billViewModel: BillViewModel = viewModel(
-        factory = BillViewModelFactory(application.appContainer.billRepository)
+        factory = BillViewModelFactory(application.appContainer.billRepository, tokenManager)
     )
     var currentMonth by remember { mutableStateOf(Calendar.getInstance()) }
     var selectedDate by remember { mutableStateOf<Date?>(null) }

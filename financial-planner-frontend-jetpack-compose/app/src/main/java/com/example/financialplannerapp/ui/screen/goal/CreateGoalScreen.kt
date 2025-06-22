@@ -1,7 +1,12 @@
 package com.example.financialplannerapp.ui.screen.goal
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.TokenManager
+import com.example.financialplannerapp.data.model.GoalCategory
 import com.example.financialplannerapp.ui.model.Wallet
 import com.example.financialplannerapp.ui.viewmodel.GoalViewModel
 import com.example.financialplannerapp.ui.viewmodel.GoalViewModelFactory
@@ -59,11 +65,10 @@ fun CreateGoalScreen(navController: NavController) {
     val context = LocalContext.current
     val application = context.applicationContext as MainApplication
     val tokenManager = remember { TokenManager(context) }
-    val userId = tokenManager.getUserId() ?: "guest"
 
     // ViewModels
     val walletViewModel: WalletViewModel = viewModel(
-        factory = WalletViewModelFactory(application.appContainer.walletRepository, userId)
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
     )
     val goalViewModel: GoalViewModel = viewModel(
         factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager)
@@ -74,11 +79,16 @@ fun CreateGoalScreen(navController: NavController) {
     var selectedWallet by remember { mutableStateOf<Wallet?>(null) }
     var goalName by remember { mutableStateOf("") }
     var targetAmount by remember { mutableStateOf("") }
-    var targetDate by remember { mutableStateOf(Calendar.getInstance().time) }
+    var currentAmount by remember { mutableStateOf("0") }
+    var selectedCategory by remember { mutableStateOf(GoalCategory.SAVINGS) }
+    var targetDate by remember { mutableStateOf(Date()) }
     var priority by remember { mutableStateOf("Medium") }
+    var description by remember { mutableStateOf("") }
 
     var isWalletDropdownExpanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var showCategorySelector by remember { mutableStateOf(false) }
+
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = targetDate.time)
 
     LaunchedEffect(Unit) {
@@ -724,7 +734,7 @@ private fun generateGoalTemplates(): List<GoalTemplate> {
             id = "2",
             name = "Dana Darurat",
             icon = "🛡️",
-            category = GoalCategory.EMERGENCY,
+            category = GoalCategory.EMERGENCY_FUND,
             suggestedAmount = 50000000.0,
             description = "Siapkan dana untuk keadaan darurat"
         ),
@@ -732,7 +742,7 @@ private fun generateGoalTemplates(): List<GoalTemplate> {
             id = "3",
             name = "Beli Rumah",
             icon = "🏠",
-            category = GoalCategory.HOUSE,
+            category = GoalCategory.HOME,
             suggestedAmount = 500000000.0,
             description = "Wujudkan impian memiliki rumah"
         ),
@@ -740,7 +750,7 @@ private fun generateGoalTemplates(): List<GoalTemplate> {
             id = "4",
             name = "Beli Mobil",
             icon = "🚗",
-            category = GoalCategory.CAR,
+            category = GoalCategory.VEHICLE,
             suggestedAmount = 200000000.0,
             description = "Dapatkan kendaraan impian Anda"
         ),
@@ -766,9 +776,9 @@ private fun generateGoalTemplates(): List<GoalTemplate> {
 private fun getMotivationalTip(category: GoalCategory?): String {
     return when (category) {
         GoalCategory.VACATION -> "Buat rencana detail dan mulai menabung sedikit demi sedikit setiap bulan."
-        GoalCategory.EMERGENCY -> "Dana darurat sebaiknya 6-12 kali pengeluaran bulanan Anda."
-        GoalCategory.HOUSE -> "Pertimbangkan untuk menabung minimal 20% dari harga rumah sebagai DP."
-        GoalCategory.CAR -> "Jangan lupa hitung biaya pajak, asuransi, dan perawatan kendaraan."
+        GoalCategory.EMERGENCY_FUND -> "Dana darurat sebaiknya 6-12 kali pengeluaran bulanan Anda."
+        GoalCategory.HOME -> "Pertimbangkan untuk menabung minimal 20% dari harga rumah sebagai DP."
+        GoalCategory.VEHICLE -> "Jangan lupa hitung biaya pajak, asuransi, dan perawatan kendaraan."
         GoalCategory.EDUCATION -> "Investasi terbaik adalah investasi untuk diri sendiri dan masa depan."
         GoalCategory.INVESTMENT -> "Mulai dengan jumlah kecil dan tingkatkan secara bertahap."
         else -> "Konsistensi adalah kunci sukses mencapai tujuan finansial Anda."

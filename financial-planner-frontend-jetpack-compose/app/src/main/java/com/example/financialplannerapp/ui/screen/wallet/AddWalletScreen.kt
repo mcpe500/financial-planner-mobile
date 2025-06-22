@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.data.local.AppDatabase
 import com.example.financialplannerapp.data.repository.WalletRepositoryImpl
 import com.example.financialplannerapp.ui.model.Wallet
@@ -51,6 +52,7 @@ fun AddWalletScreen(
     navController: NavController
 ) {
     val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
     val tokenManager = remember { TokenManager(context) }
     
     // Get user email from TokenManager, use "guest" if in no account mode
@@ -64,10 +66,7 @@ fun AddWalletScreen(
 
     // Initialize ViewModel with user email
     val viewModel: WalletViewModel = viewModel(
-        factory = WalletViewModelFactory(
-            walletRepository = WalletRepositoryImpl(AppDatabase.getDatabase(context).walletDao()),
-            userEmail = userEmail
-        )
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
     )
 
     var walletName by remember { mutableStateOf("") }

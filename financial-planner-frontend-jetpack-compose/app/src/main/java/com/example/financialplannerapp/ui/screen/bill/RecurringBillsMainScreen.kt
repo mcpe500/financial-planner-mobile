@@ -38,14 +38,15 @@ import com.example.financialplannerapp.core.util.formatCurrency
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.financialplannerapp.TokenManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecurringBillsMainScreen(navController: NavController) {
+fun RecurringBillsMainScreen(navController: NavController, tokenManager: TokenManager) {
     val context = LocalContext.current
     val application = context.applicationContext as MainApplication
     val billViewModel: BillViewModel = viewModel(
-        factory = BillViewModelFactory(application.appContainer.billRepository)
+        factory = BillViewModelFactory(application.appContainer.billRepository, tokenManager)
     )
     val isLoading by billViewModel.isLoading.collectAsState()
     val error by billViewModel.error.collectAsState()

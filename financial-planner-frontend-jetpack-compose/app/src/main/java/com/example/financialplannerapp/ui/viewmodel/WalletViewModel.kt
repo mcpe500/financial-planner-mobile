@@ -5,6 +5,7 @@ package com.example.financialplannerapp.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.WalletEntity
 import com.example.financialplannerapp.data.repository.WalletRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,7 @@ import com.example.financialplannerapp.ui.model.toHex
 
 class WalletViewModel(
     private val walletRepository: WalletRepository,
-    private val userEmail: String // Changed from userId to userEmail
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _wallets = MutableStateFlow<List<Wallet>>(emptyList())
@@ -44,10 +45,11 @@ class WalletViewModel(
         loadWallets()
     }
 
-    private fun loadWallets() {
+    fun loadWallets() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
+            val userEmail = tokenManager.getUserEmail() ?: "guest"
             walletRepository.getWalletsByUserEmail(userEmail)
                 .catch { e ->
                     _error.value = "Error loading wallets: ${e.localizedMessage}"
@@ -63,6 +65,7 @@ class WalletViewModel(
     suspend fun addWallet(wallet: Wallet): Boolean {
         return try {
             _error.value = null
+            val userEmail = tokenManager.getUserEmail() ?: "guest"
             val rowId = walletRepository.insertWallet(wallet.toWalletEntity(userEmail))
             if (rowId != -1L) {
                 _successMessage.value = "Wallet added successfully!"
@@ -83,6 +86,7 @@ class WalletViewModel(
     suspend fun updateWallet(wallet: Wallet): Boolean {
         return try {
             _error.value = null
+            val userEmail = tokenManager.getUserEmail() ?: "guest"
             walletRepository.updateWallet(wallet.toWalletEntity(userEmail))
             _successMessage.value = "Wallet updated successfully!"
             true

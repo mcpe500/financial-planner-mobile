@@ -40,6 +40,7 @@ import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.core.util.formatCurrency
 import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
 import kotlinx.coroutines.launch
+import com.example.financialplannerapp.MainApplication
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -51,6 +52,7 @@ fun EditWalletScreen(
     walletId: String
 ) {
     val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
     val tokenManager = remember { TokenManager(context) }
     
     // Get user email from TokenManager, use "guest" if in no account mode
@@ -64,10 +66,7 @@ fun EditWalletScreen(
 
     // Initialize ViewModel with user email
     val viewModel: WalletViewModel = viewModel(
-        factory = WalletViewModelFactory(
-            walletRepository = WalletRepositoryImpl(AppDatabase.getDatabase(context).walletDao()),
-            userEmail = userEmail
-        )
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
     )
 
     // Get the wallet to edit

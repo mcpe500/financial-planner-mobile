@@ -33,6 +33,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import com.example.financialplannerapp.data.repository.BillRepository
 import com.example.financialplannerapp.data.repository.BillRepositoryImpl
+import com.example.financialplannerapp.data.repository.BudgetRepository
+import com.example.financialplannerapp.data.repository.BudgetRepositoryImpl
+import com.example.financialplannerapp.data.repository.GoalRepository
+import com.example.financialplannerapp.data.repository.GoalRepositoryImpl
+import com.example.financialplannerapp.data.repository.WalletRepository
+import com.example.financialplannerapp.data.repository.WalletRepositoryImpl
 
 class MainApplication : Application() {
 
@@ -87,6 +93,9 @@ class AppContainer(private val applicationContext: Context) {
     private val userProfileDao by lazy { appDatabase.userProfileDao() }
     private val securitySettingsDao by lazy { appDatabase.securitySettingsDao() }
     private val billDao by lazy { appDatabase.billDao() }
+    private val walletDao by lazy { appDatabase.walletDao() }
+    private val budgetDao by lazy { appDatabase.budgetDao() }
+    private val goalDao by lazy { appDatabase.goalDao() }
 
     // Services
     val translationProvider: TranslationProvider by lazy {
@@ -146,5 +155,17 @@ class AppContainer(private val applicationContext: Context) {
 
     val billRepository: BillRepository by lazy {
         BillRepositoryImpl(billDao)
+    }
+
+    val budgetRepository: BudgetRepository by lazy {
+        BudgetRepositoryImpl(budgetDao)
+    }
+
+    val goalRepository: GoalRepository by lazy {
+        GoalRepositoryImpl(goalDao)
+    }
+
+    val walletRepository: WalletRepository by lazy {
+        WalletRepositoryImpl(walletDao)
     }
 }
