@@ -29,6 +29,9 @@ RUN bun install --production
 # Copy the built application from the 'builder' stage
 COPY --from=builder /usr/src/app/dist ./dist
 
+# Copy views and other assets needed for production
+COPY --from=builder /usr/src/app/src/views ./dist/views
+
 # Expose the port the app will run on
 EXPOSE 9001
 
