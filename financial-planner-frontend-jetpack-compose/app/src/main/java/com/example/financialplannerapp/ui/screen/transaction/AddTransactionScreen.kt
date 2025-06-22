@@ -25,8 +25,10 @@ import androidx.navigation.NavController
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.semantics.Role
 import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.ui.model.Wallet
 import com.example.financialplannerapp.ui.viewmodel.AddTransactionViewModel
 import com.example.financialplannerapp.ui.viewmodel.AddTransactionViewModelFactory
+import com.example.financialplannerapp.ui.viewmodel.toWalletUiModel
 import java.util.*
 
 enum class TransactionType {
@@ -53,6 +55,13 @@ fun AddTransactionScreen(navController: NavController) {
     var selectedPocket by remember { mutableStateOf("Cash") }
     var selectedCategory by remember { mutableStateOf("Food") }
     var note by remember { mutableStateOf("") }
+    var selectedWallet: Wallet? by remember { mutableStateOf<Wallet?>(null) }
+
+    val tokenManager = application.appContainer.tokenManager
+    val userId = tokenManager.getUserId() ?: "local_user"
+    val userEmail = tokenManager.getUserEmail() ?: "guest"
+    val walletEntities by application.appContainer.walletRepository.getWalletsByUserEmail(userEmail).collectAsState(initial = emptyList())
+    val wallets = walletEntities.map { it.toWalletUiModel() }
 
     // Handle state changes
     LaunchedEffect(state) {
@@ -120,6 +129,16 @@ fun AddTransactionScreen(navController: NavController) {
                 onDateChange = { selectedDate = it }
             )
 
+            // Wallet Selection Dropdown (insert before Pocket Selection)
+            DropdownCard(
+                title = "Wallet",
+                selectedValue = selectedWallet?.name ?: "Select Wallet",
+                options = wallets.map { wallet -> wallet.name },
+                onValueChange = { name ->
+                    selectedWallet = wallets.find { wallet -> wallet.name == name }
+                }
+            )
+
             // Pocket Selection
             DropdownCard(
                 title = "Pocket",
@@ -169,19 +188,21 @@ fun AddTransactionScreen(navController: NavController) {
                 
                 Button(
                     onClick = {
-                        if (amount.isNotBlank()) {
+                        if (amount.isNotBlank() && selectedWallet != null) {
                             viewModel.createTransaction(
+                                userId = userId,
                                 amount = amount.toDoubleOrNull() ?: 0.0,
                                 type = if (transactionType == TransactionType.INCOME) "INCOME" else "EXPENSE",
                                 date = Date(),
                                 pocket = selectedPocket,
                                 category = selectedCategory,
                                 note = note.takeIf { it.isNotBlank() },
-                                tags = null // Set to null since we're not using tags for now
+                                tags = null, // Set to null since we're not using tags for now
+                                walletId = selectedWallet!!.id // Use the selected wallet's id
                             )
                         }
                     },
-                    enabled = amount.isNotBlank() && !state.isLoading,
+                    enabled = amount.isNotBlank() && !state.isLoading && selectedWallet != null,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary

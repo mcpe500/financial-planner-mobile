@@ -12,10 +12,11 @@ class DataSyncViewModelFactory(private val app: MainApplication) : ViewModelProv
             return DataSyncViewModel(
                 transactionRepository = container.transactionRepository,
                 receiptTransactionRepository = container.receiptTransactionRepository,
+                walletRepository = container.walletRepository,
                 tokenManager = container.tokenManager,
                 appSettingsRepository = container.appSettingsRepository
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
-} 
+}

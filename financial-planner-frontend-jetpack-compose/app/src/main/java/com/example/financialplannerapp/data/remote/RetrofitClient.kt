@@ -70,4 +70,8 @@ object RetrofitClient {
     fun getAccountService(context: Context): AccountService {
         return getRetrofit(context).create(AccountService::class.java)
     }
+    
+    fun getWalletApiService(context: Context): WalletApiService {
+        return getRetrofit(context).create(WalletApiService::class.java)
+    }
 }

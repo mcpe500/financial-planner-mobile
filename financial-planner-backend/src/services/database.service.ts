@@ -178,6 +178,59 @@ class Database {
 		if (error) throw error;
 		return data || [];
 	}
+
+	// Wallet methods
+	async getWallets(userId: string): Promise<any[]> {
+		const { data, error } = await this.supabase
+			.from('wallets')
+			.select('*')
+			.eq('user_id', userId);
+		if (error) throw error;
+		return data || [];
+	}
+
+	async syncWallets(userId: string, wallets: any[]): Promise<any[]> {
+		const { data, error } = await this.supabase
+			.from('wallets')
+			.upsert(wallets.map(wallet => ({
+				...wallet,
+				user_id: userId,
+				updated_at: new Date().toISOString()
+			})))
+			.select();
+		if (error) throw error;
+		return data || [];
+	}
+
+	async createWallet(userId: string, wallet: any): Promise<any> {
+		const { data, error } = await this.supabase
+			.from('wallets')
+			.insert({
+				...wallet,
+				user_id: userId,
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString()
+			})
+			.select()
+			.single();
+		if (error) throw error;
+		return data;
+	}
+
+	async updateWallet(userId: string, walletId: string, wallet: any): Promise<any> {
+		const { data, error } = await this.supabase
+			.from('wallets')
+			.update({
+				...wallet,
+				updated_at: new Date().toISOString()
+			})
+			.eq('id', walletId)
+			.eq('user_id', userId)
+			.select()
+			.single();
+		if (error) throw error;
+		return data;
+	}
 }
 
 const database = Database.getInstance();

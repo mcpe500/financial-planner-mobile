@@ -30,6 +30,7 @@ data class TransactionEntity(
     // Sync
     val isSynced: Boolean = false,
     val backendTransactionId: String? = null,
+    val walletId: String,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
