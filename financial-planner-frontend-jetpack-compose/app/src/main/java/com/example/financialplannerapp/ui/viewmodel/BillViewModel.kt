@@ -2,13 +2,18 @@ package com.example.financialplannerapp.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.BillEntity
 import com.example.financialplannerapp.data.repository.BillRepository
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.Date
+import java.util.UUID
 
 class BillViewModel(
-    private val repository: BillRepository
+    private val repository: BillRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     val localBills: StateFlow<List<BillEntity>> =
@@ -28,11 +33,41 @@ class BillViewModel(
     private val _operationSuccess = MutableSharedFlow<Boolean>()
     val operationSuccess: SharedFlow<Boolean> = _operationSuccess.asSharedFlow()
 
-    fun addBill(bill: BillEntity) {
+    fun addBill(
+        name: String,
+        estimatedAmount: Double,
+        dueDate: Date,
+        repeatCycle: String,
+        category: String?,
+        notes: String
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             try {
+                val userEmail = if (tokenManager.isNoAccountMode()) {
+                    "guest"
+                } else {
+                    tokenManager.getUserEmail() ?: "guest"
+                }
+
+                val bill = BillEntity(
+                    uuid = UUID.randomUUID().toString(),
+                    name = name,
+                    estimatedAmount = estimatedAmount,
+                    dueDate = dueDate,
+                    repeatCycle = repeatCycle,
+                    category = category,
+                    notes = notes,
+                    isActive = true,
+                    paymentsJson = Gson().toJson(emptyList<Any>()),
+                    autoPay = false,
+                    notificationEnabled = true,
+                    lastPaymentDate = null,
+                    creationDate = Date(),
+                    userEmail = userEmail
+                )
+
                 repository.insertBill(bill)
                 _operationSuccess.emit(true)
             } catch (e: Exception) {
