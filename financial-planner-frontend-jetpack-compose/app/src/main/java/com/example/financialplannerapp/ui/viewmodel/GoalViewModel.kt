@@ -145,6 +145,64 @@ class GoalViewModel(
         }
     }
 
+    fun editGoalWithWalletAdjustment(goal: GoalEntity, wallet: WalletEntity, newName: String, newTarget: Double, newPriority: String) {
+        viewModelScope.launch {
+            try {
+                // If new target is smaller than current amount, return excess to wallet
+                val excessAmount = if (newTarget < goal.currentAmount) {
+                    goal.currentAmount - newTarget
+                } else {
+                    0.0
+                }
+                
+                val adjustedCurrentAmount = if (excessAmount > 0) {
+                    newTarget
+                } else {
+                    goal.currentAmount
+                }
+                
+                val updatedGoal = goal.copy(
+                    name = newName, 
+                    targetAmount = newTarget, 
+                    currentAmount = adjustedCurrentAmount,
+                    priority = newPriority
+                )
+                
+                val updatedWallet = wallet.copy(balance = wallet.balance + excessAmount)
+                
+                repository.updateGoal(updatedGoal)
+                walletRepository.updateWallet(updatedWallet)
+                
+                // Refresh goals after editing
+                refreshGoals()
+            } catch (e: Exception) {
+                _error.value = "Failed to edit goal: ${e.message}"
+            }
+        }
+    }
+
+    fun addToGoalAmountWithValidation(goal: GoalEntity, wallet: WalletEntity, amount: Double) {
+        viewModelScope.launch {
+            try {
+                if (wallet.balance >= amount) {
+                    val neededAmount = goal.targetAmount - goal.currentAmount
+                    val actualAmount = if (amount > neededAmount) neededAmount else amount
+                    
+                    val updatedGoal = goal.copy(currentAmount = goal.currentAmount + actualAmount)
+                    val updatedWallet = wallet.copy(balance = wallet.balance - actualAmount)
+                    
+                    repository.updateGoal(updatedGoal)
+                    walletRepository.updateWallet(updatedWallet)
+                    
+                    // Refresh goals after updating
+                    refreshGoals()
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to add to goal amount: ${e.message}"
+            }
+        }
+    }
+
     fun deleteGoalAndReturnToWallet(goal: GoalEntity, wallet: WalletEntity) {
         viewModelScope.launch {
             try {

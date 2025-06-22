@@ -16,15 +16,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.financialplannerapp.core.util.toCurrency
+import com.example.financialplannerapp.core.util.formatCurrency
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.data.local.model.TransactionEntity
 import com.example.financialplannerapp.ui.viewmodel.TransactionViewModel
 import com.example.financialplannerapp.ui.viewmodel.TransactionViewModelFactory
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -288,9 +291,8 @@ private fun TransactionStatsCard(transactions: List<TransactionEntity>) {
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatItem("Income", income, MaterialTheme.colorScheme.primary, true)
                 StatItem("Expenses", expenses, MaterialTheme.colorScheme.error, false)
@@ -307,21 +309,22 @@ private fun StatItem(
     color: androidx.compose.ui.graphics.Color,
     isPositive: Boolean
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium
         )
         Text(
-            text = if (isPositive) "+${amount.toCurrency()}" else amount.toCurrency(),
+            text = if (isPositive) "+${formatCurrency(amount)}" else formatCurrency(amount),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = color,
-            modifier = Modifier.padding(top = 6.dp)
+            color = color
         )
     }
 }
@@ -336,7 +339,7 @@ private fun RecentTransactionsCard(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
@@ -351,7 +354,7 @@ private fun RecentTransactionsCard(
             ) {
                 Text(
                     text = "Recent Transactions",
-                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -361,7 +364,7 @@ private fun RecentTransactionsCard(
                     Text(
                         text = "View All",
                         color = MaterialTheme.colorScheme.primary,
-                        fontSize = 14.sp
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
@@ -384,62 +387,121 @@ private fun TransactionItem(
     transaction: TransactionEntity,
     onClick: () -> Unit
 ) {
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .shadow(2.dp, RoundedCornerShape(12.dp))
+            .clickable { onClick() },
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(40.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = if (transaction.type.equals("INCOME", true)) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
-                contentDescription = transaction.type,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = transaction.merchantName ?: transaction.note ?: "Transaction",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = transaction.category,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
-        Column(
-            horizontalAlignment = Alignment.End
-        ) {
-            Text(
-                text = if (transaction.type.equals("INCOME", true)) "+${transaction.amount.toCurrency()}" else "-${transaction.amount.toCurrency()}",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (transaction.type.equals("INCOME", true)) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-            )
-            Text(
-                text = transaction.date.toString().substring(0, 10),
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Transaction Icon
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = if (transaction.type.equals("INCOME", true)) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        } else {
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (transaction.type.equals("INCOME", true)) {
+                        Icons.Default.TrendingUp
+                    } else {
+                        Icons.Default.TrendingDown
+                    },
+                    contentDescription = transaction.type,
+                    tint = if (transaction.type.equals("INCOME", true)) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            // Transaction Details
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = transaction.merchantName ?: transaction.note ?: "Transaction",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                
+                if (transaction.note != null && transaction.note.isNotBlank() && transaction.merchantName != null) {
+                    Text(
+                        text = transaction.note,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                
+                Text(
+                    text = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(transaction.date),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            // Amount
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = if (transaction.type.equals("INCOME", true)) {
+                        "+${formatCurrency(transaction.amount)}"
+                    } else {
+                        "-${formatCurrency(transaction.amount)}"
+                    },
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (transaction.type.equals("INCOME", true)) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    }
+                )
+                
+                // Receipt indicator
+                if (transaction.isFromReceipt) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = "From Receipt",
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Receipt",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
         }
     }
 }

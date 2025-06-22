@@ -39,6 +39,9 @@ import com.example.financialplannerapp.ui.model.WalletType
 import com.example.financialplannerapp.ui.model.icon
 import com.example.financialplannerapp.ui.viewmodel.GoalViewModel
 import com.example.financialplannerapp.ui.viewmodel.GoalViewModelFactory
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
+import com.example.financialplannerapp.ui.viewmodel.toWalletEntity
 import com.example.financialplannerapp.MainApplication
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,15 +69,21 @@ fun FinancialGoalsMainScreen(
         )
     )
 
+    val walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
+    )
+
     val allGoals by goalViewModel.filteredGoals.collectAsState()
     val allGoalsUnfiltered by goalViewModel.goals.collectAsState()
+    val wallets by walletViewModel.wallets.collectAsState()
     val isLoading by goalViewModel.isLoading.collectAsState()
     val error by goalViewModel.error.collectAsState()
     val selectedPriorityFilter by goalViewModel.selectedPriorityFilter.collectAsState()
 
-    // Load all goals on start
+    // Load all goals and wallets on start
     LaunchedEffect(Unit) {
         goalViewModel.loadAllGoals()
+        walletViewModel.loadWallets()
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -147,11 +156,22 @@ fun FinancialGoalsMainScreen(
                     }
 
                     items(allGoals) { goal ->
+                        val isComplete = goal.currentAmount >= goal.targetAmount
+                        
                         GoalCard(
                             goal = goal,
                             onClick = { 
                                 navController.navigate("goal_details/${goal.id.toString()}")
-                            }
+                            },
+                            onDelete = if (!isComplete) {
+                                {
+                                    // Find the wallet for this goal
+                                    val wallet = wallets.find { it.id == goal.walletId }
+                                    wallet?.let { walletEntity ->
+                                        goalViewModel.deleteGoalAndReturnToWallet(goal, walletEntity.toWalletEntity(userEmail))
+                                    }
+                                }
+                            } else null
                         )
                     }
 
@@ -402,16 +422,17 @@ private fun PriorityFilterChips(
 @Composable
 private fun GoalCard(
     goal: GoalEntity,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: (() -> Unit)?
 ) {
+    val isComplete = goal.currentAmount >= goal.targetAmount
     val progressPercentage = (goal.currentAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f)
-    val isCompleted = goal.currentAmount >= goal.targetAmount
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .shadow(4.dp, RoundedCornerShape(16.dp)),
+            .shadow(4.dp, RoundedCornerShape(16.dp))
+            .clickable { onClick() },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -431,26 +452,46 @@ private fun GoalCard(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Target: ${formatCurrency(goal.targetAmount)}",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "Priority: ${goal.priority}",
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 
-                // Priority indicator
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(
-                            when (goal.priority.uppercase()) {
-                                "HIGH" -> Color(0xFFE57373)
-                                "MEDIUM" -> Color(0xFFFFB74D)
-                                "LOW" -> Color(0xFF81C784)
-                                else -> Color(0xFF81C784)
-                            }
-                        )
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Priority indicator
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(
+                                when (goal.priority.uppercase()) {
+                                    "HIGH" -> Color(0xFFE57373)
+                                    "MEDIUM" -> Color(0xFFFFB74D)
+                                    "LOW" -> Color(0xFF81C784)
+                                    else -> Color(0xFF81C784)
+                                }
+                            )
+                    )
+                    
+                    // Delete button for incomplete goals
+                    onDelete?.let { deleteAction ->
+                        IconButton(
+                            onClick = deleteAction,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete Goal",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
             }
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -460,19 +501,13 @@ private fun GoalCard(
                 progress = progressPercentage,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = if (isCompleted) {
+                    .height(6.dp),
+                color = if (isComplete) {
                     MaterialTheme.colorScheme.primary
                 } else {
-                    when (goal.priority.uppercase()) {
-                        "HIGH" -> Color(0xFFE57373)
-                        "MEDIUM" -> Color(0xFFFFB74D)
-                        "LOW" -> Color(0xFF81C784)
-                        else -> Color(0xFF81C784)
-                    }
+                    MaterialTheme.colorScheme.primary
                 },
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -481,21 +516,53 @@ private fun GoalCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Current: ${formatCurrency(goal.currentAmount)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "${(progressPercentage * 100).toInt()}%",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isCompleted) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
+                Column {
+                    Text(
+                        text = "Current",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = formatCurrency(goal.currentAmount),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Target",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = formatCurrency(goal.targetAmount),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            
+            if (isComplete) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Goal Completed!",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }
