@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -236,7 +237,7 @@ private fun GoalPreviewCard(
                 color = Color.White.copy(alpha = 0.8f)
             )
             Text(
-                text = "Rp ${String.format("%,.0f", targetAmount)}",
+                text = getCurrentCurrencySymbol() + " ${String.format("%,.0f", targetAmount)}",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -344,7 +345,7 @@ private fun GoalTemplateOption(
             )
             template.suggestedAmount?.let { amount ->
                 Text(
-                    text = "~Rp ${String.format("%,.0f", amount)}",
+                    text = "~" + getCurrentCurrencySymbol() + " ${String.format("%,.0f", amount)}",
                     fontSize = 10.sp,
                     color = MediumGray
                 )
@@ -432,7 +433,7 @@ private fun TargetAmountCard(
                 placeholder = { Text("0") },
                 leadingIcon = {
                     Text(
-                        "Rp",
+                        getCurrentCurrencySymbol(),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = BibitGreen
@@ -459,7 +460,7 @@ private fun TargetAmountCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Saran: Rp ${String.format("%,.0f", suggested)}",
+                        text = "Saran: " + getCurrentCurrencySymbol() + " ${String.format("%,.0f", suggested)}",
                         fontSize = 12.sp,
                         color = MotivationalOrange
                     )

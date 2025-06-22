@@ -26,6 +26,7 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.financialplannerapp.core.util.formatCurrency
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -370,8 +371,7 @@ private fun PreviewCard(
                         color = MediumGray
                     )
                     Text(
-                        text = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-                            .format(amount).replace("IDR", "Rp"),
+                        text = formatCurrency(amount),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = type.color

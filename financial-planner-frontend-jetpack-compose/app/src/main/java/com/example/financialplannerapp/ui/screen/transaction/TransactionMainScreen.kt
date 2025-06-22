@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,14 +26,6 @@ import com.example.financialplannerapp.data.local.model.TransactionEntity
 import com.example.financialplannerapp.ui.viewmodel.TransactionViewModel
 import com.example.financialplannerapp.ui.viewmodel.TransactionViewModelFactory
 
-// Color scheme
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-private val ExpenseRed = Color(0xFFFF7043)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionMainScreen(navController: NavController) {
@@ -45,14 +36,16 @@ fun TransactionMainScreen(navController: NavController) {
                     Text(
                         text = "Transactions",
                         fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
@@ -64,8 +57,8 @@ fun TransactionMainScreen(navController: NavController) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate("add_transaction") },
-                containerColor = BibitGreen,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -94,23 +87,27 @@ private fun TransactionMainContent(
         )
     )
     val state by viewModel.state
+    
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Always show quick actions
-        TransactionActionsCard(navController)
+        // Quick Actions - Simplified to 2 options
+        QuickActionsCard(navController)
+        
         when {
             state.isLoading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
             state.transactions.isEmpty() -> {
@@ -121,15 +118,13 @@ private fun TransactionMainContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     TransactionStatsCard(state.transactions)
-                    RecentTransactionsDetailedCard(
+                    RecentTransactionsCard(
                         transactions = state.transactions.take(5),
                         onTransactionClick = { transaction ->
                             navController.navigate("transaction_detail/${transaction.id}")
                         },
                         navController = navController
                     )
-                    MonthlyTransactionSummary(state.transactions)
-                    CategoriesBreakdownCard(state.transactions)
                     Spacer(modifier = Modifier.height(80.dp))
                 }
             }
@@ -139,110 +134,59 @@ private fun TransactionMainContent(
 
 @Composable
 private fun EmptyTransactionsCard() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Default.Receipt,
-            contentDescription = "No transactions",
-            modifier = Modifier.size(64.dp),
-            tint = MediumGray
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "No transactions yet",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = DarkGray
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Add your first transaction to get started",
-            fontSize = 14.sp,
-            color = MediumGray
-        )
-    }
-}
-
-@Composable
-private fun TransactionStatsCard(transactions: List<com.example.financialplannerapp.data.local.model.TransactionEntity>) {
-    val income = transactions.filter { it.type.equals("INCOME", true) }.sumOf { it.amount }
-    val expenses = transactions.filter { it.type.equals("EXPENSE", true) }.sumOf { it.amount }
-    val balance = income - expenses
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "This Month",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 16.dp)
+            Icon(
+                imageVector = Icons.Default.Receipt,
+                contentDescription = "No transactions",
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                StatItem("Income", income, BibitGreen, true)
-                StatItem("Expenses", expenses, ExpenseRed, false)
-                StatItem("Balance", balance, BibitGreen, true)
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "No transactions yet",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Add your first transaction to get started",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun StatItem(
-    label: String,
-    amount: Double,
-    color: Color,
-    isPositive: Boolean
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = label,
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            fontWeight = FontWeight.Medium
-        )
-        Text(
-            text = if (isPositive) "+${amount.toCurrency()}" else amount.toCurrency(),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = color,
-            modifier = Modifier.padding(top = 6.dp)
-        )
-    }
-}
-
-@Composable
-private fun TransactionActionsCard(navController: NavController) {
+private fun QuickActionsCard(navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Text(
                 text = "Quick Actions",
@@ -252,42 +196,21 @@ private fun TransactionActionsCard(navController: NavController) {
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Two rows of actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                TransactionActionItem(
-                    icon = Icons.Default.Add,
-                    title = "Add Transaction",
-                    subtitle = "Manual entry",
-                    onClick = { navController.navigate("add_transaction") }
-                )
-                TransactionActionItem(
+                QuickActionItem(
                     icon = Icons.Default.CameraAlt,
                     title = "Scan Receipt",
                     subtitle = "Auto-extract data",
                     onClick = { navController.navigate("scan_receipt") }
                 )
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                TransactionActionItem(
-                    icon = Icons.Default.Mic,
-                    title = "Voice Input",
-                    subtitle = "Speak to add",
-                    onClick = { navController.navigate("voice_input") }
-                )
-                TransactionActionItem(
-                    icon = Icons.Default.History,
-                    title = "View History",
-                    subtitle = "All transactions",
-                    onClick = { navController.navigate("transaction_history") }
+                QuickActionItem(
+                    icon = Icons.Default.Add,
+                    title = "Add Manual",
+                    subtitle = "Manual entry",
+                    onClick = { navController.navigate("add_transaction") }
                 )
             }
         }
@@ -295,7 +218,7 @@ private fun TransactionActionsCard(navController: NavController) {
 }
 
 @Composable
-private fun TransactionActionItem(
+private fun QuickActionItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
@@ -311,7 +234,7 @@ private fun TransactionActionItem(
             modifier = Modifier
                 .size(56.dp)
                 .background(
-                    color = BibitGreen.copy(alpha = 0.1f),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
@@ -319,7 +242,7 @@ private fun TransactionActionItem(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                tint = BibitGreen,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -333,14 +256,77 @@ private fun TransactionActionItem(
         Text(
             text = subtitle,
             fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp)
         )
     }
 }
 
 @Composable
-private fun RecentTransactionsDetailedCard(
+private fun TransactionStatsCard(transactions: List<TransactionEntity>) {
+    val income = transactions.filter { it.type.equals("INCOME", true) }.sumOf { it.amount }
+    val expenses = transactions.filter { it.type.equals("EXPENSE", true) }.sumOf { it.amount }
+    val balance = income - expenses
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Text(
+                text = "This Month",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatItem("Income", income, MaterialTheme.colorScheme.primary, true)
+                StatItem("Expenses", expenses, MaterialTheme.colorScheme.error, false)
+                StatItem("Balance", balance, MaterialTheme.colorScheme.primary, true)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatItem(
+    label: String,
+    amount: Double,
+    color: androidx.compose.ui.graphics.Color,
+    isPositive: Boolean
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = if (isPositive) "+${amount.toCurrency()}" else amount.toCurrency(),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = color,
+            modifier = Modifier.padding(top = 6.dp)
+        )
+    }
+}
+
+@Composable
+private fun RecentTransactionsCard(
     transactions: List<TransactionEntity>,
     onTransactionClick: (TransactionEntity) -> Unit,
     navController: NavController
@@ -348,14 +334,14 @@ private fun RecentTransactionsDetailedCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -373,254 +359,85 @@ private fun RecentTransactionsDetailedCard(
                 ) {
                     Text(
                         text = "View All",
-                        color = BibitGreen,
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 14.sp
                     )
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
             transactions.forEach { transaction ->
-                TransactionDetailedItem(
-                    title = transaction.merchantName ?: transaction.note ?: "Transaction",
-                    category = transaction.category,
-                    amount = transaction.amount,
-                    date = transaction.date.toString(),
-                    description = transaction.note,
+                TransactionItem(
+                    transaction = transaction,
                     onClick = { onTransactionClick(transaction) }
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                if (transaction != transactions.last()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-private fun TransactionDetailedItem(
-    title: String,
-    category: String,
-    amount: Double,
-    date: String,
-    description: String?,
+private fun TransactionItem(
+    transaction: TransactionEntity,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .padding(16.dp)
-            .clickable { onClick() },
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .clickable { onClick() }
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (transaction.type.equals("INCOME", true)) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                contentDescription = transaction.type,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Column(
             modifier = Modifier.weight(1f)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(
-                        color = if (amount < 0) ExpenseRed.copy(alpha = 0.1f) 
-                               else BibitGreen.copy(alpha = 0.1f),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (amount < 0) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
-                    contentDescription = null,
-                    tint = if (amount < 0) ExpenseRed else BibitGreen,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = category,
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                Text(
-                    text = description?:"",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
-        }
-        
-        Column(
-            horizontalAlignment = Alignment.End
-        ) {
             Text(
-                text = if (amount < 0) "-${(-amount).toCurrency()}" else "+${amount.toCurrency()}",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (amount < 0) ExpenseRed else BibitGreen
-            )
-            Text(
-                text = date,
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun MonthlyTransactionSummary(transactions: List<com.example.financialplannerapp.data.local.model.TransactionEntity>) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp)
-        ) {
-            Text(
-                text = "Monthly Summary",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                val total = transactions.size
-                val avgPerDay = transactions
-                    .groupBy { it.date }
-                    .mapValues { it.value.sumOf { t -> t.amount } }
-                    .values.average()
-                val largestExpense = transactions
-                    .filter { it.type.equals("EXPENSE", true) }
-                    .maxByOrNull { it.amount }?.amount ?: 0.0
-
-                SummaryItem("Total Transactions", total.toString())
-                SummaryItem("Avg per Day", "$${"%.2f".format(avgPerDay)}")
-                SummaryItem("Largest Expense", "$${"%.2f".format(largestExpense)}")
-            }
-        }
-    }
-}
-
-@Composable
-private fun SummaryItem(label: String, value: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = value,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.padding(top = 4.dp)
-        )
-    }
-}
-
-@Composable
-private fun CategoriesBreakdownCard(transactions: List<com.example.financialplannerapp.data.local.model.TransactionEntity>) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp)
-        ) {
-            Text(
-                text = "Top Categories",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            
-            val categories = transactions
-                .groupBy { it.category }
-                .mapValues { it.value.sumOf { t -> t.amount } }
-                .toList()
-                .sortedByDescending { it.second }
-                .take(4)
-
-            categories.forEach { (category, amount) ->
-                val percentage = (amount / categories.sumOf { it.second }) * 100
-                CategoryItem(category, amount, percentage.toInt())
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategoryItem(
-    category: String,
-    amount: Double,
-    percentage: Int
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = category,
+                text = transaction.merchantName ?: transaction.note ?: "Transaction",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            LinearProgressIndicator(
-                progress = { percentage / 100f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .padding(top = 4.dp),
-                color = BibitGreen,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        }
-        
-        Spacer(modifier = Modifier.width(16.dp))
-        
-        Column(
-            horizontalAlignment = Alignment.End
-        ) {
-            Text(
-                text = amount.toCurrency(),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "$percentage%",
+                text = transaction.category,
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        
+        Column(
+            horizontalAlignment = Alignment.End
+        ) {
+            Text(
+                text = if (transaction.type.equals("INCOME", true)) "+${transaction.amount.toCurrency()}" else "-${transaction.amount.toCurrency()}",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (transaction.type.equals("INCOME", true)) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            )
+            Text(
+                text = transaction.date.toString().substring(0, 10),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

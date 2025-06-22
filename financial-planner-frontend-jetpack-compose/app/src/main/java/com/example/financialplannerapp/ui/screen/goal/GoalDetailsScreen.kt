@@ -30,6 +30,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.cos
 import kotlin.math.sin
+import com.example.financialplannerapp.core.util.formatCurrency
+import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -571,7 +573,7 @@ private fun TransactionHistoryItem(transaction: GoalTransaction) {
 
             // Amount
             Text(
-                text = "${if (transaction.type == GoalTransactionType.DEPOSIT) "+" else "-"}Rp ${String.format("%,.0f", transaction.amount)}",
+                text = "${if (transaction.type == GoalTransactionType.DEPOSIT) "+" else "-"}${formatCurrency(transaction.amount)}",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (transaction.type == GoalTransactionType.DEPOSIT) BibitGreen else MotivationalOrange
@@ -613,7 +615,7 @@ private fun WithdrawDialog(
                     placeholder = { Text("0") },
                     leadingIcon = {
                         Text(
-                            "Rp",
+                            getCurrentCurrencySymbol(),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = MotivationalOrange
@@ -641,7 +643,7 @@ private fun WithdrawDialog(
                 )
 
                 Text(
-                    text = "Saldo tersedia: Rp ${String.format("%,.0f", goal.currentAmount)}",
+                    text = "Saldo tersedia: ${formatCurrency(goal.currentAmount)}",
                     fontSize = 12.sp,
                     color = MediumGray,
                     modifier = Modifier.padding(top = 8.dp)

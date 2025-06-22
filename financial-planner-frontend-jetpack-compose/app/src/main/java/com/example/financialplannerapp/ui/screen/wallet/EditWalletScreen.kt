@@ -40,15 +40,15 @@ import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.core.util.formatCurrency
 import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddWalletScreen(
-    navController: NavController
+fun EditWalletScreen(
+    navController: NavController,
+    walletId: String
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
@@ -70,31 +70,34 @@ fun AddWalletScreen(
         )
     )
 
-    var walletName by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf(WalletType.CASH) }
-    var initialBalance by remember { mutableStateOf("") }
-    var selectedIcon by remember { mutableStateOf(selectedType.icon) }
-    var selectedColor by remember { mutableStateOf(BibitGreen) }
+    // Get the wallet to edit
+    val wallets by viewModel.wallets.collectAsState()
+    val walletToEdit = wallets.find { it.id == walletId }
+
+    // State variables for editing
+    var walletName by remember { mutableStateOf(walletToEdit?.name ?: "") }
+    var selectedType by remember { mutableStateOf(walletToEdit?.type ?: WalletType.CASH) }
+    var balance by remember { mutableStateOf(walletToEdit?.balance?.toString() ?: "0.0") }
+    var selectedIcon by remember { mutableStateOf(walletToEdit?.icon ?: selectedType.icon) }
+    var selectedColor by remember { mutableStateOf(walletToEdit?.color ?: BibitGreen) }
     var isLoading by remember { mutableStateOf(false) } // For button loading state
 
-    // Observe success and error messages
-    val successMessage by viewModel.successMessage.collectAsState()
-    val error by viewModel.error.collectAsState()
-    
-    val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-    
-    LaunchedEffect(successMessage) {
-        successMessage?.let {
-            snackbarHostState.showSnackbar(
-                message = it,
-                duration = SnackbarDuration.Short
-            )
-            viewModel.clearMessages()
-            navController.navigateUp()
+    // Update state when wallet is loaded
+    LaunchedEffect(walletToEdit) {
+        walletToEdit?.let { wallet ->
+            walletName = wallet.name
+            selectedType = wallet.type
+            balance = wallet.balance.toString()
+            selectedIcon = wallet.icon
+            selectedColor = wallet.color
         }
     }
+
+    val coroutineScope = rememberCoroutineScope()
+    val error by viewModel.error.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     
+    // This effect now only handles showing errors
     LaunchedEffect(error) {
         error?.let {
             snackbarHostState.showSnackbar(
@@ -110,7 +113,7 @@ fun AddWalletScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Add New Wallet",
+                        "Edit Wallet",
                         fontWeight = FontWeight.SemiBold
                     )
                 },
@@ -127,113 +130,125 @@ fun AddWalletScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Preview Card
-            WalletPreviewCard(
-                name = walletName.ifEmpty { "New Wallet" },
-                type = selectedType,
-                balance = initialBalance.toDoubleOrNull() ?: 0.0,
-                icon = selectedIcon,
-                color = selectedColor
-            )
-
-            // Wallet Name Input
-            WalletNameCard(
-                name = walletName,
-                onNameChange = { walletName = it }
-            )
-
-            // Wallet Type Selection
-            WalletTypeCard(
-                selectedType = selectedType,
-                onTypeChange = {
-                    selectedType = it
-                    selectedIcon = it.icon
-                }
-            )
-
-            // Initial Balance Input
-            InitialBalanceCard(
-                balance = initialBalance,
-                onBalanceChange = { initialBalance = it }
-            )
-
-            // Icon Selection
-            IconSelectionCard(
-                selectedIcon = selectedIcon,
-                onIconChange = { selectedIcon = it }
-            )
-
-            // Color Selection
-            ColorSelectionCard(
-                selectedColor = selectedColor,
-                onColorChange = { selectedColor = it }
-            )
-
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+        if (walletToEdit == null) {
+            // Show loading or error state
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
             ) {
-                OutlinedButton(
-                    onClick = { navController.navigateUp() },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text("Cancel")
-                }
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Preview Card
+                WalletPreviewCard(
+                    name = walletName.ifEmpty { "Wallet Name" },
+                    type = selectedType,
+                    balance = balance.toDoubleOrNull() ?: 0.0,
+                    icon = selectedIcon,
+                    color = selectedColor
+                )
 
-                Button(
-                    onClick = {
-                        if (!isLoading) {
-                            coroutineScope.launch {
-                                isLoading = true
-                                val newWallet = Wallet(
-                                    id = UUID.randomUUID().toString(),
-                                    name = walletName,
-                                    type = selectedType,
-                                    balance = initialBalance.toDoubleOrNull() ?: 0.0,
-                                    icon = selectedIcon,
-                                    color = selectedColor
-                                )
-                                val success = viewModel.addWallet(newWallet)
-                                if (success) {
-                                    navController.navigateUp()
-                                }
-                                isLoading = false
-                            }
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    enabled = walletName.isNotEmpty() && initialBalance.toDoubleOrNull() != null && !isLoading
+                // Wallet Name Input
+                WalletNameCard(
+                    name = walletName,
+                    onNameChange = { walletName = it }
+                )
+
+                // Wallet Type Selection
+                WalletTypeCard(
+                    selectedType = selectedType,
+                    onTypeChange = {
+                        selectedType = it
+                        selectedIcon = it.icon
+                    }
+                )
+
+                // Balance Input
+                BalanceCard(
+                    balance = balance,
+                    onBalanceChange = { balance = it }
+                )
+
+                // Icon Selection
+                IconSelectionCard(
+                    selectedIcon = selectedIcon,
+                    onIconChange = { selectedIcon = it }
+                )
+
+                // Color Selection
+                ColorSelectionCard(
+                    selectedColor = selectedColor,
+                    onColorChange = { selectedColor = it }
+                )
+
+                // Action Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
+                    OutlinedButton(
+                        onClick = { navController.navigateUp() },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
                         )
-                    } else {
-                        Text("Save Wallet")
+                    ) {
+                        Text("Cancel")
+                    }
+
+                    Button(
+                        onClick = {
+                            if (!isLoading) {
+                                coroutineScope.launch {
+                                    isLoading = true
+                                    val updatedWallet = walletToEdit.copy(
+                                        name = walletName,
+                                        type = selectedType,
+                                        balance = balance.toDoubleOrNull() ?: 0.0,
+                                        icon = selectedIcon,
+                                        color = selectedColor
+                                    )
+                                    val success = viewModel.updateWallet(updatedWallet)
+                                    if (success) {
+                                        navController.navigateUp()
+                                    }
+                                    isLoading = false
+                                }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        enabled = walletName.isNotEmpty() && balance.toDoubleOrNull() != null && !isLoading
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Update Wallet")
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }
@@ -401,7 +416,7 @@ private fun WalletTypeChip(
 }
 
 @Composable
-private fun InitialBalanceCard(
+private fun BalanceCard(
     balance: String,
     onBalanceChange: (String) -> Unit
 ) {
@@ -414,7 +429,7 @@ private fun InitialBalanceCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Initial Balance",
+                text = "Current Balance",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -589,6 +604,6 @@ private fun ColorChip(
 
 @Preview(showBackground = true)
 @Composable
-fun AddWalletScreenPreview() {
-    AddWalletScreen(rememberNavController())
-}
+fun EditWalletScreenPreview() {
+    EditWalletScreen(rememberNavController(), "preview_wallet_id")
+} 

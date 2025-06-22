@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -356,7 +357,7 @@ private fun BudgetLimitCard(
                 placeholder = { Text("0") },
                 leadingIcon = {
                     Text(
-                        "Rp",
+                        getCurrentCurrencySymbol(),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = BibitGreen

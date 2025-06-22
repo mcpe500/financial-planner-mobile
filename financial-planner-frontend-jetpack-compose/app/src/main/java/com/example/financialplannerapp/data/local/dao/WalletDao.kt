@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WalletDao {
+    @Query("SELECT * FROM wallets WHERE user_email = :userEmail ORDER BY name ASC")
+    fun getWalletsByUserEmail(userEmail: String): Flow<List<WalletEntity>>
+
     @Query("SELECT * FROM wallets ORDER BY name ASC")
     fun getAllWallets(): Flow<List<WalletEntity>>
 

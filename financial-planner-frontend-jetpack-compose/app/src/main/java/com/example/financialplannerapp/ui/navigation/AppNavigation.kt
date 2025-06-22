@@ -13,7 +13,7 @@ import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.ui.screen.auth.LoginScreen
 import com.example.financialplannerapp.ui.screen.dashboard.DashboardScreen
 import com.example.financialplannerapp.ui.screen.settings.AppSettingsScreen
-import com.example.financialplannerapp.ui.screen.settings.SettingsScreen // Assuming this is your individual settings screen composable
+import com.example.financialplannerapp.ui.screen.settings.SettingsScreen
 import com.example.financialplannerapp.screen.settings.UserProfileSettingsScreen
 import com.example.financialplannerapp.screen.settings.SecuritySettingsScreen
 import com.example.financialplannerapp.screen.settings.DataSyncSettingsScreen
@@ -23,7 +23,6 @@ import com.example.financialplannerapp.screen.settings.HelpCenterScreen
 import com.example.financialplannerapp.ui.screen.transaction.AddTransactionScreen
 import com.example.financialplannerapp.ui.screen.transaction.ScanReceiptScreen
 import com.example.financialplannerapp.ui.screen.transaction.TransactionHistoryScreen
-import com.example.financialplannerapp.screen.VoiceInputScreen
 import com.example.financialplannerapp.ui.screen.bill.AddRecurringBillScreen
 import com.example.financialplannerapp.ui.screen.bill.BillCalendarScreen
 import com.example.financialplannerapp.ui.screen.bill.RecurringBillsMainScreen
@@ -31,6 +30,7 @@ import com.example.financialplannerapp.ui.screen.transaction.TransactionMainScre
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.example.financialplannerapp.screen.AddWalletScreen
+import com.example.financialplannerapp.screen.EditWalletScreen
 import com.example.financialplannerapp.screen.DebtReceivableMainScreen
 import com.example.financialplannerapp.screen.WalletsMainScreen
 
@@ -150,11 +150,7 @@ fun AppNavigation(
             ScanReceiptScreen(navController = navController)
         }
 
-        composable("voice_input") {
-            VoiceInputScreen(navController = navController)
-        }
-
-        // --- New Quick Action Routes ---
+        // Wallet Screens
         composable("wallet") {
             WalletsMainScreen(navController = navController)
         }
@@ -162,13 +158,20 @@ fun AppNavigation(
         composable("add_wallet") {
             AddWalletScreen(navController = navController)
         }
+
+        composable("edit_wallet/{walletId}") { backStackEntry ->
+            val walletId = backStackEntry.arguments?.getString("walletId") ?: ""
+            EditWalletScreen(navController = navController, walletId = walletId)
+        }
+
+        // Other Screens
         composable("debt") {
             DebtReceivableMainScreen()
         }
+        
         composable("goals") {
             PlaceholderScreen(title = "Financial Goals Screen")
         }
-        // --- End New Quick Action Routes ---
     }
 }
 

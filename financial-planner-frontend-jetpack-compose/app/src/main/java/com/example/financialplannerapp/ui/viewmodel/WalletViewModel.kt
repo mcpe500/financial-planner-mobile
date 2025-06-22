@@ -25,7 +25,7 @@ import com.example.financialplannerapp.ui.model.toHex
 
 class WalletViewModel(
     private val walletRepository: WalletRepository,
-    private val userId: String // Assuming user ID is passed to get user-specific wallets
+    private val userEmail: String // Changed from userId to userEmail
 ) : ViewModel() {
 
     private val _wallets = MutableStateFlow<List<Wallet>>(emptyList())
@@ -37,6 +37,9 @@ class WalletViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _successMessage = MutableStateFlow<String?>(null)
+    val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
+
     init {
         loadWallets()
     }
@@ -44,7 +47,8 @@ class WalletViewModel(
     private fun loadWallets() {
         viewModelScope.launch {
             _isLoading.value = true
-            walletRepository.getAllWallets() // Pass the userId here!
+            _error.value = null
+            walletRepository.getWalletsByUserEmail(userEmail)
                 .catch { e ->
                     _error.value = "Error loading wallets: ${e.localizedMessage}"
                     _isLoading.value = false
@@ -55,46 +59,54 @@ class WalletViewModel(
                 }
         }
     }
-    // --- THIS IS THE FUNCTION TO CHECK/CHANGE ---
-    fun addWallet(wallet: Wallet) {
-        // WalletViewModel.kt
-        viewModelScope.launch {
-            try {
-                val rowId = walletRepository.insertWallet(wallet.toWalletEntity(userId))
-                if (rowId != -1L) { // Umumnya, -1 berarti gagal insert (misal: karena IGNORE dan ada konflik)
-                    _error.value = "Wallet added successfully!"
-                    Log.d("WalletViewModel", "Wallet inserted successfully with ID: $rowId")
-                } else {
-                    _error.value = "Wallet insertion failed (possible conflict)!"
-                    Log.e("WalletViewModel", "Wallet insertion returned -1, likely a conflict.")
-                }
-            } catch (e: Exception) {
-                _error.value = "Error adding wallet: ${e.localizedMessage}"
-                Log.e("WalletViewModel", "Exception during wallet insert: ${e.message}", e)
+
+    suspend fun addWallet(wallet: Wallet): Boolean {
+        return try {
+            _error.value = null
+            val rowId = walletRepository.insertWallet(wallet.toWalletEntity(userEmail))
+            if (rowId != -1L) {
+                _successMessage.value = "Wallet added successfully!"
+                Log.d("WalletViewModel", "Wallet inserted successfully with ID: $rowId")
+                true
+            } else {
+                _error.value = "Wallet insertion failed!"
+                Log.e("WalletViewModel", "Wallet insertion returned -1, likely a conflict.")
+                false
             }
+        } catch (e: Exception) {
+            _error.value = "Error adding wallet: ${e.localizedMessage}"
+            Log.e("WalletViewModel", "Exception during wallet insert: ${e.message}", e)
+            false
         }
     }
 
-
-    fun updateWallet(wallet: Wallet) {
-        viewModelScope.launch {
-            try {
-                // Pass the current userId to the mapping function
-                walletRepository.updateWallet(wallet.toWalletEntity(userId))
-            } catch (e: Exception) {
-                _error.value = "Error updating wallet: ${e.localizedMessage}"
-            }
+    suspend fun updateWallet(wallet: Wallet): Boolean {
+        return try {
+            _error.value = null
+            walletRepository.updateWallet(wallet.toWalletEntity(userEmail))
+            _successMessage.value = "Wallet updated successfully!"
+            true
+        } catch (e: Exception) {
+            _error.value = "Error updating wallet: ${e.localizedMessage}"
+            false
         }
     }
 
     fun deleteWallet(walletId: String) {
         viewModelScope.launch {
             try {
+                _error.value = null
                 walletRepository.deleteWalletById(walletId)
+                _successMessage.value = "Wallet deleted successfully!"
             } catch (e: Exception) {
                 _error.value = "Error deleting wallet: ${e.localizedMessage}"
             }
         }
+    }
+
+    fun clearMessages() {
+        _error.value = null
+        _successMessage.value = null
     }
 }
 
@@ -112,22 +124,18 @@ fun WalletEntity.toWalletUiModel(): Wallet {
         type = try { WalletType.valueOf(this.type.uppercase()) } catch (e: IllegalArgumentException) { WalletType.CASH },
         balance = this.balance,
         color = this.colorHex.toColor(), // Use the toColor extension from WalletUiModels.kt
-        isShared = this.isShared,
-        memberCount = this.memberCount,
         icon = iconFromName(this.iconName) // Use the iconFromName helper from WalletUiModels.kt
     )
 }
 
-fun Wallet.toWalletEntity(userId: String): WalletEntity {
+fun Wallet.toWalletEntity(userEmail: String): WalletEntity {
     return WalletEntity(
         id = this.id,
         name = this.name,
         type = this.type.name, // Convert enum to String
         balance = this.balance,
         colorHex = this.color.toHex(), // Use the toHex extension from WalletUiModels.kt
-        isShared = this.isShared,
-        memberCount = this.memberCount,
-        userId = userId, // Pass the current user ID
+        userEmail = userEmail, // Use userEmail as userEmail
         iconName = this.icon.name // Store ImageVector's name as a string
     )
 }

@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -488,13 +489,13 @@ private fun ActiveGoalCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Rp ${String.format("%,.0f", goal.currentAmount)}",
+                        text = "${getCurrentCurrencySymbol()} ${String.format("%,.0f", goal.currentAmount)}",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = BibitGreen
                     )
                     Text(
-                        text = "dari Rp ${String.format("%,.0f", goal.targetAmount)}",
+                        text = "dari ${getCurrentCurrencySymbol()} ${String.format("%,.0f", goal.targetAmount)}",
                         fontSize = 12.sp,
                         color = MediumGray
                     )
@@ -605,7 +606,7 @@ private fun CompletedGoalCard(
                     color = DarkGray
                 )
                 Text(
-                    text = "Rp ${String.format("%,.0f", goal.targetAmount)}",
+                    text = "${getCurrentCurrencySymbol()} ${String.format("%,.0f", goal.targetAmount)}",
                     fontSize = 14.sp,
                     color = BibitGreen,
                     fontWeight = FontWeight.Medium
@@ -658,7 +659,7 @@ private fun AchievementSummaryCard(goals: List<FinancialGoal>) {
                 color = Color.White.copy(alpha = 0.9f)
             )
             Text(
-                text = "Rp ${String.format("%,.0f", totalAchieved)}",
+                text = "${getCurrentCurrencySymbol()} ${String.format("%,.0f", totalAchieved)}",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -802,7 +803,7 @@ fun AddFundsBottomSheet(
                         color = DarkGray
                     )
                     Text(
-                        text = "Sisa: Rp ${String.format("%,.0f", goal.remainingAmount)}",
+                        text = "Sisa: ${getCurrentCurrencySymbol()} ${String.format("%,.0f", goal.remainingAmount)}",
                         fontSize = 12.sp,
                         color = MediumGray
                     )
@@ -819,7 +820,7 @@ fun AddFundsBottomSheet(
                 placeholder = { Text("0") },
                 leadingIcon = {
                     Text(
-                        "Rp",
+                        "${getCurrentCurrencySymbol()}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = BibitGreen

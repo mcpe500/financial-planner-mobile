@@ -34,6 +34,7 @@ import com.example.financialplannerapp.data.model.RecurringBill
 import com.example.financialplannerapp.data.model.RepeatCycle
 import com.example.financialplannerapp.ui.viewmodel.BillViewModel
 import com.example.financialplannerapp.ui.viewmodel.BillViewModelFactory
+import com.example.financialplannerapp.core.util.formatCurrency
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -455,10 +456,6 @@ fun BillCard(bill: RecurringBill, onCardClick: () -> Unit, onEditClick: () -> Un
     }
 }
 
-private fun formatCurrency(amount: Double): String {
-    return NumberFormat.getCurrencyInstance(Locale("in", "ID")).format(amount)
-}
-
 @Composable
 fun BillDetailDialog(
     bill: RecurringBill,
@@ -466,7 +463,6 @@ fun BillDetailDialog(
     onPay: () -> Unit
 ) {
     val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
-    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale("id", "ID")) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -487,7 +483,7 @@ fun BillDetailDialog(
                 Divider()
                 Row {
                     Text("Amount: ", fontWeight = FontWeight.Bold)
-                    Text(currencyFormat.format(bill.estimatedAmount))
+                    Text(formatCurrency(bill.estimatedAmount))
                 }
                 Row {
                     Text("Due Date: ", fontWeight = FontWeight.Bold)
@@ -499,7 +495,7 @@ fun BillDetailDialog(
                 }
                 Row {
                     Text("Cycle: ", fontWeight = FontWeight.Bold)
-                    Text(bill.repeatCycle.name)
+                    Text(bill.repeatCycle)
                 }
                 if (bill.notes.isNotBlank()) {
                     Row {

@@ -2,6 +2,7 @@ package com.example.financialplannerapp.ui.screen.transaction
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -14,31 +15,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.semantics.Role
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.ui.viewmodel.AddTransactionViewModel
 import com.example.financialplannerapp.ui.viewmodel.AddTransactionViewModelFactory
-import java.text.SimpleDateFormat
 import java.util.*
 
-// Bibit-inspired color palette
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-private val ExpenseRed = Color(0xFFFF7043)
+enum class TransactionType {
+    INCOME, EXPENSE
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,8 +53,6 @@ fun AddTransactionScreen(navController: NavController) {
     var selectedPocket by remember { mutableStateOf("Cash") }
     var selectedCategory by remember { mutableStateOf("Food") }
     var note by remember { mutableStateOf("") }
-    var selectedTags by remember { mutableStateOf(setOf<String>()) }
-    var hasAttachment by remember { mutableStateOf(false) }
 
     // Handle state changes
     LaunchedEffect(state) {
@@ -82,30 +73,21 @@ fun AddTransactionScreen(navController: NavController) {
                 title = {
                     Text(
                         "Add Transaction",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    Row {
-                        IconButton(onClick = { navController.navigate("scan_receipt") }) {
-                            Icon(Icons.Default.CameraAlt, contentDescription = "Scan Receipt")
-                        }
-                        IconButton(onClick = { navController.navigate("voice_input") }) {
-                            Icon(Icons.Default.Mic, contentDescription = "Voice Input")
-                        }
-                        IconButton(onClick = { navController.navigate("qr_scan") }) {
-                            Icon(Icons.Default.QrCodeScanner, contentDescription = "QR Scan")
-                        }
+                        Icon(
+                            Icons.Default.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = DarkGray
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         }
@@ -113,7 +95,7 @@ fun AddTransactionScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(SoftGray)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
@@ -163,19 +145,9 @@ fun AddTransactionScreen(navController: NavController) {
                 onNoteChange = { note = it }
             )
 
-            // Tags Selection
-            TagSelectionCard(
-                selectedTags = selectedTags,
-                onTagsChange = { selectedTags = it }
-            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Attachment
-            AttachmentCard(
-                hasAttachment = hasAttachment,
-                onAttachmentChange = { hasAttachment = it }
-            )
-
-            // Update Action Buttons
+            // Action Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -185,63 +157,46 @@ fun AddTransactionScreen(navController: NavController) {
                         // Reset form
                         amount = ""
                         note = ""
-                        selectedTags = setOf()
-                        hasAttachment = false
                         viewModel.resetState()
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = BibitGreen
-                    ),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = androidx.compose.foundation.BorderStroke(1.dp, BibitGreen).brush
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Text("Reset")
                 }
-
+                
                 Button(
                     onClick = {
-                        val amountValue = amount.toDoubleOrNull()
-                        if (amountValue == null) {
-                            Toast.makeText(context, "Please enter a valid amount", Toast.LENGTH_SHORT).show()
-                            return@Button
+                        if (amount.isNotBlank()) {
+                            viewModel.createTransaction(
+                                amount = amount.toDoubleOrNull() ?: 0.0,
+                                type = if (transactionType == TransactionType.INCOME) "INCOME" else "EXPENSE",
+                                date = Date(),
+                                pocket = selectedPocket,
+                                category = selectedCategory,
+                                note = note.takeIf { it.isNotBlank() },
+                                tags = null // Set to null since we're not using tags for now
+                            )
                         }
-                        
-                        val date = when (selectedDate) {
-                            "Today" -> Date()
-                            else -> SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate) ?: Date()
-                        }
-                        
-                        viewModel.createTransaction(
-                            amount = amountValue,
-                            type = transactionType.name,
-                            date = date,
-                            pocket = selectedPocket,
-                            category = selectedCategory,
-                            note = note.takeIf { it.isNotBlank() },
-                            tags = selectedTags.takeIf { it.isNotEmpty() }?.toList()
-                        )
                     },
+                    enabled = amount.isNotBlank() && !state.isLoading,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = BibitGreen,
-                        contentColor = Color.White
-                    ),
-                    enabled = !state.isLoading && amount.isNotBlank()
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
                 ) {
                     if (state.isLoading) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = Color.White
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Text("Save Transaction")
+                        Text("Save")
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -254,47 +209,57 @@ private fun TransactionTypeSelector(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Text(
                 text = "Transaction Type",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-
+            
             Row(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 TransactionType.values().forEach { type ->
+                    val isSelected = selectedType == type
                     Row(
                         modifier = Modifier
                             .weight(1f)
                             .selectable(
-                                selected = selectedType == type,
+                                selected = isSelected,
                                 onClick = { onTypeChange(type) },
                                 role = Role.RadioButton
                             )
-                            .padding(8.dp),
+                            .background(
+                                color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) 
+                                       else MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(
-                            selected = selectedType == type,
-                            onClick = { onTypeChange(type) },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = BibitGreen
-                            )
+                        Icon(
+                            imageVector = if (type == TransactionType.INCOME) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                            contentDescription = type.name,
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (type == TransactionType.INCOME) "Income" else "Expense",
-                            modifier = Modifier.padding(start = 8.dp),
-                            color = DarkGray
+                            text = type.name,
+                            fontSize = 14.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -312,38 +277,44 @@ private fun AmountInputCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Text(
                 text = "Amount",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-
+            
             OutlinedTextField(
                 value = amount,
-                onValueChange = onAmountChange,
-                label = { Text("Enter amount") },
-                leadingIcon = {
-                    Text(
-                        "$",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (transactionType == TransactionType.INCOME) BibitGreen else ExpenseRed
-                    )
+                onValueChange = { newValue ->
+                    // Allow only numbers and a single decimal point
+                    if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                        onAmountChange(newValue)
+                    }
                 },
+                label = { Text("Enter amount") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { 
+                    Icon(
+                        Icons.Default.AttachMoney, 
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    ) 
+                },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BibitGreen,
-                    focusedLabelColor = BibitGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
                 )
             )
         }
@@ -358,42 +329,46 @@ private fun DateSelectionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Text(
                 text = "Date",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-
-            OutlinedTextField(
-                value = selectedDate,
-                onValueChange = { },
-                label = { Text("Select date") },
-                readOnly = true,
-                trailingIcon = {
-                    IconButton(onClick = { /* Open date picker */ }) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Select Date")
-                    }
-                },
+            
+            val dateOptions = listOf("Today", "Yesterday", "Custom")
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BibitGreen,
-                    focusedLabelColor = BibitGreen
-                )
-            )
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                dateOptions.forEach { date ->
+                    val isSelected = selectedDate == date
+                    OutlinedButton(
+                        onClick = { onDateChange(date) },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
+                            contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        ),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(date, fontSize = 12.sp)
+                    }
+                }
+            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DropdownCard(
     title: String,
@@ -402,46 +377,52 @@ private fun DropdownCard(
     onValueChange: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Text(
                 text = title,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
+            
+            Box {
                 OutlinedTextField(
                     value = selectedValue,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Select $title") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .clickable { expanded = true },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                            contentDescription = "Toggle Dropdown",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BibitGreen,
-                        focusedLabelColor = BibitGreen
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
-                ExposedDropdownMenu(
+                
+                DropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     options.forEach { option ->
                         DropdownMenuItem(
@@ -466,147 +447,41 @@ private fun NoteInputCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Text(
-                text = "Note",
+                text = "Note (Optional)",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-
+            
             OutlinedTextField(
                 value = note,
                 onValueChange = onNoteChange,
-                label = { Text("Add a note (optional)") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
+                label = { Text("Add a note") },
+                modifier = Modifier.fillMaxWidth(),
                 maxLines = 3,
+                leadingIcon = { 
+                    Icon(
+                        Icons.Default.Note, 
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    ) 
+                },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BibitGreen,
-                    focusedLabelColor = BibitGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
                 )
             )
         }
     }
-}
-
-@Composable
-private fun TagSelectionCard(
-    selectedTags: Set<String>,
-    onTagsChange: (Set<String>) -> Unit
-) {
-    val availableTags = listOf("work", "personal", "emergency", "monthly", "weekly", "food", "transport")
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Tags",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            // Tag chips
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                availableTags.chunked(3).forEach { rowTags ->
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        rowTags.forEach { tag ->
-                            FilterChip(
-                                selected = selectedTags.contains(tag),
-                                onClick = {
-                                    if (selectedTags.contains(tag)) {
-                                        onTagsChange(selectedTags - tag)
-                                    } else {
-                                        onTagsChange(selectedTags + tag)
-                                    }
-                                },
-                                label = { Text(tag) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = BibitLightGreen,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AttachmentCard(
-    hasAttachment: Boolean,
-    onAttachmentChange: (Boolean) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Attachment",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            OutlinedButton(
-                onClick = { onAttachmentChange(!hasAttachment) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (hasAttachment) BibitGreen else MediumGray
-                ),
-                border = ButtonDefaults.outlinedButtonBorder.copy(
-                    brush = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (hasAttachment) BibitGreen else MediumGray
-                    ).brush
-                )
-            ) {
-                Icon(
-                    if (hasAttachment) Icons.Default.CheckCircle else Icons.Default.AttachFile,
-                    contentDescription = "Attach File",
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(if (hasAttachment) "File Attached" else "Attach Photo")
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun AddTransactionScreenPreview() {
-    AddTransactionScreen(rememberNavController())
 }

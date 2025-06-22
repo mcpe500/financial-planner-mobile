@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.financialplannerapp.core.util.formatCurrency
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -260,8 +261,7 @@ private fun SummaryCard(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-                    .format(amount).replace("IDR", "Rp"),
+                text = formatCurrency(amount),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = color
@@ -470,8 +470,7 @@ private fun DebtReceivableItemCard(
                         color = MediumGray
                     )
                     Text(
-                        text = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-                            .format(item.remainingAmount).replace("IDR", "Rp"),
+                        text = formatCurrency(item.remainingAmount),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (item.remainingAmount <= 0) ReceivableGreen else item.type.color
