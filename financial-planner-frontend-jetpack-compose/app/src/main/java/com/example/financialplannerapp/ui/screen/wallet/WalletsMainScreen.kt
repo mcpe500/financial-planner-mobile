@@ -186,9 +186,6 @@ fun WalletsMainScreen(
                             },
                             onEditClick = { 
                                 navController.navigate("edit_wallet/${wallet.id}")
-                            },
-                            onDeleteClick = { 
-                                walletViewModel.deleteWallet(wallet.id)
                             }
                         )
                     }
@@ -578,10 +575,8 @@ private fun WalletTypeFilterChips(
 private fun WalletCard(
     wallet: Wallet,
     onClick: () -> Unit,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onEditClick: () -> Unit
 ) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
     
     Card(
         modifier = Modifier
@@ -647,40 +642,8 @@ private fun WalletCard(
                         modifier = Modifier.size(20.dp)
                     )
                 }
-                IconButton(onClick = { showDeleteDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
             }
         }
-    }
-    
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Wallet") },
-            text = { Text("Are you sure you want to delete '${wallet.name}'? This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeleteClick()
-                        showDeleteDialog = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
 
