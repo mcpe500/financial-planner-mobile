@@ -22,6 +22,9 @@ import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,16 +35,24 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.core.util.formatCurrency
 import com.example.financialplannerapp.core.util.toCurrency
+import com.example.financialplannerapp.data.local.model.TransactionEntity
+import com.example.financialplannerapp.data.local.model.GoalEntity
+import com.example.financialplannerapp.data.local.model.BillEntity
+import com.example.financialplannerapp.ui.viewmodel.DashboardViewModel
+import com.example.financialplannerapp.ui.viewmodel.DashboardViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -52,10 +63,25 @@ private const val TAG_DASHBOARD_SCREEN = "DashboardScreen"
 fun DashboardScreen(navController: NavController, tokenManager: TokenManager) {
     Log.d(TAG_DASHBOARD_SCREEN, "DashboardScreen composing...")
 
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    
+    val dashboardViewModel: DashboardViewModel = viewModel(
+        factory = DashboardViewModelFactory(
+            transactionRepository = application.appContainer.transactionRepository,
+            goalRepository = application.appContainer.goalRepository,
+            billRepository = application.appContainer.billRepository,
+            walletRepository = application.appContainer.walletRepository,
+            tokenManager = tokenManager
+        )
+    )
+
     val userName = tokenManager.getUserName() ?: "Guest"
     val userEmail = tokenManager.getUserEmail() ?: "No email"
     val isLoggedIn = tokenManager.getToken() != null
     val isNoAccountMode = tokenManager.isNoAccountMode()
+
+    val dashboardState by dashboardViewModel.state.collectAsState()
 
     Log.d(TAG_DASHBOARD_SCREEN, "User info - Name: $userName, Email: $userEmail, LoggedIn: $isLoggedIn, NoAccountMode: $isNoAccountMode")
 
@@ -66,6 +92,8 @@ fun DashboardScreen(navController: NavController, tokenManager: TokenManager) {
             isLoggedIn = isLoggedIn,
             isNoAccountMode = isNoAccountMode,
             navController = navController,
+            dashboardState = dashboardState,
+            dashboardViewModel = dashboardViewModel,
             onLogout = {
                 tokenManager.clear()
                 navController.navigate("login") {
@@ -89,19 +117,31 @@ private fun DashboardContent(
     isLoggedIn: Boolean = false,
     isNoAccountMode: Boolean = false,
     navController: NavController? = null,
+    dashboardState: com.example.financialplannerapp.ui.viewmodel.DashboardState,
+    dashboardViewModel: DashboardViewModel,
     onLogout: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Mock data
     val currentDate = remember {
         SimpleDateFormat("EEEE, MMMM dd", Locale.getDefault()).format(Date())
     }
-    val monthlyIncome = 5000.0
-    val monthlyExpenses = 3200.0
-    val totalBudget = 4500.0
-    val spent = 3200.0
+
+    // Get data from ViewModel
+    val monthlyIncome = dashboardViewModel.getMonthlyIncome()
+    val monthlyExpenses = dashboardViewModel.getMonthlyExpenses()
+    val totalBudget = 4500.0 // Mock budget for now
+    val spent = monthlyExpenses
     val remaining = totalBudget - spent
+
+    // Get recent transactions (5 latest)
+    val recentTransactions = dashboardViewModel.getRecentTransactions()
+
+    // Get high priority goals
+    val highPriorityGoals = dashboardViewModel.getHighPriorityGoals()
+
+    // Get upcoming bills
+    val upcomingBills = dashboardViewModel.getUpcomingBills()
 
     Column(
         modifier = modifier
@@ -133,9 +173,28 @@ private fun DashboardContent(
             remaining = remaining
         )
 
-        // Recent Activity Section
-        navController?.let { nav ->
-            RecentActivitySection(navController = nav)
+        // Recent Transactions Section
+        if (recentTransactions.isNotEmpty()) {
+            RecentTransactionsSection(
+                transactions = recentTransactions,
+                navController = navController
+            )
+        }
+
+        // Goals Progress Section
+        if (highPriorityGoals.isNotEmpty()) {
+            GoalsProgressSection(
+                goals = highPriorityGoals,
+                navController = navController
+            )
+        }
+
+        // Upcoming Bills Section
+        if (upcomingBills.isNotEmpty()) {
+            UpcomingBillsSection(
+                bills = upcomingBills,
+                navController = navController
+            )
         }
 
         // Bottom spacing for FAB
@@ -591,12 +650,15 @@ private fun RowScope.QuickActionButton(
 }
 
 @Composable
-private fun RecentActivitySection(navController: NavController) {
+private fun RecentTransactionsSection(
+    transactions: List<TransactionEntity>,
+    navController: NavController?
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(6.dp, RoundedCornerShape(20.dp))
-            .clickable { navController.navigate("transactions") },
+            .clickable { navController?.navigate("transactions") },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -632,13 +694,13 @@ private fun RecentActivitySection(navController: NavController) {
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Recent Activity",
+                            text = "Recent Transactions",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Latest transactions",
+                            text = "Latest activities",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -656,11 +718,15 @@ private fun RecentActivitySection(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Recent transaction items
-            RecentTransactionItem("Coffee Shop", "Food & Beverage", -8.50, "2 hours ago")
-            Spacer(modifier = Modifier.height(12.dp))
-            RecentTransactionItem("Salary", "Income", 2500.00, "Yesterday")
-            Spacer(modifier = Modifier.height(12.dp))
-            RecentTransactionItem("Gas Station", "Transportation", -45.00, "2 days ago")
+            transactions.forEach { transaction ->
+                RecentTransactionItem(
+                    title = transaction.merchantName ?: transaction.note ?: "Transaction",
+                    category = transaction.category,
+                    amount = transaction.amount,
+                    timeAgo = getTimeAgo(transaction.date)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
     }
 }
@@ -697,18 +763,289 @@ private fun RecentTransactionItem(
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.End
+        ) {
+            Text(
+                text = if (amount >= 0) "+${amount.toCurrency()}" else amount.toCurrency(),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (amount >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+            )
             Text(
                 text = timeAgo,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
         }
+    }
+}
+
+@Composable
+private fun GoalsProgressSection(
+    goals: List<GoalEntity>,
+    navController: NavController?
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp))
+            .clickable { navController?.navigate("goals") },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Goals Progress",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "High priority goals",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Goals progress items
+            goals.forEach { goal ->
+                val progress = if (goal.targetAmount > 0) (goal.currentAmount / goal.targetAmount).toFloat() else 0f
+                GoalProgressItem(
+                    title = goal.name,
+                    progress = progress,
+                    target = goal.targetAmount,
+                    navController = navController
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun GoalProgressItem(
+    title: String,
+    progress: Float,
+    target: Double,
+    navController: NavController?
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "Progress: ${(progress * 100).toInt()}%",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
 
         Text(
-            text = if (amount >= 0) "+${amount.toCurrency()}" else amount.toCurrency(),
+            text = target.toCurrency(),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = if (amount >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+            color = MaterialTheme.colorScheme.primary
         )
+    }
+}
+
+@Composable
+private fun UpcomingBillsSection(
+    bills: List<BillEntity>,
+    navController: NavController?
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp))
+            .clickable { navController?.navigate("bills") },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Upcoming Bills",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Latest bills",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Upcoming bill items
+            bills.forEach { bill ->
+                UpcomingBillItem(
+                    title = bill.name,
+                    amount = bill.estimatedAmount,
+                    dueDate = bill.dueDate,
+                    navController = navController
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpcomingBillItem(
+    title: String,
+    amount: Double,
+    dueDate: Date,
+    navController: NavController?
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "Due: ${SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(dueDate)}",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+
+        Text(
+            text = amount.toCurrency(),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.tertiary
+        )
+    }
+}
+
+// Helper function to get time ago
+private fun getTimeAgo(date: Date): String {
+    val now = Calendar.getInstance()
+    val transactionDate = Calendar.getInstance().apply { time = date }
+    val diffInMillis = now.timeInMillis - transactionDate.timeInMillis
+    val diffInHours = diffInMillis / (60 * 60 * 1000)
+    val diffInDays = diffInHours / 24
+
+    return when {
+        diffInHours < 1 -> "Just now"
+        diffInHours < 24 -> "${diffInHours}h ago"
+        diffInDays < 7 -> "${diffInDays}d ago"
+        else -> SimpleDateFormat("MMM dd", Locale.getDefault()).format(date)
     }
 }
