@@ -27,6 +27,7 @@ import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.core.util.formatCurrency
 import com.example.financialplannerapp.data.local.model.GoalEntity
+import com.example.financialplannerapp.data.local.model.WalletEntity
 import com.example.financialplannerapp.ui.viewmodel.GoalViewModel
 import com.example.financialplannerapp.ui.viewmodel.GoalViewModelFactory
 import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
@@ -64,6 +65,8 @@ fun GoalDetailsScreen(
     var addAmount by remember { mutableStateOf("") }
     var subtractAmount by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var errorAmount by remember { mutableStateOf(0.0) }
+    var showAmountError by remember { mutableStateOf(false) }
 
     if (goal == null) {
         Scaffold(
@@ -489,17 +492,17 @@ fun GoalDetailsScreen(
                                 when {
                                     amount <= 0 -> {
                                         errorMessage = "Please enter a positive amount to add."
+                                        showAmountError = false
                                     }
                                     amount > wallet.balance -> {
                                         errorMessage = "Insufficient funds in your wallet."
-                                    }
-                                    amount > needed -> {
-                                        errorMessage = "Amount exceeds target. You only need ${formatCurrency(needed)}."
+                                        showAmountError = false
                                     }
                                     else -> {
-                                        goalViewModel.addToGoalAmount(goal, wallet.toWalletEntity(userId), amount)
+                                        goalViewModel.addToGoalAmountWithValidation(goal, wallet.toWalletEntity(userId), amount)
                                         addAmount = ""
                                         errorMessage = null
+                                        showAmountError = false
                                     }
                                 }
                             },
@@ -558,20 +561,23 @@ fun GoalDetailsScreen(
                         
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                                                Button(
+                        Button(
                             onClick = {
                                 val amount = subtractAmount.toDoubleOrNull() ?: 0.0
                                 when {
                                     amount <= 0 -> {
                                         errorMessage = "Please enter a positive amount to subtract."
+                                        showAmountError = false
                                     }
                                     amount > goal.currentAmount -> {
                                         errorMessage = "Cannot subtract more than the current saved amount."
+                                        showAmountError = false
                                     }
                                     else -> {
                                         goalViewModel.subtractFromGoalAmount(goal, wallet.toWalletEntity(userId), amount)
                                         subtractAmount = ""
                                         errorMessage = null
+                                        showAmountError = false
                                     }
                                 }
                             },
@@ -596,76 +602,83 @@ fun GoalDetailsScreen(
             }
 
             // Error Message
-            if (errorMessage != null) {
-                item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .shadow(4.dp, RoundedCornerShape(16.dp)),
-                        shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Error,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = errorMessage!!,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
+            item {
+                if (errorMessage != null) {
+                    ErrorMessageCard(errorMessage = errorMessage!!)
+                } else if (showAmountError) {
+                    ErrorMessageCard(
+                        errorMessage = "Amount exceeds target. You only need ${formatCurrency(errorAmount)}."
+                    )
                 }
             }
 
             // Action Buttons
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = { showEditDialog = true },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.primary
-                        ),
-                        shape = MaterialTheme.shapes.medium
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Edit Goal")
+                        OutlinedButton(
+                            onClick = { showEditDialog = true },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Edit Goal")
+                        }
+                        
+                        Button(
+                            onClick = { /* TODO: Implement complete logic */ },
+                            enabled = isComplete,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
+                            ),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Complete")
+                        }
                     }
                     
-                    Button(
-                        onClick = { /* TODO: Implement complete logic */ },
-                        enabled = isComplete,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = MaterialTheme.colorScheme.onSecondary
-                        ),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Complete")
+                    // Delete button for incomplete goals
+                    if (!isComplete) {
+                        OutlinedButton(
+                            onClick = {
+                                goalViewModel.deleteGoalAndReturnToWallet(goal, wallet.toWalletEntity(userId))
+                                navController.popBackStack()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Delete Goal & Return to Wallet")
+                        }
                     }
                 }
             }
@@ -676,9 +689,10 @@ fun GoalDetailsScreen(
     if (showEditDialog) {
         EditGoalDialog(
             goal = goal,
+            wallet = wallet.toWalletEntity(userId),
             onDismiss = { showEditDialog = false },
             onSave = { newName, newTarget, newPriority ->
-                goalViewModel.editGoal(goal, newName, newTarget, newPriority)
+                goalViewModel.editGoalWithWalletAdjustment(goal, wallet.toWalletEntity(userId), newName, newTarget, newPriority)
                 showEditDialog = false
             }
         )
@@ -689,6 +703,7 @@ fun GoalDetailsScreen(
 @Composable
 fun EditGoalDialog(
     goal: GoalEntity,
+    wallet: WalletEntity,
     onDismiss: () -> Unit,
     onSave: (String, Double, String) -> Unit
 ) {
@@ -697,6 +712,11 @@ fun EditGoalDialog(
     var priority by remember { mutableStateOf(goal.priority) }
     var isPriorityDropdownExpanded by remember { mutableStateOf(false) }
     val priorities = listOf("High", "Medium", "Low")
+
+    // Calculate if there will be excess amount returned to wallet
+    val targetValue = target.toDoubleOrNull() ?: goal.targetAmount
+    val excessAmount = if (targetValue < goal.currentAmount) goal.currentAmount - targetValue else 0.0
+    val willReturnExcess = excessAmount > 0
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -729,6 +749,42 @@ fun EditGoalDialog(
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
+                
+                // Show warning if target is reduced
+                if (willReturnExcess) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "Excess Amount Will Be Returned",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Text(
+                                    text = "${formatCurrency(excessAmount)} will be returned to your wallet",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+                    }
+                }
+                
                 ExposedDropdownMenuBox(
                     expanded = isPriorityDropdownExpanded,
                     onExpandedChange = { isPriorityDropdownExpanded = !isPriorityDropdownExpanded }
@@ -768,6 +824,7 @@ fun EditGoalDialog(
                     val targetValue = target.toDoubleOrNull() ?: goal.targetAmount
                     onSave(name, targetValue, priority)
                 },
+                enabled = name.isNotBlank() && target.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
@@ -789,4 +846,33 @@ fun EditGoalDialog(
             }
         }
     )
+}
+
+@Composable
+fun ErrorMessageCard(errorMessage: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
+    }
 }
