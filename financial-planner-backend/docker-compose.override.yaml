@@ -1,16 +1,16 @@
-# This file is for development overrides.
-# It is automatically merged with docker-compose.yaml when you run 'docker-compose up'.
-version: '3.8'
+# # This file is for development overrides.
+# # It is automatically merged with docker-compose.yaml when you run 'docker-compose up'.
+# version: '3.8'
 
-services:
-  backend:
-    container_name: financial_planner_backend_dev
-    ports:
-      - "9001:9001"
-    # Override the production command to use Bun's built-in watcher
-    command: bun run dev
-    volumes:
-      # Mount the source code into the container for development
-      - ./src:/usr/src/app/src
-    # The 'deploy' section from the base file is ignored in development,
-    # so resource limits do not apply. 
+# services:
+#   backend:
+#     container_name: financial_planner_backend_dev
+#     ports:
+#       - "9001:9001"
+#     # Override the production command to use Bun's built-in watcher
+#     command: bun run dev
+#     volumes:
+#       # Mount the source code into the container for development
+#       - ./src:/usr/src/app/src
+#     # The 'deploy' section from the base file is ignored in development,
+#     # so resource limits do not apply. 
