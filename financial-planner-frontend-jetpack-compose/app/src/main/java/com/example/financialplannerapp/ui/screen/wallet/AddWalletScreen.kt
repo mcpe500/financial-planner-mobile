@@ -585,9 +585,3 @@ private fun ColorChip(
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun AddWalletScreenPreview() {
-    AddWalletScreen(rememberNavController())
-}

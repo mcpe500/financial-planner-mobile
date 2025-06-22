@@ -600,9 +600,3 @@ private fun ColorChip(
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun EditWalletScreenPreview() {
-    EditWalletScreen(rememberNavController(), "preview_wallet_id")
-} 

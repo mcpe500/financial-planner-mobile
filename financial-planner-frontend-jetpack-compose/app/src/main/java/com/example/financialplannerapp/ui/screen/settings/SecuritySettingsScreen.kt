@@ -11,11 +11,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,15 +30,6 @@ import kotlinx.coroutines.launch
 import java.security.MessageDigest
 
 private const val TAG_SECURITY = "SecuritySettingsScreen"
-
-// Bibit-inspired color palette
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val DarkGray = Color(0xFF424242)
-private val MediumGray = Color(0xFF9E9E9E)
-private val SoftGray = Color(0xFFF5F5F5)
-private val WarningOrange = Color(0xFFFF9800)
-private val ErrorRed = Color(0xFFF44336)
 
 // Data class for SecuritySettings
 data class SecuritySettings(
@@ -101,42 +92,6 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
-    // Simple translation function
-    val translate = remember<(String) -> String> {
-        { key ->
-            when(key) {
-                "security" -> "Security"
-                "back" -> "Back"
-                "pin_application" -> "PIN Application"
-                "pin_protect_app" -> "Protect app with PIN"
-                "biometric_auth" -> "Biometric Authentication"
-                "use_fingerprint_face" -> "Use fingerprint or face recognition"
-                "auto_lock" -> "Auto Lock"
-                "lock_when_inactive" -> "Lock app when inactive"
-                "setup_pin" -> "Setup PIN"
-                "disable_pin" -> "Disable PIN"
-                "disable_pin_confirm" -> "Are you sure you want to disable PIN protection?"
-                "yes" -> "Yes"
-                "cancel" -> "Cancel"
-                "too_short" -> "Too Short"
-                "weak" -> "Weak"
-                "medium" -> "Medium"
-                "strong" -> "Strong"
-                "pin_active" -> "PIN Active"
-                "pin_inactive" -> "PIN Inactive"
-                "pin_protected" -> "App is protected with PIN"
-                "pin_not_protected" -> "App is not protected"
-                "biometric_active" -> "Biometric Active"
-                "biometric_inactive" -> "Biometric Inactive"
-                "auto_lock_active" -> "Auto Lock Active"
-                "auto_lock_inactive" -> "Auto Lock Inactive"
-                "pin_strength" -> "PIN Strength:"
-                "security_tips" -> "Security Tips:"
-                else -> key
-            }
-        }
-    }
-    
     val userId = "default_user" // In real app, get from TokenManager
     
     // Security settings state
@@ -158,10 +113,10 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
             TopAppBar(
                 title = {
                     Text(
-                        text = translate("security"),
+                        text = "Security",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = DarkGray
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
@@ -172,18 +127,20 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
                         }
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = translate("back"),
-                            tint = BibitGreen
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = DarkGray
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -194,144 +151,124 @@ fun SecuritySettingsScreen(navController: NavController, tokenManager: TokenMana
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header
-            SecurityHeaderCard(translate)
+            SecurityHeaderCard()
             
             // PIN Settings
             PinSecurityCard(
                 securitySettings = securitySettings,
-                translate = translate,
-                onTogglePin = { enabled ->
+                onPinToggle = { enabled ->
                     if (enabled) {
                         showPinDialog = true
-                        isSettingPin = true
                     } else {
                         showConfirmDisableDialog = true
                     }
                 }
             )
             
-            // Biometric Settings (simulated)
+            // Biometric Settings
             BiometricSecurityCard(
                 securitySettings = securitySettings,
-                translate = translate,
-                onToggleBiometric = { enabled ->
-                    coroutineScope.launch {
-                        val updatedSettings = securitySettings.copy(isBiometricEnabled = enabled)
-                        SecurityStorage.saveSettings(userId, updatedSettings)
-                        securitySettings = updatedSettings
-                        Toast.makeText(
-                            context,
-                            if (enabled) "Autentikasi biometrik diaktifkan" else "Autentikasi biometrik dinonaktifkan",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                onBiometricToggle = { enabled ->
+                    securitySettings = securitySettings.copy(isBiometricEnabled = enabled)
+                    SecurityStorage.saveSettings(userId, securitySettings)
+                    Toast.makeText(context, "Biometric setting updated", Toast.LENGTH_SHORT).show()
                 }
             )
             
             // Auto Lock Settings
-            AutoLockSettingsCard(
+            AutoLockSecurityCard(
                 securitySettings = securitySettings,
-                translate = translate,
-                onToggleAutoLock = { enabled ->
-                    coroutineScope.launch {
-                        val updatedSettings = securitySettings.copy(isAutoLockEnabled = enabled)
-                        SecurityStorage.saveSettings(userId, updatedSettings)
-                        securitySettings = updatedSettings
-                    }
+                onAutoLockToggle = { enabled ->
+                    securitySettings = securitySettings.copy(isAutoLockEnabled = enabled)
+                    SecurityStorage.saveSettings(userId, securitySettings)
+                    Toast.makeText(context, "Auto lock setting updated", Toast.LENGTH_SHORT).show()
                 },
                 onTimeoutChange = { timeout ->
-                    coroutineScope.launch {
-                        val updatedSettings = securitySettings.copy(autoLockTimeout = timeout)
-                        SecurityStorage.saveSettings(userId, updatedSettings)
-                        securitySettings = updatedSettings
-                    }
+                    securitySettings = securitySettings.copy(autoLockTimeout = timeout)
+                    SecurityStorage.saveSettings(userId, securitySettings)
+                    Toast.makeText(context, "Auto lock timeout updated", Toast.LENGTH_SHORT).show()
                 }
             )
+            
+            // Security Tips
+            SecurityTipsCard()
+            
+            // Bottom spacing to prevent overflow with device back button
+            Spacer(modifier = Modifier.height(32.dp))
         }
-        
-        // PIN Setup Dialog
-        if (showPinDialog) {
-            PinSetupDialog(
-                pinInput = pinInput,
-                confirmPinInput = confirmPinInput,
-                pinError = pinError,
-                isSettingPin = isSettingPin,
-                translate = translate,
-                onPinInputChange = { pinInput = it },
-                onConfirmPinInputChange = { confirmPinInput = it },
-                onConfirm = {
-                    when {
-                        pinInput.length < 4 -> {
-                            pinError = "PIN minimal 4 digit"
-                        }
-                        pinInput != confirmPinInput -> {
-                            pinError = "PIN tidak sama"
-                        }
-                        else -> {
-                            coroutineScope.launch {
-                                val hashedPin = hashPin(pinInput)
-                                SecurityStorage.savePinHash(userId, hashedPin)
-                                securitySettings = SecurityStorage.getSettings(userId)
-                                Toast.makeText(context, "PIN berhasil diatur", Toast.LENGTH_SHORT).show()
-                                
-                                // Reset states
-                                showPinDialog = false
-                                pinInput = ""
-                                confirmPinInput = ""
-                                pinError = ""
-                                isSettingPin = false
-                            }
-                        }
+    }
+    
+    // PIN Setup Dialog
+    if (showPinDialog) {
+        PinSetupDialog(
+            onDismiss = { showPinDialog = false },
+            onPinSet = { pin ->
+                SecurityStorage.savePinHash(userId, hashPin(pin))
+                securitySettings = securitySettings.copy(isPinEnabled = true)
+                showPinDialog = false
+                Toast.makeText(context, "PIN set successfully", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+    
+    // Confirm Disable PIN Dialog
+    if (showConfirmDisableDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDisableDialog = false },
+            title = {
+                Text(
+                    text = "Disable PIN",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to disable PIN protection?",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        SecurityStorage.removePinHash(userId)
+                        securitySettings = securitySettings.copy(isPinEnabled = false)
+                        showConfirmDisableDialog = false
+                        Toast.makeText(context, "PIN disabled", Toast.LENGTH_SHORT).show()
                     }
-                },
-                onDismiss = {
-                    showPinDialog = false
-                    pinInput = ""
-                    confirmPinInput = ""
-                    pinError = ""
-                    isSettingPin = false
+                ) {
+                    Text(
+                        text = "Yes",
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-            )
-        }
-        
-        // Confirm disable PIN dialog
-        if (showConfirmDisableDialog) {
-            AlertDialog(
-                onDismissRequest = { showConfirmDisableDialog = false },
-                title = { Text(translate("disable_pin")) },
-                text = { Text(translate("disable_pin_confirm")) },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            coroutineScope.launch {
-                                SecurityStorage.removePinHash(userId)
-                                securitySettings = SecurityStorage.getSettings(userId)
-                                showConfirmDisableDialog = false
-                                Toast.makeText(context, "PIN berhasil dinonaktifkan", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    ) {
-                        Text(translate("yes"), color = ErrorRed)
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { showConfirmDisableDialog = false }
-                    ) {
-                        Text(translate("cancel"))
-                    }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showConfirmDisableDialog = false }
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-            )
-        }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 }
 
 @Composable
-private fun SecurityHeaderCard(translate: (String) -> String) {
+private fun SecurityHeaderCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box {
@@ -342,7 +279,7 @@ private fun SecurityHeaderCard(translate: (String) -> String) {
                     .height(120.dp)
                     .background(
                         brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                            colors = listOf(BibitGreen.copy(alpha = 0.1f), BibitLightGreen.copy(alpha = 0.05f))
+                            colors = listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
                         ),
                         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
                     )
@@ -360,28 +297,28 @@ private fun SecurityHeaderCard(translate: (String) -> String) {
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .background(BibitGreen, RoundedCornerShape(12.dp)),
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Security,
-                            contentDescription = translate("security"),
-                            tint = Color.White,
+                            contentDescription = "Security",
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(28.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            text = translate("pin_application"),
+                            text = "PIN Application",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = DarkGray
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = translate("pin_protect_app"),
+                            text = "Protect app with PIN",
                             fontSize = 14.sp,
-                            color = MediumGray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -389,21 +326,21 @@ private fun SecurityHeaderCard(translate: (String) -> String) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(SoftGray, RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Storage,
                         contentDescription = "Local Storage",
-                        tint = BibitGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Semua pengaturan keamanan disimpan secara lokal dan aman di perangkat Anda",
+                        text = "All security settings are stored locally and securely on your device",
                         fontSize = 13.sp,
-                        color = DarkGray,
+                        color = MaterialTheme.colorScheme.onSurface,
                         lineHeight = 18.sp
                     )
                 }
@@ -415,13 +352,12 @@ private fun SecurityHeaderCard(translate: (String) -> String) {
 @Composable
 private fun PinSecurityCard(
     securitySettings: SecuritySettings,
-    translate: (String) -> String,
-    onTogglePin: (Boolean) -> Unit
+    onPinToggle: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
@@ -437,7 +373,7 @@ private fun PinSecurityCard(
                     modifier = Modifier
                         .size(40.dp)
                         .background(
-                            if (securitySettings.isPinEnabled) BibitGreen.copy(alpha = 0.2f) else MediumGray.copy(alpha = 0.2f),
+                            if (securitySettings.isPinEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                             RoundedCornerShape(10.dp)
                         ),
                     contentAlignment = Alignment.Center
@@ -445,22 +381,22 @@ private fun PinSecurityCard(
                     Icon(
                         imageVector = Icons.Filled.Pin,
                         contentDescription = "PIN",
-                        tint = if (securitySettings.isPinEnabled) BibitGreen else MediumGray,
+                        tint = if (securitySettings.isPinEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = translate("pin_application"),
+                        text = "PIN Application",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = DarkGray
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = translate("pin_protect_app"),
+                        text = "Protect app with PIN",
                         fontSize = 14.sp,
-                        color = MediumGray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -470,7 +406,7 @@ private fun PinSecurityCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        if (securitySettings.isPinEnabled) BibitGreen.copy(alpha = 0.1f) else SoftGray,
+                        if (securitySettings.isPinEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
                         RoundedCornerShape(12.dp)
                     )
                     .padding(16.dp),
@@ -482,29 +418,29 @@ private fun PinSecurityCard(
                         Icon(
                             imageVector = if (securitySettings.isPinEnabled) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
                             contentDescription = null,
-                            tint = if (securitySettings.isPinEnabled) BibitGreen else MediumGray,
+                            tint = if (securitySettings.isPinEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (securitySettings.isPinEnabled) translate("pin_active") else translate("pin_inactive"),
+                            text = if (securitySettings.isPinEnabled) "PIN Active" else "PIN Inactive",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = if (securitySettings.isPinEnabled) BibitGreen else MediumGray
+                            color = if (securitySettings.isPinEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     if (securitySettings.isPinEnabled) {
                         Text(
-                            text = translate("pin_protected"),
+                            text = "PIN Protected",
                             fontSize = 12.sp,
-                            color = BibitGreen,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 28.dp, top = 4.dp)
                         )
                     } else {
                         Text(
-                            text = translate("pin_not_protected"),
+                            text = "PIN Not Protected",
                             fontSize = 12.sp,
-                            color = WarningOrange,
+                            color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(start = 28.dp, top = 4.dp)
                         )
                     }
@@ -512,12 +448,12 @@ private fun PinSecurityCard(
                 
                 Switch(
                     checked = securitySettings.isPinEnabled,
-                    onCheckedChange = onTogglePin,
+                    onCheckedChange = onPinToggle,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = BibitGreen,
-                        uncheckedThumbColor = Color.White,
-                        uncheckedTrackColor = MediumGray
+                        checkedThumbColor = MaterialTheme.colorScheme.onSurface,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurface,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }
@@ -528,13 +464,12 @@ private fun PinSecurityCard(
 @Composable
 private fun BiometricSecurityCard(
     securitySettings: SecuritySettings,
-    translate: (String) -> String,
-    onToggleBiometric: (Boolean) -> Unit
+    onBiometricToggle: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
@@ -550,30 +485,30 @@ private fun BiometricSecurityCard(
                     modifier = Modifier
                         .size(40.dp)
                         .background(
-                            if (securitySettings.isBiometricEnabled) BibitGreen.copy(alpha = 0.2f) else MediumGray.copy(alpha = 0.2f),
+                            if (securitySettings.isBiometricEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                             RoundedCornerShape(10.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Fingerprint,
-                        contentDescription = "Biometrik",
-                        tint = if (securitySettings.isBiometricEnabled) BibitGreen else MediumGray,
+                        contentDescription = "Biometric",
+                        tint = if (securitySettings.isBiometricEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = translate("biometric_auth"),
+                        text = "Biometric Authentication",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = DarkGray
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = translate("use_fingerprint_face"),
+                        text = "Use fingerprint or face recognition",
                         fontSize = 14.sp,
-                        color = MediumGray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -583,7 +518,7 @@ private fun BiometricSecurityCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        if (securitySettings.isBiometricEnabled) BibitGreen.copy(alpha = 0.1f) else SoftGray,
+                        if (securitySettings.isBiometricEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
                         RoundedCornerShape(12.dp)
                     )
                     .padding(16.dp),
@@ -595,15 +530,15 @@ private fun BiometricSecurityCard(
                         Icon(
                             imageVector = if (securitySettings.isBiometricEnabled) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
                             contentDescription = null,
-                            tint = if (securitySettings.isBiometricEnabled) BibitGreen else MediumGray,
+                            tint = if (securitySettings.isBiometricEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (securitySettings.isBiometricEnabled) translate("biometric_active") else translate("biometric_inactive"),
+                            text = if (securitySettings.isBiometricEnabled) "Biometric Active" else "Biometric Inactive",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = if (securitySettings.isBiometricEnabled) BibitGreen else MediumGray
+                            color = if (securitySettings.isBiometricEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Row(
@@ -613,26 +548,26 @@ private fun BiometricSecurityCard(
                         Icon(
                             imageVector = Icons.Filled.Info,
                             contentDescription = null,
-                            tint = WarningOrange,
+                            tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Simulasi - Integrasi sistem akan datang",
+                            text = "Ready to use",
                             fontSize = 12.sp,
-                            color = WarningOrange
+                            color = MaterialTheme.colorScheme.secondary
                         )
                     }
                 }
                 
                 Switch(
                     checked = securitySettings.isBiometricEnabled,
-                    onCheckedChange = onToggleBiometric,
+                    onCheckedChange = onBiometricToggle,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = BibitGreen,
-                        uncheckedThumbColor = Color.White,
-                        uncheckedTrackColor = MediumGray
+                        checkedThumbColor = MaterialTheme.colorScheme.onSurface,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurface,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }
@@ -641,10 +576,9 @@ private fun BiometricSecurityCard(
 }
 
 @Composable
-private fun AutoLockSettingsCard(
+private fun AutoLockSecurityCard(
     securitySettings: SecuritySettings,
-    translate: (String) -> String,
-    onToggleAutoLock: (Boolean) -> Unit,
+    onAutoLockToggle: (Boolean) -> Unit,
     onTimeoutChange: (Int) -> Unit
 ) {
     val timeoutOptions = listOf(1, 2, 5, 10, 15, 30)
@@ -652,7 +586,7 @@ private fun AutoLockSettingsCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
@@ -668,7 +602,7 @@ private fun AutoLockSettingsCard(
                     modifier = Modifier
                         .size(40.dp)
                         .background(
-                            if (securitySettings.isAutoLockEnabled) BibitGreen.copy(alpha = 0.2f) else MediumGray.copy(alpha = 0.2f),
+                            if (securitySettings.isAutoLockEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                             RoundedCornerShape(10.dp)
                         ),
                     contentAlignment = Alignment.Center
@@ -676,22 +610,22 @@ private fun AutoLockSettingsCard(
                     Icon(
                         imageVector = Icons.Filled.Timer,
                         contentDescription = "Auto Lock",
-                        tint = if (securitySettings.isAutoLockEnabled) BibitGreen else MediumGray,
+                        tint = if (securitySettings.isAutoLockEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = translate("auto_lock"),
+                        text = "Auto Lock",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = DarkGray
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = translate("lock_when_inactive"),
+                        text = "Lock app when inactive",
                         fontSize = 14.sp,
-                        color = MediumGray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -701,7 +635,7 @@ private fun AutoLockSettingsCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        if (securitySettings.isAutoLockEnabled) BibitGreen.copy(alpha = 0.1f) else SoftGray,
+                        if (securitySettings.isAutoLockEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
                         RoundedCornerShape(12.dp)
                     )
                     .padding(16.dp),
@@ -713,22 +647,22 @@ private fun AutoLockSettingsCard(
                         Icon(
                             imageVector = if (securitySettings.isAutoLockEnabled) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
                             contentDescription = null,
-                            tint = if (securitySettings.isAutoLockEnabled) BibitGreen else MediumGray,
+                            tint = if (securitySettings.isAutoLockEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (securitySettings.isAutoLockEnabled) translate("auto_lock_active") else translate("auto_lock_inactive"),
+                            text = if (securitySettings.isAutoLockEnabled) "Auto Lock Active" else "Auto Lock Inactive",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = if (securitySettings.isAutoLockEnabled) BibitGreen else MediumGray
+                            color = if (securitySettings.isAutoLockEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     if (securitySettings.isAutoLockEnabled) {
                         Text(
-                            text = "⏰ Otomatis kunci setelah ${securitySettings.autoLockTimeout} menit",
+                            text = "⏰ Auto lock after ${securitySettings.autoLockTimeout} minutes",
                             fontSize = 12.sp,
-                            color = BibitGreen,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 28.dp, top = 4.dp)
                         )
                     }
@@ -736,12 +670,12 @@ private fun AutoLockSettingsCard(
                 
                 Switch(
                     checked = securitySettings.isAutoLockEnabled,
-                    onCheckedChange = onToggleAutoLock,
+                    onCheckedChange = onAutoLockToggle,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = BibitGreen,
-                        uncheckedThumbColor = Color.White,
-                        uncheckedTrackColor = MediumGray
+                        checkedThumbColor = MaterialTheme.colorScheme.onSurface,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurface,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }
@@ -751,18 +685,15 @@ private fun AutoLockSettingsCard(
                 Spacer(modifier = Modifier.height(20.dp))
                 
                 Text(
-                    text = "Waktu Tunggu:",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = DarkGray,
+                    text = "Timeout:",
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 
+                var expanded by remember { mutableStateOf(false) }
                 Box {
-                    var expanded by remember { mutableStateOf(false) }
-                    
                     OutlinedTextField(
-                        value = "${securitySettings.autoLockTimeout} menit",
+                        value = "${securitySettings.autoLockTimeout} minutes",
                         onValueChange = { },
                         readOnly = true,
                         trailingIcon = {
@@ -770,7 +701,7 @@ private fun AutoLockSettingsCard(
                                 Icon(
                                     imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                                     contentDescription = "Dropdown",
-                                    tint = BibitGreen
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         },
@@ -778,8 +709,8 @@ private fun AutoLockSettingsCard(
                             .fillMaxWidth()
                             .clickable { expanded = !expanded },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BibitGreen,
-                            unfocusedBorderColor = MediumGray
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -787,7 +718,7 @@ private fun AutoLockSettingsCard(
                     DropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
-                        modifier = Modifier.background(Color.White, RoundedCornerShape(12.dp))
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         timeoutOptions.forEach { timeout ->
                             DropdownMenuItem(
@@ -796,11 +727,11 @@ private fun AutoLockSettingsCard(
                                         Icon(
                                             imageVector = Icons.Filled.Timer,
                                             contentDescription = null,
-                                            tint = BibitGreen,
+                                            tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("$timeout menit")
+                                        Text("$timeout minutes")
                                     }
                                 },
                                 onClick = {
@@ -812,7 +743,7 @@ private fun AutoLockSettingsCard(
                                         Icon(
                                             imageVector = Icons.Filled.Check,
                                             contentDescription = "Selected",
-                                            tint = BibitGreen,
+                                            tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
@@ -827,17 +758,60 @@ private fun AutoLockSettingsCard(
 }
 
 @Composable
+private fun SecurityTipsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Lightbulb,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Security Tips:",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "• Use unique number combinations\n• Avoid birth dates or sequential numbers\n• Longer PINs are more secure",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun PinSetupDialog(
-    pinInput: String,
-    confirmPinInput: String,
-    pinError: String,
-    isSettingPin: Boolean,
-    translate: (String) -> String,
-    onPinInputChange: (String) -> Unit,
-    onConfirmPinInputChange: (String) -> Unit,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onPinSet: (String) -> Unit
 ) {
+    var pinInput by remember { mutableStateOf("") }
+    var confirmPinInput by remember { mutableStateOf("") }
+    var pinError by remember { mutableStateOf("") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -846,175 +820,163 @@ private fun PinSetupDialog(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Security,
-                    contentDescription = translate("security"),
-                    tint = BibitGreen,
+                    contentDescription = "Security",
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = translate("setup_pin"),
+                    text = "Setup PIN",
                     fontWeight = FontWeight.Bold,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         },
         text = {
             Column {
                 Text(
-                    text = "Buat PIN 4-6 digit untuk melindungi aplikasi Anda dari akses yang tidak sah",
+                    text = "Create a 4-6 digit PIN to protect your app from unauthorized access",
                     fontSize = 14.sp,
-                    color = MediumGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 20.sp,
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
                 
-                // PIN Strength Indicator
                 if (pinInput.isNotEmpty()) {
                     val strength = when {
-                        pinInput.length < 4 -> translate("too_short")
-                        pinInput.length == 4 -> translate("weak")
-                        pinInput.length == 5 -> translate("medium")
-                        pinInput.length >= 6 -> translate("strong")
-                        else -> translate("weak")
+                        pinInput.length < 4 -> "Too Short"
+                        pinInput.length == 4 -> "Weak"
+                        pinInput.length == 5 -> "Medium"
+                        pinInput.length >= 6 -> "Strong"
+                        else -> "Weak"
                     }
                     
                     val strengthColor = when {
-                        pinInput.length < 4 -> ErrorRed
-                        pinInput.length == 4 -> WarningOrange
-                        pinInput.length == 5 -> BibitLightGreen
-                        pinInput.length >= 6 -> BibitGreen
-                        else -> WarningOrange
+                        pinInput.length < 4 -> MaterialTheme.colorScheme.error
+                        pinInput.length == 4 -> MaterialTheme.colorScheme.secondary
+                        pinInput.length == 5 -> MaterialTheme.colorScheme.primary
+                        pinInput.length >= 6 -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.secondary
                     }
                     
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(strengthColor.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 16.dp)
                     ) {
                         Icon(
-                            imageVector = when {
-                                pinInput.length < 4 -> Icons.Filled.Warning
-                                pinInput.length >= 6 -> Icons.Filled.CheckCircle
-                                else -> Icons.Filled.Info
-                            },
+                            imageVector = Icons.Filled.Security,
                             contentDescription = null,
                             tint = strengthColor,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = translate("pin_strength") + " $strength",
+                            text = "PIN Strength: $strength",
                             fontSize = 12.sp,
                             color = strengthColor,
                             fontWeight = FontWeight.Medium
                         )
                     }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
                 
                 OutlinedTextField(
                     value = pinInput,
-                    onValueChange = { if (it.length <= 6 && it.all { char -> char.isDigit() }) onPinInputChange(it) },
-                    label = { Text("Masukkan PIN") },
-                    placeholder = { Text("Minimal 4 digit") },
+                    onValueChange = { if (it.length <= 6 && it.all { char -> char.isDigit() }) pinInput = it },
+                    label = { Text("Enter PIN") },
+                    placeholder = { Text("Minimum 4 digits") },
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BibitGreen,
-                        focusedLabelColor = BibitGreen
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Filled.Lock,
                             contentDescription = null,
-                            tint = BibitGreen
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 )
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 
                 OutlinedTextField(
                     value = confirmPinInput,
-                    onValueChange = { if (it.length <= 6 && it.all { char -> char.isDigit() }) onConfirmPinInputChange(it) },
-                    label = { Text("Konfirmasi PIN") },
-                    placeholder = { Text("Masukkan ulang PIN") },
+                    onValueChange = { if (it.length <= 6 && it.all { char -> char.isDigit() }) confirmPinInput = it },
+                    label = { Text("Confirm PIN") },
+                    placeholder = { Text("Re-enter PIN") },
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BibitGreen,
-                        focusedLabelColor = BibitGreen
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Filled.Lock,
                             contentDescription = null,
-                            tint = BibitGreen
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 )
                 
                 if (pinError.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(ErrorRed.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Error,
                             contentDescription = null,
-                            tint = ErrorRed,
+                            tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = pinError,
-                            color = ErrorRed,
+                            color = MaterialTheme.colorScheme.error,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Security tips
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(BibitGreen.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
                         .padding(12.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Lightbulb,
                         contentDescription = null,
-                        tint = BibitGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = translate("security_tips"),
+                            text = "Security Tips:",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = BibitGreen
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "• Gunakan kombinasi angka yang unik\n• Hindari tanggal lahir atau angka berurutan\n• PIN yang lebih panjang lebih aman",
-                            fontSize = 11.sp,
-                            color = DarkGray,
-                            lineHeight = 16.sp
+                            text = "• Use unique number combinations\n• Avoid birth dates or sequential numbers\n• Longer PINs are more secure",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
                         )
                     }
                 }
@@ -1022,29 +984,46 @@ private fun PinSetupDialog(
         },
         confirmButton = {
             Button(
-                onClick = onConfirm,
+                onClick = {
+                    when {
+                        pinInput.length < 4 -> {
+                            pinError = "PIN must be at least 4 digits"
+                        }
+                        pinInput != confirmPinInput -> {
+                            pinError = "PINs do not match"
+                        }
+                        else -> {
+                            onPinSet(pinInput)
+                        }
+                    }
+                },
                 enabled = pinInput.isNotEmpty() && confirmPinInput.isNotEmpty(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = BibitGreen,
-                    disabledContainerColor = MediumGray
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
+                Text(
+                    text = "Set PIN",
+                    fontWeight = FontWeight.SemiBold
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Atur PIN")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Batal", color = MediumGray)
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Cancel", 
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         },
-        shape = RoundedCornerShape(16.dp)
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 

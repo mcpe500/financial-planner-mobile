@@ -189,7 +189,7 @@ private fun HeaderSection(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 IconButton(
-                    onClick = { /* TODO: Handle notifications */ },
+                    onClick = onSettingsClick,
                     modifier = Modifier
                         .size(44.dp)
                         .background(
@@ -198,8 +198,8 @@ private fun HeaderSection(
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = "Notifications",
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
                     )
@@ -497,8 +497,7 @@ private fun QuickActionsGrid(navController: NavController) {
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 20.dp)
             )
-            
-            // First row - 4 items
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -518,24 +517,18 @@ private fun QuickActionsGrid(navController: NavController) {
                     label = "Budget",
                     onClick = { navController.navigate("budget") }
                 )
-                QuickActionButton(
-                    icon = Icons.Default.Flag,
-                    label = "Goals",
-                    onClick = { navController.navigate("goals") }
-                )
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // Second row - 4 items
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 QuickActionButton(
-                    icon = Icons.Default.AttachMoney,
-                    label = "Debt",
-                    onClick = { navController.navigate("debt") }
+                    icon = Icons.Default.Flag,
+                    label = "Goals",
+                    onClick = { navController.navigate("goals") }
                 )
                 QuickActionButton(
                     icon = Icons.Default.Receipt,
@@ -546,11 +539,6 @@ private fun QuickActionsGrid(navController: NavController) {
                     icon = Icons.Default.TrendingUp,
                     label = "Reports",
                     onClick = { navController.navigate("reports") }
-                )
-                QuickActionButton(
-                    icon = Icons.Default.Settings,
-                    label = "Settings",
-                    onClick = { navController.navigate("settings") }
                 )
             }
         }
