@@ -49,7 +49,7 @@ export const config: Config = {
     	url: process.env.SUPABASE_URL || "",
     	anon_key: process.env.SUPABASE_ANON_KEY || "",
     },
-    useLocalStorage: process.env.USE_LOCAL_STORAGE === "true",
+    useLocalStorage: false,
     google: {
         clientId: process.env.GOOGLE_CLIENT_ID || "",
         clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",

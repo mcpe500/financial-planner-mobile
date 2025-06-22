@@ -20,7 +20,7 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
 
         const category = await database.createCategory(payload);
         res.status(201).json({ success: true, data: category });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating category:", error);
         res.status(500).json({ 
             success: false, 
@@ -39,7 +39,7 @@ export const getCategories = async (req: AuthRequest, res: Response): Promise<vo
 
         const categories = await database.getCategoryTree(req.user.id);
         res.status(200).json({ success: true, data: categories });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error getting categories:", error);
         res.status(500).json({ 
             success: false, 
@@ -61,7 +61,7 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
 
         const updatedCategory = await database.updateCategory(id, payload);
         res.status(200).json({ success: true, data: updatedCategory });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error updating category:", error);
         res.status(500).json({ 
             success: false, 
@@ -81,7 +81,7 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
         const { id } = req.params;
         await database.deleteCategory(id);
         res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error deleting category:", error);
         res.status(500).json({ 
             success: false, 

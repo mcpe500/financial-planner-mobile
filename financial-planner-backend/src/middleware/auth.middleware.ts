@@ -59,3 +59,6 @@ export const authorize = (...roles: string[]) => {
         next();
     };
 };
+
+// Export authenticate as authMiddleware for compatibility
+export const authMiddleware = authenticate;
