@@ -18,7 +18,7 @@ data class GoalEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val walletId: String,
-    val userEmail: String,
+    val user_email: String,
     val name: String,
     val targetAmount: Double,
     var currentAmount: Double,

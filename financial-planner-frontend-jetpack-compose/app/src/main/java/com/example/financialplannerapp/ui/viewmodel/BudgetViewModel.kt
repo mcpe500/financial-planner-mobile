@@ -25,7 +25,8 @@ class BudgetViewModel(
 
     fun loadBudgets(walletId: String) {
         viewModelScope.launch {
-            repository.getBudgetsForWallet(walletId).collect { budgetList ->
+            val user_email = tokenManager.getUserEmail() ?: "guest"
+            repository.getBudgetsForWallet(walletId, user_email).collect { budgetList ->
                 _budgets.value = budgetList
             }
         }
@@ -43,16 +44,16 @@ class BudgetViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val userEmail = tokenManager.getUserEmail() ?: "guest"
+                val user_email = tokenManager.getUserEmail() ?: "guest"
                 // Check if a budget for this wallet already exists for this user
-                val existing = repository.getBudgetsForWallet(walletId).firstOrNull()?.find { it.userEmail == userEmail }
+                val existing = repository.getBudgetsForWallet(walletId).firstOrNull()?.find { it.user_email == user_email }
                 if (existing != null) {
                     _error.value = "A budget for this wallet already exists."
                     return@launch
                 }
                 val budget = BudgetEntity(
                     walletId = walletId,
-                    userEmail = userEmail,
+                    user_email = user_email,
                     name = name,
                     amount = amount,
                     category = category,
