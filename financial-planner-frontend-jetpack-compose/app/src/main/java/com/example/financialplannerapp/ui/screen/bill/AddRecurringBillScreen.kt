@@ -121,14 +121,28 @@ fun AddRecurringBillScreen(
             )
 
             val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
-            OutlinedTextField(
-                value = dateFormat.format(selectedDate.time),
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("First Due Date") },
-                modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
-                trailingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = "Select Date") }
-            )
+            val dateFormatted = remember(selectedDate) {
+                dateFormat.format(selectedDate.time)
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true } // ini yang akan menerima klik
+            ) {
+                OutlinedTextField(
+                    value = dateFormatted,
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = false, // agar tidak bisa difokuskan / buka keyboard
+                    label = { Text("First Due Date") },
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        Icon(Icons.Default.CalendarToday, contentDescription = "Select Date")
+                    }
+                )
+            }
+
 
             CycleDropDown(selectedCycle = selectedCycle, onCycleSelected = { selectedCycle = it })
 

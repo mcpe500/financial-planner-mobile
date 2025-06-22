@@ -64,14 +64,13 @@ data class GoalTemplate(
 fun CreateGoalScreen(navController: NavController) {
     val context = LocalContext.current
     val application = context.applicationContext as MainApplication
-    val tokenManager = remember { TokenManager(context) }
-
-    // ViewModels
+    val tokenManager = remember { TokenManager(application) }
+    val userId = tokenManager.getUserEmail() ?: "guest"
+    val goalViewModel: GoalViewModel = viewModel(
+        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager, application.appContainer.walletRepository)
+    )
     val walletViewModel: WalletViewModel = viewModel(
         factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
-    )
-    val goalViewModel: GoalViewModel = viewModel(
-        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager)
     )
 
     // State
@@ -83,6 +82,8 @@ fun CreateGoalScreen(navController: NavController) {
     var selectedCategory by remember { mutableStateOf(GoalCategory.SAVINGS) }
     var targetDate by remember { mutableStateOf(Date()) }
     var priority by remember { mutableStateOf("Medium") }
+    var isPriorityDropdownExpanded by remember { mutableStateOf(false) }
+    val priorities = listOf("High", "Medium", "Low")
     var description by remember { mutableStateOf("") }
 
     var isWalletDropdownExpanded by remember { mutableStateOf(false) }
@@ -140,9 +141,14 @@ fun CreateGoalScreen(navController: NavController) {
                     value = selectedWallet?.name ?: "Select a Wallet",
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Wallet") },
+                    label = { Text("Wallet", style = MaterialTheme.typography.bodyLarge) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isWalletDropdownExpanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    textStyle = MaterialTheme.typography.bodyLarge
                 )
                 ExposedDropdownMenu(
                     expanded = isWalletDropdownExpanded,
@@ -150,11 +156,12 @@ fun CreateGoalScreen(navController: NavController) {
                 ) {
                     wallets.forEach { wallet ->
                         DropdownMenuItem(
-                            text = { Text(wallet.name) },
+                            text = { Text(wallet.name, style = MaterialTheme.typography.bodyLarge) },
                             onClick = {
                                 selectedWallet = wallet
                                 isWalletDropdownExpanded = false
-                            }
+                            },
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
@@ -164,17 +171,27 @@ fun CreateGoalScreen(navController: NavController) {
             OutlinedTextField(
                 value = goalName,
                 onValueChange = { goalName = it },
-                label = { Text("Goal Name (e.g., New Laptop)") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Goal Name (e.g., New Laptop)", style = MaterialTheme.typography.bodyLarge) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                ),
+                textStyle = MaterialTheme.typography.bodyLarge
             )
 
             // Target Amount
             OutlinedTextField(
                 value = targetAmount,
                 onValueChange = { targetAmount = it },
-                label = { Text("Target Amount") },
+                label = { Text("Target Amount", style = MaterialTheme.typography.bodyLarge) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                ),
+                textStyle = MaterialTheme.typography.bodyLarge
             )
 
             // Target Date
@@ -182,16 +199,21 @@ fun CreateGoalScreen(navController: NavController) {
                 value = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(targetDate),
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Target Date") },
-                trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }
+                label = { Text("Target Date", style = MaterialTheme.typography.bodyLarge) },
+                trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                ),
+                textStyle = MaterialTheme.typography.bodyLarge
             )
             
-            // Priority can be a dropdown too, simplified for now
-            OutlinedTextField(
-                value = priority,
-                onValueChange = { priority = it },
-                label = { Text("Priority (e.g., High, Medium, Low)") },
+            StringCycleDropDown(
+                label = "Priority",
+                options = priorities,
+                selected = priority,
+                onSelected = { priority = it },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -203,7 +225,7 @@ fun CreateGoalScreen(navController: NavController) {
                             walletId = selectedWallet!!.id,
                             name = goalName,
                             targetAmount = amount,
-                            currentAmount = 0.0, // Starts with 0
+                            currentAmount = 0.0,
                             targetDate = targetDate,
                             priority = priority
                         )
@@ -211,9 +233,62 @@ fun CreateGoalScreen(navController: NavController) {
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = selectedWallet != null && goalName.isNotBlank() && targetAmount.isNotBlank()
+                enabled = selectedWallet != null && goalName.isNotBlank() && targetAmount.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("Save Goal")
+                Text("Save Goal", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onPrimary)
+            }
+        }
+    }
+}
+
+@Composable
+fun StringCycleDropDown(
+    label: String,
+    options: List<String>,
+    selected: String,
+    onSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label, style = MaterialTheme.typography.bodyLarge) },
+            trailingIcon = {
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option, style = MaterialTheme.typography.bodyLarge) },
+                    onClick = {
+                        onSelected(option)
+                        expanded = false
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

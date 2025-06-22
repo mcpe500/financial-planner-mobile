@@ -268,14 +268,26 @@ fun EditBillDialog(
                 )
 
                 val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
-                OutlinedTextField(
-                    value = dateFormat.format(selectedDate.time),
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Next Due Date") },
-                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
-                    trailingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) }
-                )
+                val dateFormatted = remember(selectedDate) {
+                    dateFormat.format(selectedDate.time)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true } // klik di luar OutlinedTextField
+                ) {
+                    OutlinedTextField(
+                        value = dateFormatted,
+                        onValueChange = {},
+                        readOnly = true,
+                        enabled = false, // ini penting agar tidak trigger keyboard/focus
+                        label = { Text("Next Due Date") },
+                        trailingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
 
                 CycleDropDown(selectedCycle = selectedCycle, onCycleSelected = { selectedCycle = it })
 
