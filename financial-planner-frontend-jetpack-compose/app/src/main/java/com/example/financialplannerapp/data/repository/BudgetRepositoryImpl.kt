@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.Flow
 
 class BudgetRepositoryImpl(private val budgetDao: BudgetDao) : BudgetRepository {
 
-    override fun getBudgetsForWallet(walletId: String): Flow<List<BudgetEntity>> {
-        return budgetDao.getBudgetsForWallet(walletId)
+    override fun getBudgetsForWallet(walletId: String, user_email: String): Flow<List<BudgetEntity>> {
+        return budgetDao.getBudgetsForWallet(walletId, user_email)
     }
 
     override suspend fun insertBudget(budget: BudgetEntity) {

@@ -18,7 +18,7 @@ data class BudgetEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val walletId: String,
-    val userEmail: String,
+    val user_email: String,
     val name: String,
     val amount: Double,
     val category: String, // Consider relating this to a CategoryEntity if it exists

@@ -8,7 +8,7 @@ import java.util.Date
 data class Budget(
     val id: Int = 0,
     val walletId: String,
-    val userEmail: String,
+    val user_email: String,
     val name: String,
     val amount: Double,
     val category: String,
@@ -49,7 +49,7 @@ fun generateMockBudgets(): List<Budget> {
         Budget(
             id = 1,
             walletId = "wallet1",
-            userEmail = "user@example.com",
+            user_email = "user@example.com",
             name = "Makanan Bulanan",
             amount = 2000000.0,
             category = "Food",
@@ -61,7 +61,7 @@ fun generateMockBudgets(): List<Budget> {
         Budget(
             id = 2,
             walletId = "wallet1",
-            userEmail = "user@example.com",
+            user_email = "user@example.com",
             name = "Transportasi",
             amount = 500000.0,
             category = "Transport",
@@ -73,7 +73,7 @@ fun generateMockBudgets(): List<Budget> {
         Budget(
             id = 3,
             walletId = "wallet2",
-            userEmail = "user@example.com",
+            user_email = "user@example.com",
             name = "Hiburan",
             amount = 300000.0,
             category = "Entertainment",

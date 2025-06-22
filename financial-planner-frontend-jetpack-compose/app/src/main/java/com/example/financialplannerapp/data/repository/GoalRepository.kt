@@ -5,7 +5,7 @@ import com.example.financialplannerapp.data.local.model.GoalEntity
 import kotlinx.coroutines.flow.Flow
 
 interface GoalRepository {
-    fun getGoalsForWallet(walletId: String): Flow<List<GoalEntity>>
+    fun getGoalsForWallet(walletId: String, user_email: String): Flow<List<GoalEntity>>
     suspend fun insertGoal(goal: GoalEntity)
     suspend fun updateGoal(goal: GoalEntity)
     suspend fun deleteGoal(goalId: Int)

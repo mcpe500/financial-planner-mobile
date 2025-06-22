@@ -45,10 +45,10 @@ class GoalViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val userEmail = tokenManager.getUserEmail() ?: "guest"
+                val user_email = tokenManager.getUserEmail() ?: "guest"
                 val goal = GoalEntity(
                     walletId = walletId,
-                    userEmail = userEmail,
+                    user_email = user_email,
                     name = name,
                     targetAmount = targetAmount,
                     currentAmount = currentAmount,

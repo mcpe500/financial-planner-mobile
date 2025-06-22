@@ -8,7 +8,7 @@ import java.util.Date
 data class FinancialGoal(
     val id: Int = 0,
     val walletId: String,
-    val userEmail: String,
+    val user_email: String,
     val name: String,
     val targetAmount: Double,
     var currentAmount: Double,
@@ -59,7 +59,7 @@ fun generateMockGoals(): List<FinancialGoal> {
         FinancialGoal(
             id = 1,
             walletId = "wallet1",
-            userEmail = "user@example.com",
+            user_email = "user@example.com",
             name = "Tabungan Liburan",
             targetAmount = 10000000.0,
             currentAmount = 3000000.0,
@@ -71,7 +71,7 @@ fun generateMockGoals(): List<FinancialGoal> {
         FinancialGoal(
             id = 2,
             walletId = "wallet1",
-            userEmail = "user@example.com",
+            user_email = "user@example.com",
             name = "Dana Darurat",
             targetAmount = 50000000.0,
             currentAmount = 25000000.0,
@@ -83,7 +83,7 @@ fun generateMockGoals(): List<FinancialGoal> {
         FinancialGoal(
             id = 3,
             walletId = "wallet2",
-            userEmail = "user@example.com",
+            user_email = "user@example.com",
             name = "Investasi Saham",
             targetAmount = 20000000.0,
             currentAmount = 5000000.0,
