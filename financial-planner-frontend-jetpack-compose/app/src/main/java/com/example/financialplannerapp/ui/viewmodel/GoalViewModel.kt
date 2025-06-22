@@ -4,14 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.GoalEntity
+import com.example.financialplannerapp.data.local.model.WalletEntity
 import com.example.financialplannerapp.data.repository.GoalRepository
+import com.example.financialplannerapp.data.repository.WalletRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Date
 
 class GoalViewModel(
     private val repository: GoalRepository,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val walletRepository: WalletRepository
 ) : ViewModel() {
 
     private val _goals = MutableStateFlow<List<GoalEntity>>(emptyList())
@@ -70,6 +73,43 @@ class GoalViewModel(
                 _error.value = "Failed to delete goal: ${e.message}"
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    fun editGoal(goal: GoalEntity, newName: String, newTarget: Double, newPriority: String) {
+        viewModelScope.launch {
+            val updatedGoal = goal.copy(name = newName, targetAmount = newTarget, priority = newPriority)
+            repository.updateGoal(updatedGoal)
+        }
+    }
+
+    fun deleteGoalAndReturnToWallet(goal: GoalEntity, wallet: WalletEntity) {
+        viewModelScope.launch {
+            val updatedWallet = wallet.copy(balance = wallet.balance + goal.currentAmount)
+            walletRepository.updateWallet(updatedWallet)
+            repository.deleteGoal(goal.id)
+        }
+    }
+
+    fun addToGoalAmount(goal: GoalEntity, wallet: WalletEntity, amount: Double) {
+        viewModelScope.launch {
+            if (wallet.balance >= amount) {
+                val updatedGoal = goal.copy(currentAmount = goal.currentAmount + amount)
+                val updatedWallet = wallet.copy(balance = wallet.balance - amount)
+                repository.updateGoal(updatedGoal)
+                walletRepository.updateWallet(updatedWallet)
+            }
+        }
+    }
+
+    fun subtractFromGoalAmount(goal: GoalEntity, wallet: WalletEntity, amount: Double) {
+        viewModelScope.launch {
+            if (goal.currentAmount >= amount) {
+                val updatedGoal = goal.copy(currentAmount = goal.currentAmount - amount)
+                val updatedWallet = wallet.copy(balance = wallet.balance + amount)
+                repository.updateGoal(updatedGoal)
+                walletRepository.updateWallet(updatedWallet)
             }
         }
     }
