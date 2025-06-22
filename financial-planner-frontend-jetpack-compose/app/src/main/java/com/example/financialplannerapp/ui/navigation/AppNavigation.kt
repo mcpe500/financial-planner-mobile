@@ -18,8 +18,8 @@ import com.example.financialplannerapp.screen.settings.UserProfileSettingsScreen
 import com.example.financialplannerapp.screen.settings.SecuritySettingsScreen
 import com.example.financialplannerapp.screen.settings.DataSyncSettingsScreen
 import com.example.financialplannerapp.screen.settings.BackupRestoreSettingsScreen
-import com.example.financialplannerapp.screen.settings.ContactSupportScreen
-import com.example.financialplannerapp.screen.settings.HelpCenterScreen
+import com.example.financialplannerapp.ui.screen.settings.ContactSupportScreen
+import com.example.financialplannerapp.ui.screen.settings.HelpCenterScreen
 import com.example.financialplannerapp.ui.screen.transaction.AddTransactionScreen
 import com.example.financialplannerapp.ui.screen.transaction.ScanReceiptScreen
 import com.example.financialplannerapp.ui.screen.transaction.TransactionHistoryScreen
@@ -38,6 +38,8 @@ import com.example.financialplannerapp.screen.DebtReceivableMainScreen
 import com.example.financialplannerapp.screen.WalletsMainScreen
 import com.example.financialplannerapp.ui.screen.budget.BudgetMainScreen
 import com.example.financialplannerapp.ui.screen.budget.CreateBudgetScreen
+import com.example.financialplannerapp.ui.screen.budget.BudgetAnalyticsScreen
+import com.example.financialplannerapp.ui.screen.report.FinancialReportsMainScreen
 
 @Composable
 fun AppNavigation(
@@ -67,19 +69,7 @@ fun AppNavigation(
 
         // Main Settings Screen
         composable("settings") {
-            AppSettingsScreen(
-                onNavigateToPersonalProfile = { navController.navigate("personal_profile") },
-                onNavigateToSecurity = { navController.navigate("security") },
-                onNavigateToAppInfo = { navController.navigate("app_info") },
-                onLogout = {
-                    // Handle logout logic
-                    tokenManager.clear() // Clear token on logout
-                    navController.navigate("login") {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-            )
+            AppSettingsScreen(navController = navController, tokenManager = tokenManager)
         }
 
         // Settings Sub-screens
@@ -115,11 +105,11 @@ fun AppNavigation(
             BackupRestoreSettingsScreen(navController = navController)
         }
 
-        composable("help_center") {
+        composable("helpCenterSettings") {
             HelpCenterScreen(navController = navController)
         }
 
-        composable("contact_support") {
+        composable("contactSupportSettings") {
             ContactSupportScreen(navController = navController)
         }
 
@@ -170,14 +160,14 @@ fun AppNavigation(
         }
 
         // Other Screens
-        composable("debt") {
-            DebtReceivableMainScreen()
-        }
-        composable("budgets") {
+        composable("budget") {
             BudgetMainScreen(navController = navController)
         }
         composable("create_budget") {
             CreateBudgetScreen(navController = navController)
+        }
+        composable("budget_analytics") {
+            BudgetAnalyticsScreen(navController = navController)
         }
         composable("budget_details/{budgetId}") { backStackEntry ->
             val budgetId = backStackEntry.arguments?.getString("budgetId")
@@ -194,6 +184,9 @@ fun AppNavigation(
             val goalId = backStackEntry.arguments?.getString("goalId")
             // Pass goalId to the details screen
             GoalDetailsScreen(navController = navController, goalId = goalId)
+        }
+        composable("reports") {
+            FinancialReportsMainScreen(navController = navController)
         }
     }
 }

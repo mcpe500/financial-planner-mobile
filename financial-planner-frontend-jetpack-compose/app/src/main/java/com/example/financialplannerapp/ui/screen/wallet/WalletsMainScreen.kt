@@ -340,7 +340,7 @@ private fun QuickActionsSection(navController: NavController, isEnabled: Boolean
                 QuickActionButton(
                     icon = Icons.Default.Assessment,
                     label = "Reports",
-                    onClick = { navController.navigate("financial_reports") },
+                    onClick = { navController.navigate("reports") },
                     enabled = isEnabled
                 )
             }
@@ -730,10 +730,4 @@ private fun EmptyStateCard(hasWallets: Boolean, selectedFilter: WalletTypeFilter
             )
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun WalletsMainScreenPreview() {
-    WalletsMainScreen(rememberNavController())
 }

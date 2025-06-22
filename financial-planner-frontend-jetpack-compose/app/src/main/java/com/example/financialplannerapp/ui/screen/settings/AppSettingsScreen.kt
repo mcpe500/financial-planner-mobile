@@ -1,54 +1,62 @@
 package com.example.financialplannerapp.ui.screen.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape // Added for icon background
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.ContactSupport
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip // Added for icon background
-import androidx.compose.ui.draw.shadow // Added for card shadow
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp // Added for explicit font sizes
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.collectAsState
-import com.example.financialplannerapp.core.util.translate
+import androidx.navigation.NavController
+import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.model.Currency
 import com.example.financialplannerapp.data.model.LanguageOption
 import com.example.financialplannerapp.data.model.ThemeSetting
-import com.example.financialplannerapp.data.model.Translations
 import com.example.financialplannerapp.service.LocalTranslationProvider
 import com.example.financialplannerapp.ui.viewmodel.AppSettingsViewModel
 import com.example.financialplannerapp.ui.viewmodel.SettingsViewModelFactory
-
-// Bibit-inspired color palette (consistent with other screens)
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val BibitDarkGreen = Color(0xFF388E3C)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-private val DangerRed = Color(0xFFE53935) // For logout button
-private val LightRed = Color(0xFFFFCDD2) // For logout button container
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppSettingsScreen(
-    appSettingsViewModel: AppSettingsViewModel = viewModel(factory = SettingsViewModelFactory(LocalContext.current)),
-    onNavigateToPersonalProfile: () -> Unit,
-    onNavigateToSecurity: () -> Unit,
-    onNavigateToAppInfo: () -> Unit,
-    onLogout: () -> Unit
+    navController: NavController,
+    tokenManager: com.example.financialplannerapp.TokenManager,
+    appSettingsViewModel: AppSettingsViewModel = viewModel(factory = SettingsViewModelFactory(LocalContext.current))
 ) {
     val currentTheme by appSettingsViewModel.theme.collectAsState()
     val currentLanguage by appSettingsViewModel.language.collectAsState()
@@ -70,101 +78,79 @@ fun AppSettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = translate(Translations.AppSettings),
-                        fontSize = 22.sp, // Larger title
-                        fontWeight = FontWeight.Bold, // Bolder title
-                        color = Color.White // White text for better contrast
+                        text = "App Settings",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                            // Assuming AppSettingsScreen is always pushed from SettingsScreen
-                            // so popBackStack is correct to go back to SettingsScreen
-                            // If this screen can be accessed directly, adjust logic
-                            // or pass a specific back action lambda.
-                        }
+                        onClick = { navController.popBackStack() }
                     ) {
-                        // This TopAppBar is likely within a NestedNavGraph
-                        // and a common solution is to provide a back button here.
-                        // However, based on the previous context, AppSettingsScreen is a direct
-                        // child of the main SettingsScreen route.
-                        // If you intend to have a back button that truly navigates back,
-                        // you'll need to pass navController as a parameter and use navController.popBackStack()
-                        // For now, I'll assume you don't want a back button from App Settings.
-                        // If you do, uncomment and adjust:
-                        /*
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = translate(Translations.Back),
-                            tint = Color.White
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
-                        */
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BibitGreen, // Green background for TopAppBar
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        containerColor = SoftGray // Consistent light gray background for the screen
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp) // Increased spacing between sections
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Profile Section
             item {
-                SectionHeader(title = translate(Translations.SettingsProfile))
+                SectionHeader(title = "Profile")
             }
             item {
                 SettingsSectionCard {
                     SettingsItemCard(
-                        title = translate(Translations.SettingsProfile),
+                        title = "Personal Profile",
+                        subtitle = "Manage your personal information",
                         icon = Icons.Default.Person,
-                        onClick = onNavigateToPersonalProfile
+                        onClick = { navController.navigate("personal_profile") }
                     )
-                    Divider(color = MediumGray.copy(alpha = 0.2f), thickness = 0.5.dp) // Thinner, softer divider
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
+                    )
                     SettingsItemCard(
-                        title = translate(Translations.Security),
+                        title = "Security",
+                        subtitle = "Password, PIN, and security settings",
                         icon = Icons.Default.Security,
-                        onClick = onNavigateToSecurity
+                        onClick = { navController.navigate("security") }
                     )
                 }
             }
 
-            // No Spacer here, increased verticalArrangement in LazyColumn
-
             // App Settings Section
             item {
-                SectionHeader(title = translate(Translations.Settings))
+                SectionHeader(title = "Preferences")
             }
             item {
                 SettingsSectionCard {
-                    ThemeSettingCard(
-                        currentTheme = themeEnum,
-                        onThemeSelected = { appSettingsViewModel.setTheme(it.value) },
-                        onShowDialog = { showThemeDialog = true }
-                    )
-                    Divider(color = MediumGray.copy(alpha = 0.2f), thickness = 0.5.dp) // Thinner, softer divider
-                    LanguageSettingCard(
-                        currentLanguageCode = currentLanguage,
-                        availableLanguages = translationProvider.getAvailableLanguages(),
-                        onLanguageSelected = { appSettingsViewModel.setLanguage(it.code) },
-                        onShowDialog = { showLanguageDialog = true }
-                    )
-                    Divider(color = MediumGray.copy(alpha = 0.2f), thickness = 0.5.dp) // Thinner, softer divider
                     CurrencySettingCard(
                         currentCurrency = currencyEnum,
                         onCurrencySelected = { appSettingsViewModel.setCurrency(it.code) },
                         onShowDialog = { showCurrencyDialog = true }
                     )
-                    Divider(color = MediumGray.copy(alpha = 0.2f), thickness = 0.5.dp) // Thinner, softer divider
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
+                    )
                     NotificationSettingCard(
                         notificationsEnabled = notificationsEnabled,
                         onToggle = { appSettingsViewModel.setNotificationsEnabled(it) }
@@ -172,46 +158,57 @@ fun AppSettingsScreen(
                 }
             }
 
-            // No Spacer here, increased verticalArrangement in LazyColumn
-
             // Support & Information Section
             item {
-                SectionHeader(title = translate(Translations.AppInfo))
+                SectionHeader(title = "Support & Information")
             }
             item {
                 SettingsSectionCard {
                     SettingsItemCard(
-                        title = translate(Translations.DataSync),
-                        subtitle = translate(Translations.DataSyncDesc),
+                        title = "Data Sync",
+                        subtitle = "Sync data across devices",
                         icon = Icons.Default.Sync,
-                        onClick = { /* TODO */ }
+                        onClick = { navController.navigate("data_sync") }
                     )
-                    Divider(color = MediumGray.copy(alpha = 0.2f), thickness = 0.5.dp) // Thinner, softer divider
-                    SettingsItemCard(
-                        title = translate(Translations.BackupRestore),
-                        subtitle = translate(Translations.BackupRestoreDesc),
-                        icon = Icons.Default.CloudUpload, // Changed to CloudUpload for consistency with main settings
-                        onClick = { /* TODO */ }
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
                     )
-                    Divider(color = MediumGray.copy(alpha = 0.2f), thickness = 0.5.dp) // Thinner, softer divider
                     SettingsItemCard(
-                        title = translate(Translations.HelpCenter),
-                        subtitle = translate(Translations.HelpCenterDesc),
-                        icon = Icons.Default.HelpOutline,
-                        onClick = { /* TODO */ }
+                        title = "Backup & Restore",
+                        subtitle = "Backup and restore your data",
+                        icon = Icons.Default.CloudUpload,
+                        onClick = { navController.navigate("backup_restore") }
                     )
-                    Divider(color = MediumGray.copy(alpha = 0.2f), thickness = 0.5.dp) // Thinner, softer divider
-                    SettingsItemCard(
-                        title = translate(Translations.ContactSupport),
-                        subtitle = translate(Translations.ContactSupportDesc),
-                        icon = Icons.Default.ContactSupport,
-                        onClick = { /* TODO */ }
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
                     )
-                    Divider(color = MediumGray.copy(alpha = 0.2f), thickness = 0.5.dp) // Thinner, softer divider
                     SettingsItemCard(
-                        title = translate(Translations.AppInfo),
+                        title = "Help Center",
+                        subtitle = "FAQs and user guides",
+                        icon = Icons.AutoMirrored.Filled.HelpOutline,
+                        onClick = { navController.navigate("helpCenterSettings") }
+                    )
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
+                    )
+                    SettingsItemCard(
+                        title = "Contact Support",
+                        subtitle = "Get help from our support team",
+                        icon = Icons.AutoMirrored.Filled.ContactSupport,
+                        onClick = { navController.navigate("contactSupportSettings") }
+                    )
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
+                    )
+                    SettingsItemCard(
+                        title = "App Information",
+                        subtitle = "Version and app details",
                         icon = Icons.Default.Info,
-                        onClick = onNavigateToAppInfo
+                        onClick = { navController.navigate("app_info") }
                     )
                 }
             }
@@ -220,44 +217,43 @@ fun AppSettingsScreen(
 
             // Logout Button
             item {
-                // Card for logout button for better visual grouping
                 Card(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(
-                            elevation = 4.dp, // Consistent shadow with other cards
-                            shape = RoundedCornerShape(12.dp),
-                            ambientColor = Color.Black.copy(alpha = 0.05f),
-                            spotColor = Color.Black.copy(alpha = 0.05f)
-                        ),
+                        .fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = LightRed // Light red background for logout card
+                        containerColor = MaterialTheme.colorScheme.errorContainer
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Elevation handled by .shadow
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Button(
-                        onClick = onLogout,
+                        onClick = {
+                            tokenManager.clear()
+                            navController.navigate("login") {
+                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp) // Consistent height with other buttons
-                            .padding(horizontal = 4.dp, vertical = 4.dp), // Inner padding
+                            .height(56.dp)
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = DangerRed, // Stronger red for the button itself
-                            contentColor = Color.White // White text on red button
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Icon(
-                            Icons.Default.Logout,
+                            Icons.AutoMirrored.Filled.Logout,
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp) // Larger icon
+                            modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.width(12.dp)) // Increased spacing
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = translate(Translations.Logout),
-                            fontSize = 18.sp, // Larger text
-                            fontWeight = FontWeight.SemiBold // Stronger font weight
+                            text = "Logout",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
@@ -265,6 +261,7 @@ fun AppSettingsScreen(
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
+        
         if (showThemeDialog) {
             ThemeSelectionDialog(
                 currentTheme = themeEnum,
@@ -305,9 +302,9 @@ fun AppSettingsScreen(
 fun SectionHeader(title: String) {
     Text(
         text = title,
-        fontSize = 18.sp, // Slightly larger font for section headers
-        fontWeight = FontWeight.Bold, // Bolder headers
-        color = DarkGray, // Darker gray for section headers
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
     )
 }
@@ -319,18 +316,10 @@ fun SettingsSectionCard(
 ) {
     Card(
         modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 4.dp, // Consistent shadow with other cards
-                shape = RoundedCornerShape(12.dp),
-                ambientColor = Color.Black.copy(alpha = 0.05f),
-                spotColor = Color.Black.copy(alpha = 0.05f)
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White // White background for setting sections
-        ),
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Elevation handled by .shadow
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(vertical = 4.dp)
@@ -351,8 +340,8 @@ fun SettingsItemCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick), // Make Surface clickable directly
-        color = Color.Transparent // Ensure surface background is transparent
+            .clickable(onClick = onClick),
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -360,43 +349,43 @@ fun SettingsItemCard(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon Container (with Bibit-themed circular background)
+            // Icon Container
             Box(
                 modifier = Modifier
-                    .size(48.dp) // Slightly smaller icon container for sub-items
+                    .size(48.dp)
                     .clip(CircleShape)
-                    .background(BibitLightGreen.copy(alpha = 0.2f))
-                    .padding(10.dp), // Padding inside the circular background
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp), // Standard icon size
-                    tint = BibitDarkGreen // Darker green tint
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontSize = 16.sp, // Consistent bodyLarge equivalent
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = DarkGray // Consistent with main body text
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 if (subtitle != null) {
                     Text(
                         text = subtitle,
-                        fontSize = 13.sp, // Smaller subtitle
-                        color = MediumGray // Consistent with subtitles
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = MediumGray, // Consistent with subtitle color
-                modifier = Modifier.size(24.dp) // Larger arrow
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -412,7 +401,7 @@ fun ThemeSettingCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onShowDialog),
-        color = Color.Transparent
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -425,7 +414,7 @@ fun ThemeSettingCard(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(BibitLightGreen.copy(alpha = 0.2f))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -433,27 +422,27 @@ fun ThemeSettingCard(
                     imageVector = Icons.Default.Palette,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = BibitDarkGreen
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = translate(Translations.ThemeSetting),
+                    text = "Theme",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "${translate(Translations.ThemeSettingDesc)}: ${getThemeDisplayName(currentTheme)}",
+                    text = getThemeDisplayName(currentTheme),
                     fontSize = 13.sp,
-                    color = MediumGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = MediumGray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -473,7 +462,7 @@ fun LanguageSettingCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onShowDialog),
-        color = Color.Transparent
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -486,7 +475,7 @@ fun LanguageSettingCard(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(BibitLightGreen.copy(alpha = 0.2f))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -494,27 +483,27 @@ fun LanguageSettingCard(
                     imageVector = Icons.Default.Language,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = BibitDarkGreen
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = translate(Translations.LanguageSetting),
+                    text = "Language",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "${translate(Translations.LanguageSettingDesc)}: $currentLanguageDisplay",
+                    text = currentLanguageDisplay,
                     fontSize = 13.sp,
-                    color = MediumGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = MediumGray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -531,7 +520,7 @@ fun CurrencySettingCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onShowDialog),
-        color = Color.Transparent
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -544,7 +533,7 @@ fun CurrencySettingCard(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(BibitLightGreen.copy(alpha = 0.2f))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -552,27 +541,27 @@ fun CurrencySettingCard(
                     imageVector = Icons.Default.AttachMoney,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = BibitDarkGreen
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = translate(Translations.CurrencySetting),
+                    text = "Currency",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "${translate(Translations.CurrencySettingDesc)}: ${getCurrencyDisplayName(currentCurrency)}",
+                    text = getCurrencyDisplayName(currentCurrency),
                     fontSize = 13.sp,
-                    color = MediumGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = MediumGray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -586,7 +575,7 @@ fun NotificationSettingCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = Color.Transparent
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -599,7 +588,7 @@ fun NotificationSettingCard(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(BibitLightGreen.copy(alpha = 0.2f))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -607,34 +596,31 @@ fun NotificationSettingCard(
                     imageVector = Icons.Default.Notifications,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = BibitDarkGreen
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = translate(Translations.NotificationsSetting),
+                    text = "Notifications",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = if (notificationsEnabled)
-                        translate(Translations.NotificationsEnabled)
-                    else
-                        translate(Translations.NotificationsDisabled),
+                    text = if (notificationsEnabled) "Enabled" else "Disabled",
                     fontSize = 13.sp,
-                    color = MediumGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Switch(
                 checked = notificationsEnabled,
                 onCheckedChange = onToggle,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = BibitGreen, // Bibit green for checked thumb
-                    checkedTrackColor = BibitLightGreen.copy(alpha = 0.6f), // Lighter green for track
-                    uncheckedThumbColor = MediumGray, // Gray for unchecked thumb
-                    uncheckedTrackColor = MediumGray.copy(alpha = 0.3f) // Lighter gray for unchecked track
+                    checkedThumbColor = MaterialTheme.colorScheme.onSurface,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurface,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
@@ -651,10 +637,10 @@ fun ThemeSelectionDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = translate(Translations.ThemeSetting),
-                fontSize = 20.sp, // Consistent dialog title size
+                text = "Theme",
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = DarkGray
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
@@ -668,11 +654,11 @@ fun ThemeSelectionDialog(
                             .clickable { onThemeSelected(theme) },
                         colors = CardDefaults.cardColors(
                             containerColor = if (theme == currentTheme)
-                                BibitLightGreen.copy(alpha = 0.2f) // Light green background for selected
+                                MaterialTheme.colorScheme.primaryContainer
                             else
-                                Color.White // White for unselected
+                                MaterialTheme.colorScheme.surface
                         ),
-                        shape = RoundedCornerShape(12.dp), // Rounded corners for dialog items
+                        shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
                         Row(
@@ -685,8 +671,8 @@ fun ThemeSelectionDialog(
                                 selected = (theme == currentTheme),
                                 onClick = { onThemeSelected(theme) },
                                 colors = RadioButtonDefaults.colors(
-                                    selectedColor = BibitGreen, // Bibit green for selected radio button
-                                    unselectedColor = MediumGray // Medium gray for unselected
+                                    selectedColor = MaterialTheme.colorScheme.primary,
+                                    unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             )
                             Spacer(Modifier.width(12.dp))
@@ -694,7 +680,7 @@ fun ThemeSelectionDialog(
                                 text = getThemeDisplayName(theme),
                                 fontSize = 16.sp,
                                 fontWeight = if (theme == currentTheme) FontWeight.SemiBold else FontWeight.Normal,
-                                color = DarkGray
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -704,14 +690,14 @@ fun ThemeSelectionDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text(
-                    text = translate(Translations.Cancel),
-                    fontWeight = FontWeight.SemiBold, // Bolder text for buttons
-                    color = BibitGreen // Bibit green for action buttons
+                    text = "Cancel",
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         },
-        shape = RoundedCornerShape(16.dp), // Rounded corners for dialog itself
-        containerColor = SoftGray // Soft gray background for dialog
+        shape = RoundedCornerShape(16.dp),
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -728,10 +714,10 @@ fun LanguageSelectionDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = translate(Translations.SelectLanguage),
+                text = "Select Language",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = DarkGray
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
@@ -746,9 +732,9 @@ fun LanguageSelectionDialog(
                             .clickable { onLanguageSelected(language) },
                         colors = CardDefaults.cardColors(
                             containerColor = if (language.code == currentLanguageCode)
-                                BibitLightGreen.copy(alpha = 0.2f)
+                                MaterialTheme.colorScheme.primaryContainer
                             else
-                                Color.White
+                                MaterialTheme.colorScheme.surface
                         ),
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -763,8 +749,8 @@ fun LanguageSelectionDialog(
                                 selected = (language.code == currentLanguageCode),
                                 onClick = { onLanguageSelected(language) },
                                 colors = RadioButtonDefaults.colors(
-                                    selectedColor = BibitGreen,
-                                    unselectedColor = MediumGray
+                                    selectedColor = MaterialTheme.colorScheme.primary,
+                                    unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             )
                             Spacer(Modifier.width(12.dp))
@@ -772,7 +758,7 @@ fun LanguageSelectionDialog(
                                 text = language.displayName,
                                 fontSize = 16.sp,
                                 fontWeight = if (language.code == currentLanguageCode) FontWeight.SemiBold else FontWeight.Normal,
-                                color = DarkGray
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -782,14 +768,14 @@ fun LanguageSelectionDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text(
-                    text = translate(Translations.Cancel),
+                    text = "Cancel",
                     fontWeight = FontWeight.SemiBold,
-                    color = BibitGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         },
         shape = RoundedCornerShape(16.dp),
-        containerColor = SoftGray
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -802,87 +788,94 @@ fun CurrencySelectionDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = translate(Translations.SelectCurrency),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = DarkGray
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AttachMoney,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Select Currency",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Choose your preferred currency",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Currency.values().forEach { currency ->
-                    Card(
+            LazyColumn {
+                items(Currency.values()) { currency ->
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onCurrencySelected(currency) },
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (currency == currentCurrency)
-                                BibitLightGreen.copy(alpha = 0.2f)
-                            else
-                                Color.White
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                            .clickable { onCurrencySelected(currency) }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = (currency == currentCurrency),
-                                onClick = { onCurrencySelected(currency) },
-                                colors = RadioButtonDefaults.colors(
-                                    selectedColor = BibitGreen,
-                                    unselectedColor = MediumGray
-                                )
+                        RadioButton(
+                            selected = (currency == currentCurrency),
+                            onClick = { onCurrencySelected(currency) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = MaterialTheme.colorScheme.primary,
+                                unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                text = getCurrencyDisplayName(currency),
-                                fontSize = 16.sp,
-                                fontWeight = if (currency == currentCurrency) FontWeight.SemiBold else FontWeight.Normal,
-                                color = DarkGray
-                            )
-                        }
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Text(
+                            text = getCurrencyDisplayName(currency),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             }
         },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    text = translate(Translations.Cancel),
-                    fontWeight = FontWeight.SemiBold,
-                    color = BibitGreen
-                )
+        confirmButton = {}, // Remove confirm button, selection is instant
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Cancel")
             }
         },
-        shape = RoundedCornerShape(16.dp),
-        containerColor = SoftGray
+        shape = RoundedCornerShape(20.dp),
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
-@Composable
 fun getThemeDisplayName(theme: ThemeSetting): String {
     return when (theme) {
-        ThemeSetting.LIGHT -> translate(Translations.ThemeLight)
-        ThemeSetting.DARK -> translate(Translations.ThemeDark)
-        ThemeSetting.SYSTEM -> translate(Translations.ThemeSystem)
+        ThemeSetting.LIGHT -> "Light Mode"
+        ThemeSetting.DARK -> "Dark Mode"
+        ThemeSetting.SYSTEM -> "System Default"
     }
 }
 
-@Composable
 fun getCurrencyDisplayName(currency: Currency): String {
     return when (currency) {
         Currency.IDR -> "Indonesian Rupiah (IDR)"
         Currency.USD -> "US Dollar (USD)"
         Currency.EUR -> "Euro (EUR)"
         Currency.JPY -> "Japanese Yen (JPY)"
+        // Add other currencies as needed
+    }
+}
+
+fun getCurrencySymbol(currency: Currency): String {
+    return when (currency) {
+        Currency.IDR -> "Rp"
+        Currency.USD -> "$"
+        Currency.EUR -> "€"
+        Currency.JPY -> "¥"
         // Add other currencies as needed
     }
 }
