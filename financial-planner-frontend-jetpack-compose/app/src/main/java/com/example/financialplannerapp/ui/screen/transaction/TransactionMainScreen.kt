@@ -9,6 +9,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,7 +49,7 @@ fun TransactionMainScreen(navController: NavController) {
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
@@ -57,18 +60,6 @@ fun TransactionMainScreen(navController: NavController) {
                 )
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate("add_transaction") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Transaction"
-                )
-            }
-        }
     ) { paddingValues ->
         TransactionMainContent(
             navController = navController,
@@ -321,10 +312,25 @@ private fun StatItem(
             fontWeight = FontWeight.Medium
         )
         Text(
-            text = if (isPositive) "+${formatCurrency(amount)}" else formatCurrency(amount),
+            text = when {
+                label == "Balance" -> {
+                    if (amount >= 0) {
+                        "+${formatCurrency(amount)}"
+                    } else {
+                        "-${formatCurrency(-amount)}"
+                    }
+                }
+                isPositive -> "+${formatCurrency(amount)}"
+                else -> formatCurrency(amount)
+            },
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = color
+            color = when {
+                label == "Balance" -> {
+                    if (amount >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                }
+                else -> color
+            }
         )
     }
 }
@@ -417,9 +423,9 @@ private fun TransactionItem(
             ) {
                 Icon(
                     imageVector = if (transaction.type.equals("INCOME", true)) {
-                        Icons.Default.TrendingUp
+                        Icons.AutoMirrored.Filled.TrendingUp
                     } else {
-                        Icons.Default.TrendingDown
+                        Icons.AutoMirrored.Filled.TrendingDown
                     },
                     contentDescription = transaction.type,
                     tint = if (transaction.type.equals("INCOME", true)) {

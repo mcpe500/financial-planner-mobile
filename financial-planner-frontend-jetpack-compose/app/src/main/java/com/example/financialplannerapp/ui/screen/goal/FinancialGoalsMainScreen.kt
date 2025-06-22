@@ -65,7 +65,8 @@ fun FinancialGoalsMainScreen(
         factory = GoalViewModelFactory(
             application.appContainer.goalRepository,
             tokenManager,
-            application.appContainer.walletRepository
+            application.appContainer.walletRepository,
+            application.appContainer.transactionRepository
         )
     )
 

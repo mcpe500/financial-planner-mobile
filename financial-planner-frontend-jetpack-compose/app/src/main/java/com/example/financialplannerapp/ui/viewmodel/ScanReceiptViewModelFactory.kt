@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.repository.ReceiptTransactionRepository
 import com.example.financialplannerapp.data.repository.TransactionRepository
+import com.example.financialplannerapp.data.repository.WalletRepository
 import com.example.financialplannerapp.data.service.ReceiptService
 
 /**
@@ -14,7 +15,8 @@ class ScanReceiptViewModelFactory(
     private val receiptService: ReceiptService,
     private val tokenManager: TokenManager,
     private val receiptTransactionRepository: ReceiptTransactionRepository,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val walletRepository: WalletRepository
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -24,7 +26,8 @@ class ScanReceiptViewModelFactory(
                 receiptService = receiptService,
                 tokenManager = tokenManager,
                 receiptTransactionRepository = receiptTransactionRepository,
-                transactionRepository = transactionRepository
+                transactionRepository = transactionRepository,
+                walletRepository = walletRepository
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

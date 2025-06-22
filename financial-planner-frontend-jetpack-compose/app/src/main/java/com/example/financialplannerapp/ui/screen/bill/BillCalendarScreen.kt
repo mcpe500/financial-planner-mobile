@@ -44,7 +44,12 @@ fun BillCalendarScreen(navController: NavController, tokenManager: TokenManager)
     val context = LocalContext.current
     val application = context.applicationContext as MainApplication
     val billViewModel: BillViewModel = viewModel(
-        factory = BillViewModelFactory(application.appContainer.billRepository, tokenManager)
+        factory = BillViewModelFactory(
+            billRepository = application.appContainer.billRepository,
+            walletRepository = application.appContainer.walletRepository,
+            transactionRepository = application.appContainer.transactionRepository,
+            tokenManager = tokenManager
+        )
     )
     var currentMonth by remember { mutableStateOf(Calendar.getInstance()) }
     var selectedDate by remember { mutableStateOf<Date?>(null) }

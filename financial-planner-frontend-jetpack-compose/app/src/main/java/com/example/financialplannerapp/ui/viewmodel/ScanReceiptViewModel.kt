@@ -11,10 +11,13 @@ import com.example.financialplannerapp.data.model.ReceiptOCRState
 import com.example.financialplannerapp.data.model.TransactionFromOCR
 import com.example.financialplannerapp.data.repository.ReceiptTransactionRepository
 import com.example.financialplannerapp.data.repository.TransactionRepository
+import com.example.financialplannerapp.data.repository.WalletRepository
 import com.example.financialplannerapp.data.service.ReceiptService
+import com.example.financialplannerapp.data.local.model.WalletEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -26,7 +29,8 @@ class ScanReceiptViewModel(
     private val receiptService: ReceiptService,
     private val tokenManager: TokenManager,
     private val receiptTransactionRepository: ReceiptTransactionRepository,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val walletRepository: WalletRepository
 ) : ViewModel() {
 
     companion object {
@@ -40,6 +44,55 @@ class ScanReceiptViewModel(
     // Current image URI for camera capture
     var currentImageUri: Uri? = null
         private set
+
+    // OCR result for wallet selection
+    private val _ocrResult = MutableStateFlow<com.example.financialplannerapp.data.model.ReceiptOCRData?>(null)
+    val ocrResult: StateFlow<com.example.financialplannerapp.data.model.ReceiptOCRData?> = _ocrResult.asStateFlow()
+
+    // Available wallets for selection
+    private val _wallets = MutableStateFlow<List<WalletEntity>>(emptyList())
+    val wallets: StateFlow<List<WalletEntity>> = _wallets.asStateFlow()
+
+    // Selected wallet
+    private val _selectedWallet = MutableStateFlow<WalletEntity?>(null)
+    val selectedWallet: StateFlow<WalletEntity?> = _selectedWallet.asStateFlow()
+
+    // Loading state for wallets
+    private val _isLoadingWallets = MutableStateFlow(false)
+    val isLoadingWallets: StateFlow<Boolean> = _isLoadingWallets.asStateFlow()
+
+    init {
+        loadWallets()
+    }
+
+    /**
+     * Load available wallets
+     */
+    private fun loadWallets() {
+        viewModelScope.launch {
+            try {
+                _isLoadingWallets.value = true
+                val userEmail = tokenManager.getUserEmail() ?: "local_user@example.com"
+                val walletsFlow = walletRepository.getWalletsByUserEmail(userEmail)
+                val walletsList = walletsFlow.first()
+                _wallets.value = walletsList
+                Log.d(TAG, "Loaded ${walletsList.size} wallets")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load wallets: ${e.message}", e)
+                _wallets.value = emptyList()
+            } finally {
+                _isLoadingWallets.value = false
+            }
+        }
+    }
+
+    /**
+     * Set selected wallet
+     */
+    fun setSelectedWallet(wallet: WalletEntity) {
+        _selectedWallet.value = wallet
+        Log.d(TAG, "Selected wallet: ${wallet.name}")
+    }
 
     /**
      * Create a file URI for camera capture
@@ -68,10 +121,8 @@ class ScanReceiptViewModel(
                 result.fold(
                     onSuccess = { response ->
                         Log.d(TAG, "OCR processing successful. Found ${response.data.items.size} items")
+                        _ocrResult.value = response.data
                         _state.value = ReceiptOCRState.Success(response.data)
-
-                        // Save to RoomDB as a transaction
-                        saveOcrResultToTransaction(response.data)
                     },
                     onFailure = { exception ->
                         val errorMessage = exception.message ?: "Unknown error occurred"
@@ -88,10 +139,101 @@ class ScanReceiptViewModel(
     }
 
     /**
+     * Submit transaction with selected wallet
+     */
+    fun submitTransaction() {
+        val ocrData = _ocrResult.value
+        val wallet = _selectedWallet.value
+        
+        if (ocrData == null) {
+            Log.e(TAG, "No OCR data available for submission")
+            return
+        }
+        
+        if (wallet == null) {
+            Log.e(TAG, "No wallet selected for transaction")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val userId = tokenManager.getUserId() ?: "local_user"
+                val localReceiptItems = ocrData.items.map { item ->
+                    com.example.financialplannerapp.data.local.model.ReceiptItem(
+                        name = item.name,
+                        price = item.price,
+                        quantity = item.quantity,
+                        category = item.category ?: "Unknown"
+                    )
+                }
+                
+                val transaction = com.example.financialplannerapp.data.local.model.TransactionEntity(
+                    userId = userId,
+                    amount = ocrData.totalAmount,
+                    type = "EXPENSE", // Always set as EXPENSE for receipt transactions
+                    date = try { 
+                        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).parse(ocrData.date) ?: java.util.Date() 
+                    } catch (e: Exception) { 
+                        java.util.Date() 
+                    },
+                    pocket = "", // Empty string instead of null
+                    category = "", // Empty string instead of null
+                    note = "${ocrData.merchantName} - Receipt Transaction",
+                    walletId = wallet.id,
+                    isFromReceipt = true,
+                    receiptId = ocrData.receiptId ?: "receipt_${System.currentTimeMillis()}",
+                    merchantName = ocrData.merchantName,
+                    location = ocrData.location,
+                    receiptConfidence = ocrData.confidence,
+                    receipt_items = localReceiptItems,
+                    isSynced = false
+                )
+                
+                val transactionId = transactionRepository.insertTransaction(transaction)
+                Log.d(TAG, "Receipt transaction saved successfully with ID: $transactionId")
+                
+                // Update wallet balance
+                updateWalletBalance(wallet.id, ocrData.totalAmount)
+                
+                // Reset state
+                resetState()
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error saving transaction: ${e.message}", e)
+                _state.value = ReceiptOCRState.Error("Unexpected error saving transaction: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Update wallet balance after transaction
+     */
+    private suspend fun updateWalletBalance(walletId: String, amount: Double) {
+        try {
+            // Get current wallet from the wallets list
+            val userEmail = tokenManager.getUserEmail() ?: "local_user@example.com"
+            val walletsFlow = walletRepository.getWalletsByUserEmail(userEmail)
+            val wallets = walletsFlow.first()
+            val currentWallet = wallets.find { it.id == walletId }
+            
+            currentWallet?.let { wallet ->
+                val newBalance = wallet.balance - amount // Subtract for expense
+                val updatedWallet = wallet.copy(balance = newBalance)
+                walletRepository.updateWallet(updatedWallet)
+                Log.d(TAG, "Updated wallet balance: ${wallet.balance} -> $newBalance")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error updating wallet balance: ${e.message}", e)
+        }
+    }
+
+    /**
      * Reset state to idle for new scan
      */
     fun resetState() {
         _state.value = ReceiptOCRState.Idle
+        _ocrResult.value = null
+        _selectedWallet.value = null
         currentImageUri = null
         Log.d(TAG, "State reset for new scan")
     }
@@ -235,10 +377,10 @@ class ScanReceiptViewModel(
             val transaction = com.example.financialplannerapp.data.local.model.TransactionEntity(
                 userId = userId,
                 amount = ocrData.totalAmount,
-                type = if (ocrData.totalAmount >= 0) "INCOME" else "EXPENSE",
+                type = "EXPENSE", // Always set as EXPENSE for receipt transactions
                 date = try { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).parse(ocrData.date) ?: java.util.Date() } catch (e: Exception) { java.util.Date() },
-                pocket = "Cash",
-                category = "General",
+                pocket = "", // Empty string instead of null
+                category = "", // Empty string instead of null
                 note = "${ocrData.merchantName} - Receipt Transaction",
                 walletId = "default_wallet_id",
                 isFromReceipt = true,

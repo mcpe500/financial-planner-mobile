@@ -4,16 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.GoalEntity
+import com.example.financialplannerapp.data.local.model.TransactionEntity
 import com.example.financialplannerapp.data.local.model.WalletEntity
 import com.example.financialplannerapp.data.repository.GoalRepository
+import com.example.financialplannerapp.data.repository.TransactionRepository
 import com.example.financialplannerapp.data.repository.WalletRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.Date
 
 class GoalViewModel(
     private val repository: GoalRepository,
     private val tokenManager: TokenManager,
-    private val walletRepository: WalletRepository
+    private val walletRepository: WalletRepository,
+    private val transactionRepository: TransactionRepository
 ) : ViewModel() {
 
     private val _goals = MutableStateFlow<List<GoalEntity>>(emptyList())
@@ -247,6 +251,39 @@ class GoalViewModel(
                 }
             } catch (e: Exception) {
                 _error.value = "Failed to subtract from goal amount: ${e.message}"
+            }
+        }
+    }
+
+    fun completeGoal(goal: GoalEntity) {
+        viewModelScope.launch {
+            try {
+                val userId = tokenManager.getUserId() ?: "local_user"
+                
+                // Create expense transaction for the goal completion
+                val transaction = TransactionEntity(
+                    userId = userId,
+                    amount = goal.targetAmount,
+                    type = "EXPENSE",
+                    date = Date(),
+                    pocket = "",
+                    category = "",
+                    note = "Goal completed: ${goal.name}",
+                    tags = listOf("goal", "completed"),
+                    isFromReceipt = false,
+                    walletId = goal.walletId
+                )
+                
+                // Insert the transaction (no wallet balance deduction needed)
+                transactionRepository.insertTransaction(transaction)
+                
+                // Delete the goal since it's completed
+                repository.deleteGoal(goal.id)
+                
+                // Refresh goals after completing
+                refreshGoals()
+            } catch (e: Exception) {
+                _error.value = "Failed to complete goal: ${e.message}"
             }
         }
     }
