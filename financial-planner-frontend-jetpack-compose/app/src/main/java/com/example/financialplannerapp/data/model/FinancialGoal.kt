@@ -12,7 +12,6 @@ data class FinancialGoal(
     val name: String,
     val targetAmount: Double,
     var currentAmount: Double,
-    val targetDate: Date,
     val priority: String,
     val category: GoalCategory = GoalCategory.SAVINGS,
     val description: String = "",
@@ -28,17 +27,19 @@ data class FinancialGoal(
     val isCompleted: Boolean
         get() = currentAmount >= targetAmount
     
-    val daysRemaining: Int
-        get() = ((targetDate.time - Date().time) / (1000 * 60 * 60 * 24)).toInt()
-    
-    val estimatedCompletionDate: Date
-        get() = if (currentAmount > 0) {
-            val dailySaving = currentAmount / ((Date().time - createdDate.time) / (1000 * 60 * 60 * 24)).toDouble().coerceAtLeast(1.0)
-            val remainingDays = remainingAmount / dailySaving.coerceAtLeast(1.0)
-            Date(System.currentTimeMillis() + (remainingDays * 24 * 60 * 60 * 1000).toLong())
-        } else {
-            targetDate
+    val priorityColor: androidx.compose.ui.graphics.Color
+        get() = when (priority.uppercase()) {
+            "HIGH" -> androidx.compose.ui.graphics.Color(0xFFE57373) // Red
+            "MEDIUM" -> androidx.compose.ui.graphics.Color(0xFFFFB74D) // Orange
+            "LOW" -> androidx.compose.ui.graphics.Color(0xFF81C784) // Green
+            else -> androidx.compose.ui.graphics.Color(0xFF81C784) // Default Green
         }
+}
+
+enum class GoalPriority(val displayName: String) {
+    HIGH("High"),
+    MEDIUM("Medium"),
+    LOW("Low")
 }
 
 enum class GoalCategory(val displayName: String, val icon: ImageVector) {
@@ -63,7 +64,6 @@ fun generateMockGoals(): List<FinancialGoal> {
             name = "Tabungan Liburan",
             targetAmount = 10000000.0,
             currentAmount = 3000000.0,
-            targetDate = Date(System.currentTimeMillis() + 180L * 24 * 60 * 60 * 1000),
             priority = "Medium",
             category = GoalCategory.VACATION,
             icon = Icons.Default.Flight
@@ -75,7 +75,6 @@ fun generateMockGoals(): List<FinancialGoal> {
             name = "Dana Darurat",
             targetAmount = 50000000.0,
             currentAmount = 25000000.0,
-            targetDate = Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000),
             priority = "High",
             category = GoalCategory.EMERGENCY_FUND,
             icon = Icons.Default.Emergency
@@ -87,7 +86,6 @@ fun generateMockGoals(): List<FinancialGoal> {
             name = "Investasi Saham",
             targetAmount = 20000000.0,
             currentAmount = 5000000.0,
-            targetDate = Date(System.currentTimeMillis() + 730L * 24 * 60 * 60 * 1000),
             priority = "Medium",
             category = GoalCategory.INVESTMENT,
             icon = Icons.Default.TrendingUp

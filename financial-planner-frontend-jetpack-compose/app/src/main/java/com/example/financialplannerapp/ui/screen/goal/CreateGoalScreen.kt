@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -18,11 +20,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +45,7 @@ import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
+import com.example.financialplannerapp.core.util.formatCurrency
 import com.example.financialplannerapp.ui.theme.BibitGreen
 import com.example.financialplannerapp.ui.theme.BibitLightGreen
 import com.example.financialplannerapp.ui.theme.MediumGray
@@ -78,165 +83,378 @@ fun CreateGoalScreen(navController: NavController) {
     var selectedWallet by remember { mutableStateOf<Wallet?>(null) }
     var goalName by remember { mutableStateOf("") }
     var targetAmount by remember { mutableStateOf("") }
-    var currentAmount by remember { mutableStateOf("0") }
     var selectedCategory by remember { mutableStateOf(GoalCategory.SAVINGS) }
-    var targetDate by remember { mutableStateOf(Date()) }
     var priority by remember { mutableStateOf("Medium") }
     var isPriorityDropdownExpanded by remember { mutableStateOf(false) }
     val priorities = listOf("High", "Medium", "Low")
-    var description by remember { mutableStateOf("") }
 
     var isWalletDropdownExpanded by remember { mutableStateOf(false) }
-    var showDatePicker by remember { mutableStateOf(false) }
     var showCategorySelector by remember { mutableStateOf(false) }
-
-    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = targetDate.time)
 
     LaunchedEffect(Unit) {
         walletViewModel.loadWallets()
     }
 
-    if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        targetDate = Date(it)
-                    }
-                    showDatePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create New Goal") },
+                title = { 
+                    Text(
+                        "Create New Goal",
+                        fontWeight = FontWeight.SemiBold
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Wallet Dropdown
-            ExposedDropdownMenuBox(
-                expanded = isWalletDropdownExpanded,
-                onExpandedChange = { isWalletDropdownExpanded = !isWalletDropdownExpanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedWallet?.name ?: "Select a Wallet",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Wallet", style = MaterialTheme.typography.bodyLarge) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isWalletDropdownExpanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    ),
-                    textStyle = MaterialTheme.typography.bodyLarge
-                )
-                ExposedDropdownMenu(
-                    expanded = isWalletDropdownExpanded,
-                    onDismissRequest = { isWalletDropdownExpanded = false }
+            // Header Card
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(6.dp, RoundedCornerShape(20.dp)),
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ) {
-                    wallets.forEach { wallet ->
-                        DropdownMenuItem(
-                            text = { Text(wallet.name, style = MaterialTheme.typography.bodyLarge) },
-                            onClick = {
-                                selectedWallet = wallet
-                                isWalletDropdownExpanded = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Set Your Financial Goal",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Create a new goal to track your progress and achieve your financial dreams",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
                     }
                 }
             }
 
-            // Goal Name
-            OutlinedTextField(
-                value = goalName,
-                onValueChange = { goalName = it },
-                label = { Text("Goal Name (e.g., New Laptop)", style = MaterialTheme.typography.bodyLarge) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge
-            )
-
-            // Target Amount
-            OutlinedTextField(
-                value = targetAmount,
-                onValueChange = { targetAmount = it },
-                label = { Text("Target Amount", style = MaterialTheme.typography.bodyLarge) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge
-            )
-
-            // Target Date
-            OutlinedTextField(
-                value = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(targetDate),
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Target Date", style = MaterialTheme.typography.bodyLarge) },
-                trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge
-            )
-            
-            StringCycleDropDown(
-                label = "Priority",
-                options = priorities,
-                selected = priority,
-                onSelected = { priority = it },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Button(
-                onClick = {
-                    val amount = targetAmount.toDoubleOrNull()
-                    if (selectedWallet != null && goalName.isNotBlank() && amount != null) {
-                        goalViewModel.addGoal(
-                            walletId = selectedWallet!!.id,
-                            name = goalName,
-                            targetAmount = amount,
-                            currentAmount = 0.0,
-                            targetDate = targetDate,
-                            priority = priority
-                        )
-                        navController.popBackStack()
+            // Wallet Selection Card
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(16.dp)),
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountBalanceWallet,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Select Wallet",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        ExposedDropdownMenuBox(
+                            expanded = isWalletDropdownExpanded,
+                            onExpandedChange = { isWalletDropdownExpanded = !isWalletDropdownExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedWallet?.name ?: "Choose a wallet",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Wallet") },
+                                placeholder = { Text("Select the wallet for this goal") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isWalletDropdownExpanded) },
+                                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                )
+                            )
+                            ExposedDropdownMenu(
+                                expanded = isWalletDropdownExpanded,
+                                onDismissRequest = { isWalletDropdownExpanded = false }
+                            ) {
+                                wallets.forEach { wallet ->
+                                    DropdownMenuItem(
+                                        text = { 
+                                            Column {
+                                                Text(wallet.name)
+                                                Text(
+                                                    text = "Balance: ${formatCurrency(wallet.balance)}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            selectedWallet = wallet
+                                            isWalletDropdownExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = selectedWallet != null && goalName.isNotBlank() && targetAmount.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Save Goal", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onPrimary)
+                }
+            }
+
+            // Goal Details Card
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(16.dp)),
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Goal Details",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Goal Name
+                        OutlinedTextField(
+                            value = goalName,
+                            onValueChange = { goalName = it },
+                            label = { Text("Goal Name") },
+                            placeholder = { Text("e.g., New Laptop, Vacation Fund, Emergency Fund") },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Target Amount
+                        OutlinedTextField(
+                            value = targetAmount,
+                            onValueChange = { targetAmount = it },
+                            label = { Text("Target Amount") },
+                            placeholder = { Text("Enter your target amount") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Current Amount Info
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = "Initial Amount",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "Your goal will start with 0. You can add funds later.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Priority Selection Card
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(16.dp)),
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PriorityHigh,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Priority Level",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        ExposedDropdownMenuBox(
+                            expanded = isPriorityDropdownExpanded,
+                            onExpandedChange = { isPriorityDropdownExpanded = !isPriorityDropdownExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = priority,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Priority") },
+                                placeholder = { Text("Select priority level") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriorityDropdownExpanded) },
+                                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                )
+                            )
+                            ExposedDropdownMenu(
+                                expanded = isPriorityDropdownExpanded,
+                                onDismissRequest = { isPriorityDropdownExpanded = false }
+                            ) {
+                                priorities.forEach { priorityOption ->
+                                    DropdownMenuItem(
+                                        text = { 
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(12.dp)
+                                                        .clip(CircleShape)
+                                                        .background(
+                                                            when (priorityOption.uppercase()) {
+                                                                "HIGH" -> Color(0xFFE57373)
+                                                                "MEDIUM" -> Color(0xFFFFB74D)
+                                                                "LOW" -> Color(0xFF81C784)
+                                                                else -> Color(0xFF81C784)
+                                                            }
+                                                        )
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Text(priorityOption)
+                                            }
+                                        },
+                                        onClick = {
+                                            priority = priorityOption
+                                            isPriorityDropdownExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Create Button
+            item {
+                Button(
+                    onClick = {
+                        if (selectedWallet != null && goalName.isNotBlank() && targetAmount.isNotBlank()) {
+                            val targetAmountValue = targetAmount.toDoubleOrNull() ?: 0.0
+                            
+                            goalViewModel.addGoal(
+                                walletId = selectedWallet!!.id,
+                                name = goalName,
+                                targetAmount = targetAmountValue,
+                                currentAmount = 0.0, // Always start at 0
+                                priority = priority
+                            )
+                            navController.popBackStack()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = selectedWallet != null && goalName.isNotBlank() && targetAmount.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Create Goal")
+                }
             }
         }
     }
@@ -333,7 +551,7 @@ private fun GoalPreviewCard(
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onPrimary,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -448,7 +666,7 @@ private fun GoalTemplateOption(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
             template.suggestedAmount?.let { amount ->
                 Text(
@@ -769,7 +987,7 @@ private fun GoalSuccessDialog(
             Text(
                 text = if (isEditing) "Tujuan Diperbarui!" else "Tujuan Dibuat!",
                 fontWeight = FontWeight.SemiBold,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
         },
         text = {
@@ -778,7 +996,7 @@ private fun GoalSuccessDialog(
                     "Tujuan \"$goalName\" telah berhasil diperbarui. Tetap semangat mencapai target!"
                 else
                     "Tujuan \"$goalName\" telah dibuat. Mulai menabung sekarang untuk mewujudkan impian Anda!",
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
         },
         confirmButton = {

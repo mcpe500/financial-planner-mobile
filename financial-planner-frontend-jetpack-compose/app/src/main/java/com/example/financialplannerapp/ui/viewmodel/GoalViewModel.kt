@@ -9,7 +9,6 @@ import com.example.financialplannerapp.data.repository.GoalRepository
 import com.example.financialplannerapp.data.repository.WalletRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.Date
 
 class GoalViewModel(
     private val repository: GoalRepository,
@@ -26,7 +25,24 @@ class GoalViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _selectedPriorityFilter = MutableStateFlow<String?>(null)
+    val selectedPriorityFilter: StateFlow<String?> = _selectedPriorityFilter.asStateFlow()
+
     private var currentWalletId: String? = null
+
+    val filteredGoals: StateFlow<List<GoalEntity>> = combine(
+        _goals,
+        _selectedPriorityFilter
+    ) { goals, priorityFilter ->
+        when (priorityFilter) {
+            null -> goals
+            else -> goals.filter { it.priority.equals(priorityFilter, ignoreCase = true) }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     fun loadGoals(walletId: String) {
         viewModelScope.launch {
@@ -67,12 +83,15 @@ class GoalViewModel(
         } ?: loadAllGoals()
     }
 
+    fun setPriorityFilter(priority: String?) {
+        _selectedPriorityFilter.value = priority
+    }
+
     fun addGoal(
         walletId: String,
         name: String,
         targetAmount: Double,
         currentAmount: Double,
-        targetDate: Date,
         priority: String
     ) {
         viewModelScope.launch {
@@ -85,7 +104,6 @@ class GoalViewModel(
                     name = name,
                     targetAmount = targetAmount,
                     currentAmount = currentAmount,
-                    targetDate = targetDate,
                     priority = priority
                 )
                 repository.insertGoal(goal)

@@ -3,7 +3,6 @@ package com.example.financialplannerapp.data.local.model
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import java.util.Date
 
 @Entity(
     tableName = "goals",
@@ -22,6 +21,5 @@ data class GoalEntity(
     val name: String,
     val targetAmount: Double,
     var currentAmount: Double,
-    val targetDate: Date,
     val priority: String // e.g., "High", "Medium", "Low"
 )
