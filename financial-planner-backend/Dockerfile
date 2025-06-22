@@ -23,7 +23,7 @@ WORKDIR /usr/src/app
 
 # Copy only the necessary package files and install production dependencies
 COPY package*.json ./
-COPY bun.lockb ./
+COPY bun.lock ./
 RUN bun install --production
 
 # Copy the built application from the 'builder' stage
