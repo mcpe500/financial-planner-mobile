@@ -3,6 +3,7 @@ package com.example.financialplannerapp.ui.screen.transaction
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -87,7 +88,14 @@ fun ScanReceiptScreen(navController: NavController) {
             Toast.makeText(context, "Camera permission is required to take photos", Toast.LENGTH_SHORT).show()
         }
     }
-    
+
+    // For Android 13+ use READ_MEDIA_IMAGES, else READ_EXTERNAL_STORAGE
+    val storagePermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Manifest.permission.READ_MEDIA_IMAGES
+    } else {
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    }
+
     val storagePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -216,11 +224,11 @@ fun ScanReceiptScreen(navController: NavController) {
                 OutlinedButton(
                     onClick = {
                         when {
-                            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED -> {
+                            ContextCompat.checkSelfPermission(context, storagePermission) == PackageManager.PERMISSION_GRANTED -> {
                                 galleryLauncher.launch("image/*")
                             }
                             else -> {
-                                storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                                storagePermissionLauncher.launch(storagePermission)
                             }
                         }
                     },
