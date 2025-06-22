@@ -1,10 +1,11 @@
-import { Request, Response } from "express";
+import { Request, Response, RequestHandler } from "express";
 import crypto from "crypto";
-import database from "../services/database.service";
-import { sendAccountDeletionEmail } from "../services/email.service";
+import databaseService from "../services/database.service";
+import { sendDeletionOtpEmail, sendAccountDeletionEmailForWeb } from "../services/email.service";
 import { AuthRequest } from "../types/request.types";
 import jwt from "jsonwebtoken";
 import { config } from "../config/config";
+import * as otpService from '../services/otp.service';
 
 // Store deletion requests temporarily (in production, use Redis or a database table)
 interface DeletionRequest {
@@ -27,71 +28,33 @@ export const showDeletionRequestPage = (req: Request, res: Response) => {
 };
 
 // Handle the account deletion request form
-export const requestAccountDeletion = async (req: Request, res: Response) => {
+export const requestAccountDeletion: RequestHandler = async (req, res) => {
+  const { userId } = (req as any).user;
+
+  if (!userId) {
+    res.status(401).json({ success: false, message: 'Authentication required.' });
+    return;
+  }
+
   try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.render("account/delete-request", {
-        title: "Delete Account",
-        error: "Email is required",
-      });
-    }
-
-    // Check if user exists
-    const user = await database.findUserByEmail(email);
+    const user = await databaseService.findUserById(userId);
     if (!user) {
-      // For security, don't reveal if email exists or not
-      return res.render("account/delete-request", {
-        title: "Delete Account",
-        message: "If your email is registered, you will receive deletion instructions",
-      });
+      res.status(404).json({ success: false, message: 'User not found.' });
+      return;
     }
 
-    // Generate unique token for the deletion link
-    const token = crypto.randomBytes(32).toString("hex");
-    
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Store deletion request with 1-hour expiration
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1);
-    
-    deletionRequests.set(token, {
-      email,
-      token,
-      otp,
-      createdAt: new Date(),
-      expiresAt,
-    });
+    const { otp, expiresAt } = otpService.generateOtp();
+    await otpService.storeOtp(userId, otp, expiresAt);
 
-    // Set expiration cleanup
-    setTimeout(() => {
-      if (deletionRequests.has(token)) {
-        deletionRequests.delete(token);
-      }
-    }, 3600000); // 1 hour
+    await sendDeletionOtpEmail(user.email, otp);
 
-    // Send email with deletion link and OTP
-    try {
-      await sendAccountDeletionEmail(email, token, otp);
-    } catch (emailError) {
-      console.error('Failed to send email:', emailError);
-      // Continue without failing the request for security
-    }
-
-    // Show success message
-    return res.render("account/delete-request", {
-      title: "Delete Account",
-      message: "If your email is registered, you will receive deletion instructions",
+    res.status(200).json({
+      success: true,
+      message: 'An OTP has been sent to your email to confirm deletion.',
     });
   } catch (error) {
-    console.error("Error requesting account deletion:", error);
-    return res.render("account/delete-request", {
-      title: "Delete Account",
-      error: "An error occurred while processing your request",
-    });
+    console.error('Error requesting account deletion:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 };
 
@@ -102,19 +65,21 @@ export const showOtpVerificationPage = (req: Request, res: Response) => {
   // Check if token exists and is valid
   const deletionRequest = deletionRequests.get(token);
   if (!deletionRequest) {
-    return res.render("account/error", {
+    res.render("account/error", {
       title: "Invalid Request",
       error: "This deletion link is invalid or has expired",
     });
+    return;
   }
   
   // Check if token is expired
   if (deletionRequest.expiresAt < new Date()) {
     deletionRequests.delete(token);
-    return res.render("account/error", {
+    res.render("account/error", {
       title: "Expired Request",
       error: "This deletion link has expired. Please request a new one.",
     });
+    return;
   }
   
   // Show OTP verification page
@@ -126,27 +91,29 @@ export const showOtpVerificationPage = (req: Request, res: Response) => {
 };
 
 // Verify OTP and show final confirmation
-export const verifyOtp = (req: Request, res: Response) => {
+export const verifyWebOtp = (req: Request, res: Response) => {
   const { token } = req.params;
   const { otp } = req.body;
   
   // Check if token exists and is valid
   const deletionRequest = deletionRequests.get(token);
   if (!deletionRequest) {
-    return res.render("account/error", {
+    res.render("account/error", {
       title: "Invalid Request",
       error: "This deletion link is invalid or has expired",
     });
+    return;
   }
   
   // Check if OTP matches
   if (deletionRequest.otp !== otp) {
-    return res.render("account/enter-otp", {
+    res.render("account/enter-otp", {
       title: "Verify OTP",
       token,
       email: deletionRequest.email,
       error: "Invalid OTP. Please try again.",
     });
+    return;
   }
   
   // Show final confirmation page
@@ -165,25 +132,27 @@ export const confirmDeletion = async (req: Request, res: Response) => {
   // Check if token exists and is valid
   const deletionRequest = deletionRequests.get(token);
   if (!deletionRequest) {
-    return res.render("account/error", {
+    res.render("account/error", {
       title: "Invalid Request",
       error: "This deletion link is invalid or has expired",
     });
+    return;
   }
   
   // Verify email confirmation matches
   if (deletionRequest.email !== email) {
-    return res.render("account/final-confirmation", {
+    res.render("account/final-confirmation", {
       title: "Confirm Deletion",
       token,
       email: deletionRequest.email,
       error: "Email confirmation does not match",
     });
+    return;
   }
   
   try {
     // Delete user from database
-    await database.deleteUser(email);
+    await databaseService.deleteUser(email);
     
     // Remove deletion request
     deletionRequests.delete(token);
@@ -194,12 +163,13 @@ export const confirmDeletion = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error deleting account:", error);
-    return res.render("account/final-confirmation", {
+    res.render("account/final-confirmation", {
       title: "Confirm Deletion",
       token,
       email: deletionRequest.email,
       error: "An error occurred while deleting your account",
     });
+    return;
   }
 };
 
@@ -243,7 +213,7 @@ export const apiRequestDeletion = async (req: AuthRequest, res: Response): Promi
 
     // Send email with OTP
     try {
-      await sendAccountDeletionEmail(email, token, otp);
+      await sendAccountDeletionEmailForWeb(email, token, otp);
     } catch (emailError) {
       console.error('Failed to send email:', emailError);
       res.status(500).json({ 
@@ -272,7 +242,10 @@ export const apiVerifyOtp = async (req: Request, res: Response): Promise<void> =
   try {
     const { token, otp } = req.body;
     
+    console.log('API Verify OTP request:', { token: token?.substring(0, 8) + '...', otp });
+    
     if (!token || !otp) {
+      console.log('Missing token or OTP');
       res.status(400).json({ 
         success: false, 
         message: "Token and OTP are required" 
@@ -283,6 +256,7 @@ export const apiVerifyOtp = async (req: Request, res: Response): Promise<void> =
     // Check if token exists and is valid
     const deletionRequest = deletionRequests.get(token);
     if (!deletionRequest) {
+      console.log('Token not found in deletion requests');
       res.status(400).json({ 
         success: false, 
         message: "Invalid or expired token" 
@@ -290,8 +264,20 @@ export const apiVerifyOtp = async (req: Request, res: Response): Promise<void> =
       return;
     }
     
+    // Check if token is expired
+    if (deletionRequest.expiresAt < new Date()) {
+      console.log('Token has expired');
+      deletionRequests.delete(token);
+      res.status(400).json({ 
+        success: false, 
+        message: "Token has expired" 
+      });
+      return;
+    }
+    
     // Check if OTP matches
-    if (deletionRequest.otp !== otp) {
+    if (deletionRequest.otp !== otp.toString()) {
+      console.log('OTP mismatch:', { expected: deletionRequest.otp, received: otp });
       res.status(400).json({ 
         success: false, 
         message: "Invalid OTP" 
@@ -305,6 +291,8 @@ export const apiVerifyOtp = async (req: Request, res: Response): Promise<void> =
       config.jwt.secret,
       { expiresIn: "15m" }
     );
+    
+    console.log('OTP verified successfully for email:', deletionRequest.email);
     
     res.status(200).json({ 
       success: true, 
@@ -355,7 +343,7 @@ export const apiConfirmDeletion = async (req: Request, res: Response): Promise<v
     }
     
     // Delete user from database
-    await database.deleteUser(email);
+    await databaseService.deleteUser(email);
     
     // Clean up any deletion requests for this email
     for (const [key, value] of deletionRequests.entries()) {
@@ -374,5 +362,43 @@ export const apiConfirmDeletion = async (req: Request, res: Response): Promise<v
       success: false, 
       message: "Failed to delete account" 
     });
+  }
+};
+
+/**
+ * Confirms and finalizes account deletion using an OTP from the request body.
+ * This requires authentication.
+ */
+export const confirmAccountDeletion: RequestHandler = async (req, res) => {
+  const { userId } = (req as any).user;
+  const { otp } = req.body;
+
+  if (!userId) {
+    res.status(401).json({ success: false, message: 'Authentication required.' });
+    return;
+  }
+
+  if (!otp) {
+    res.status(400).json({ success: false, message: 'OTP is required.' });
+    return;
+  }
+
+  try {
+    const isOtpValid = await otpService.verifyOtp(userId, otp);
+
+    if (!isOtpValid) {
+      res.status(400).json({ success: false, message: 'Invalid or expired OTP.' });
+      return;
+    }
+
+    await databaseService.deleteUserById(userId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Your account has been successfully deleted.',
+    });
+  } catch (error) {
+    console.error('Error confirming account deletion:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 };

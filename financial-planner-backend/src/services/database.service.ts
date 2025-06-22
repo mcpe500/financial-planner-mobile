@@ -305,6 +305,41 @@ class Database {
 			return false;
 		}
 	}
+
+	async findUserById(id: string) {
+		const { data, error } = await this.supabase
+			.from('users')
+			.select('*')
+			.eq('id', id)
+			.single();
+		if (error) {
+			console.error('Error finding user by ID:', error);
+			return null;
+		}
+		return data;
+	}
+
+	async updateUser(id: string, updates: Record<string, any>) {
+		const { data, error } = await this.supabase
+			.from('users')
+			.update(updates)
+			.eq('id', id);
+		if (error) {
+			console.error('Error updating user:', error);
+		}
+		return { data, error };
+	}
+
+	async deleteUserById(id: string) {
+		const { error } = await this.supabase
+			.from('users')
+			.delete()
+			.eq('id', id);
+		if (error) {
+			console.error('Error deleting user by ID:', error);
+		}
+		return { error };
+	}
 }
 
 const database = Database.getInstance();
