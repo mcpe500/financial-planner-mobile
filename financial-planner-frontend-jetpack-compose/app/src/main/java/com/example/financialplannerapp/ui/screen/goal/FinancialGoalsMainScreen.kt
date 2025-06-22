@@ -54,6 +54,11 @@ fun FinancialGoalsMainScreen(navController: NavController) {
     var goalToDelete by remember { mutableStateOf<GoalEntity?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    val walletId = wallets.firstOrNull()?.id ?: "wallet1" // TODO: Ganti dengan walletId aktif dari selector jika ada
+    LaunchedEffect(walletId) {
+        goalViewModel.loadGoals(walletId)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Financial Goals") })
