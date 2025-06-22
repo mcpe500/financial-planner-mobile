@@ -162,6 +162,18 @@ class ReceiptTransactionRepositoryImpl constructor(
             val receiptTransaction = getReceiptTransactionById(receiptTransactionId)
                 ?: return Result.failure(Exception("Receipt transaction not found"))
 
+            // Parse items JSON to List<ReceiptItem>
+            val items: List<com.example.financialplannerapp.data.model.ReceiptItem>? = receiptTransaction.items?.let { itemsJson ->
+                val moshi = com.squareup.moshi.Moshi.Builder()
+                    .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory())
+                    .build()
+                val type = com.squareup.moshi.Types.newParameterizedType(
+                    List::class.java, com.example.financialplannerapp.data.model.ReceiptItem::class.java
+                )
+                val adapter = moshi.adapter<List<com.example.financialplannerapp.data.model.ReceiptItem>>(type)
+                adapter.fromJson(itemsJson)
+            }
+
             // Create regular transaction from receipt data
             val transaction = TransactionEntity(
                 userId = receiptTransaction.userId,
@@ -178,6 +190,14 @@ class ReceiptTransactionRepositoryImpl constructor(
                 location = receiptTransaction.location,
                 receiptImagePath = null, // Could store image path if needed
                 receiptConfidence = receiptTransaction.confidence,
+                receipt_items = items?.map { item ->
+                    com.example.financialplannerapp.data.local.model.ReceiptItem(
+                        name = item.name,
+                        price = item.price,
+                        quantity = item.quantity,
+                        category = item.category ?: "Unknown"
+                    )
+                },
                 isSynced = receiptTransaction.isSynced,
                 backendTransactionId = receiptTransaction.backendTransactionId,
                 createdAt = receiptTransaction.createdAt,

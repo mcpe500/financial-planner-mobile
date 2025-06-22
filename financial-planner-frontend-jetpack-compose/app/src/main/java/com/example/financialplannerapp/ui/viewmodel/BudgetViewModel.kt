@@ -25,8 +25,7 @@ class BudgetViewModel(
 
     fun loadBudgets(walletId: String) {
         viewModelScope.launch {
-            val user_email = tokenManager.getUserEmail() ?: "guest"
-            repository.getBudgetsForWallet(walletId, user_email).collect { budgetList ->
+            repository.getBudgetsForWallet(walletId).collect { budgetList ->
                 _budgets.value = budgetList
             }
         }
