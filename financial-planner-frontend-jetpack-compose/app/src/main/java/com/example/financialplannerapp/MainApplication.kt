@@ -71,7 +71,7 @@ class AppContainer(private val applicationContext: Context) {
     private val appDatabase: AppDatabase by lazy {
         Room.databaseBuilder(
             applicationContext,
-            AppDatabase::class.java, "financial_planner_db"
+            AppDatabase::class.java, "financial-planner-db"
         ).build()
     }
 

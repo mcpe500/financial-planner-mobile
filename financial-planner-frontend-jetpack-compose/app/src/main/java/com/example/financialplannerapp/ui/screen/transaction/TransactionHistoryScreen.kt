@@ -33,7 +33,8 @@ fun TransactionHistoryScreen(navController: NavController) {
     val application = context.applicationContext as MainApplication
     val viewModel: TransactionViewModel = viewModel(
         factory = TransactionViewModelFactory(
-            transactionRepository = application.appContainer.transactionRepository
+            transactionRepository = application.appContainer.transactionRepository,
+            userId = application.appContainer.tokenManager.getUserId() ?: "local_user"
         )
     )
     val state by viewModel.state

@@ -5,6 +5,7 @@ import com.example.financialplannerapp.data.local.model.TransactionEntity
 import com.example.financialplannerapp.data.model.TransactionData
 import com.example.financialplannerapp.data.remote.ApiService
 import kotlinx.coroutines.flow.Flow
+import android.util.Log
 
 class TransactionRepositoryImpl(
     private val transactionDao: TransactionDao,
@@ -43,6 +44,29 @@ class TransactionRepositoryImpl(
     }
 
     override suspend fun insertTransactions(transactions: List<TransactionEntity>) {
-        transactions.forEach { transactionDao.insertTransaction(it) }
+        Log.d("TransactionRepo", "Inserting ${transactions.size} transactions to RoomDB")
+        transactions.forEach {
+            Log.d("TransactionRepo", "Inserting transaction: $it")
+            transactionDao.insertTransaction(it)
+        }
+    }
+
+    override suspend fun createTransactionRemote(transaction: TransactionData): TransactionData? {
+        val response = apiService.createTransaction(transaction)
+        return if (response.isSuccessful) response.body()?.data else null
+    }
+
+    override fun getCurrentUserId(): String? {
+        // Use TokenManager from AppContainer or as passed to the repository
+        // This assumes TokenManager is available in AppContainer
+        return try {
+            // If you have access to TokenManager, use it
+            // If not, return null
+            // Example:
+            // return tokenManager.getUserId()
+            null // TODO: Replace with actual TokenManager usage
+        } catch (e: Exception) {
+            null
+        }
     }
 }

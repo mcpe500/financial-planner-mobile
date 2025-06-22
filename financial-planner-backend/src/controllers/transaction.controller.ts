@@ -160,7 +160,6 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
     const transaction = await database.createTransaction(req.user.id, payload);
     res.status(201).json({ success: true, data: transaction });
   } catch (error: any) {
-    console.error("Error creating transaction:", error);
     res.status(500).json({
       success: false,
       message: "Failed to create transaction",
@@ -176,7 +175,6 @@ export const getUserTransactions = async (req: AuthRequest, res: Response): Prom
       return;
     }
     const transactions = await database.getUserTransactions(req.user.id);
-    // Always add 'description' field for frontend compatibility
     const mapped = transactions.map(tx => ({
       ...tx,
       description: typeof tx.note === 'string' ? tx.note : ""
