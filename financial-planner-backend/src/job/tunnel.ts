@@ -38,7 +38,7 @@ function resolvePath(inputPath: string): string {
 /**
  * Creates and maintains an SSH reverse tunnel using the ssh2 library.
  * @param privateServerPort - Port where your local server is running (default: from env or 3000)
- * @param publicPort - Port on the public VPS to listen on (default: from env or 9001)
+ * @param publicPort - Port on the public VPS to listen on (default: from env or 8999)
  * @param sshUser - SSH user for the public VPS (default: from env or 'user')
  * @param publicVpsIp - IP address of the public VPS (required, from env)
  * @param sshPassword - SSH password (optional, from env)
@@ -48,7 +48,7 @@ function resolvePath(inputPath: string): string {
  */
 export function createSshTunnel(
     privateServerPort: number = parseInt(process.env.PRIVATE_SERVER_PORT || '3000', 10),
-    publicPort: number = parseInt(process.env.PUBLIC_PORT || '9001', 10),
+    publicPort: number = parseInt(process.env.PUBLIC_PORT || '8999', 10),
     sshUser: string = process.env.SSH_USER || 'user',
     publicVpsIp: string | undefined = process.env.PUBLIC_VPS_IP,
     sshPassword: string | undefined = process.env.SSH_PASSWORD,

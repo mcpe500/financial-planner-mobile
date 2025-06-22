@@ -2,7 +2,7 @@ package com.example.financialplannerapp.config
 
 object Config {
     // Base URL for the API - update this to match your backend server
-    const val BASE_URL = "http://banachs.duckdns.org:9001" // For Android emulator
+    const val BASE_URL = "http://banachs.duckdns.org:8999" // For Android emulator
     // const val BASE_URL = "http://10.0.2.2:3000" // For Android emulator
     // const val BASE_URL = "http://localhost:3000" // For local development
     // const val BASE_URL = "https://your-production-server.com" // For production

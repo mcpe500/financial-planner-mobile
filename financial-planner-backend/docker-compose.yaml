@@ -7,8 +7,8 @@ services:
       dockerfile: Dockerfile
     container_name: financial_planner_backend_prod
     ports:
-      - "9001:9001"
-    command: bun start
+      - "8999:8999"
+    command: npm start
     env_file:
       - .env
     # For production, we don't mount volumes to keep the container immutable.

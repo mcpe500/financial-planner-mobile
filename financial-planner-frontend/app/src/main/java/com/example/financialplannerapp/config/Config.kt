@@ -2,7 +2,7 @@ package com.example.financialplannerapp.config
 
 object Config {
     // API Configuration
-    const val API_BASE_URL = "http://banachs.duckdns.org:9001/"
+    const val API_BASE_URL = "http://banachs.duckdns.org:8999/"
 
     // Auth Configuration
     const val AUTH_SCHEME = "finplanner"
