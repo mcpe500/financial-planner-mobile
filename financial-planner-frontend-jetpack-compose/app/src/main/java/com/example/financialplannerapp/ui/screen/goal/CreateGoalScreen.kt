@@ -41,14 +41,14 @@ import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
-
-// Bibit-inspired color palette
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-private val MotivationalOrange = Color(0xFFFF9800)
+import com.example.financialplannerapp.ui.theme.BibitGreen
+import com.example.financialplannerapp.ui.theme.BibitLightGreen
+import com.example.financialplannerapp.ui.theme.MediumGray
+import com.example.financialplannerapp.ui.theme.DangerRed
+import com.example.financialplannerapp.ui.theme.WarningOrange
+import com.example.financialplannerapp.ui.theme.MotivationalOrange
+import com.example.financialplannerapp.ui.theme.DarkGray
+import com.example.financialplannerapp.ui.theme.SoftGray
 
 data class GoalTemplate(
     val id: String,
@@ -232,7 +232,7 @@ private fun GoalPreviewCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = BibitGreen)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -241,7 +241,7 @@ private fun GoalPreviewCard(
             Text(
                 text = "Preview Tujuan",
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -257,7 +257,7 @@ private fun GoalPreviewCard(
                 text = name,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
 
@@ -266,13 +266,13 @@ private fun GoalPreviewCard(
             Text(
                 text = "Target",
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
             Text(
                 text = getCurrentCurrencySymbol() + " ${String.format("%,.0f", targetAmount)}",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onPrimary
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -280,12 +280,12 @@ private fun GoalPreviewCard(
             Text(
                 text = "Deadline: $targetDate",
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
             Text(
                 text = "Wallet: $wallet",
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
         }
     }
@@ -302,7 +302,7 @@ private fun GoalTemplatesCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -311,7 +311,7 @@ private fun GoalTemplatesCard(
                 text = "Template Tujuan",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -355,9 +355,9 @@ private fun GoalTemplateOption(
             ),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) BibitLightGreen.copy(alpha = 0.2f) else SoftGray
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
         ),
-        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, BibitGreen) else null
+        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -372,14 +372,14 @@ private fun GoalTemplateOption(
                 text = template.name,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (isSelected) BibitGreen else DarkGray,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             template.suggestedAmount?.let { amount ->
                 Text(
                     text = "~" + getCurrentCurrencySymbol() + " ${String.format("%,.0f", amount)}",
                     fontSize = 10.sp,
-                    color = MediumGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -397,7 +397,7 @@ private fun GoalNameCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -406,7 +406,7 @@ private fun GoalNameCard(
                 text = "Nama Tujuan",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
@@ -417,8 +417,8 @@ private fun GoalNameCard(
                 placeholder = { Text("e.g., Liburan ke Bali") },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BibitGreen,
-                    focusedLabelColor = BibitGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
                 )
             )
 
@@ -426,7 +426,7 @@ private fun GoalNameCard(
                 Text(
                     text = template.description,
                     fontSize = 12.sp,
-                    color = MediumGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -445,7 +445,7 @@ private fun TargetAmountCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -454,7 +454,7 @@ private fun TargetAmountCard(
                 text = "Target Jumlah",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
@@ -468,14 +468,14 @@ private fun TargetAmountCard(
                         getCurrentCurrencySymbol(),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = BibitGreen
+                        color = MaterialTheme.colorScheme.primary
                     )
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BibitGreen,
-                    focusedLabelColor = BibitGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
                 )
             )
 
@@ -487,14 +487,14 @@ private fun TargetAmountCard(
                     Icon(
                         Icons.Default.Lightbulb,
                         contentDescription = "Suggestion",
-                        tint = MotivationalOrange,
+                        tint = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Saran: " + getCurrentCurrencySymbol() + " ${String.format("%,.0f", suggested)}",
                         fontSize = 12.sp,
-                        color = MotivationalOrange
+                        color = MaterialTheme.colorScheme.secondary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(
@@ -504,7 +504,7 @@ private fun TargetAmountCard(
                         Text(
                             "Gunakan",
                             fontSize = 10.sp,
-                            color = BibitGreen
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -523,7 +523,7 @@ private fun TargetDateCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -532,7 +532,7 @@ private fun TargetDateCard(
                 text = "Target Tanggal",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
@@ -548,15 +548,15 @@ private fun TargetDateCard(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BibitGreen,
-                    focusedLabelColor = BibitGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
                 )
             )
 
             Text(
                 text = "Pilih tanggal yang realistis untuk mencapai tujuan Anda",
                 fontSize = 12.sp,
-                color = MediumGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
@@ -577,7 +577,7 @@ private fun WalletSelectionCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -586,7 +586,7 @@ private fun WalletSelectionCard(
                 text = "Wallet Tujuan",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
@@ -604,8 +604,8 @@ private fun WalletSelectionCard(
                         .menuAnchor()
                         .fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BibitGreen,
-                        focusedLabelColor = BibitGreen
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
                     )
                 )
                 ExposedDropdownMenu(

@@ -12,16 +12,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 
-// Bibit-inspired color palette
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
+// Import colors from Color.kt
+import com.example.financialplannerapp.ui.theme.BibitGreen
+import com.example.financialplannerapp.ui.theme.BibitLightGreen
+import com.example.financialplannerapp.ui.theme.SoftGray
+import com.example.financialplannerapp.ui.theme.MediumGray
+import com.example.financialplannerapp.ui.theme.DarkGray
+import com.example.financialplannerapp.ui.theme.WarningOrange
+import com.example.financialplannerapp.ui.theme.DangerRed
+
+// Additional colors needed for theme
 private val BibitDarkGreen = Color(0xFF388E3C)
 private val BibitAccent = Color(0xFF66BB6A)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-private val WarningOrange = Color(0xFFFF9800)
-private val ErrorRed = Color(0xFFF44336)
+private val ErrorRed = DangerRed
 
 // Light theme color scheme
 private val LightColorScheme = lightColorScheme(

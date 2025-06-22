@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -21,9 +22,6 @@ import androidx.navigation.NavController
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.BudgetEntity
-import com.example.financialplannerapp.ui.theme.DangerRed
-import com.example.financialplannerapp.ui.theme.Green
-import com.example.financialplannerapp.ui.theme.WarningOrange
 import com.example.financialplannerapp.ui.viewmodel.BudgetViewModel
 import com.example.financialplannerapp.ui.viewmodel.BudgetViewModelFactory
 import java.text.NumberFormat
@@ -117,9 +115,9 @@ fun BudgetProgressCard(
     val remainingAmount = (budget.amount - spentAmount).coerceAtLeast(0.0)
     
     val progressColor = when {
-        progress > 1.0f -> DangerRed
-        progress > 0.8f -> WarningOrange
-        else -> Green
+        progress > 1.0f -> MaterialTheme.colorScheme.error
+        progress > 0.8f -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.primary
     }
 
     Card(
@@ -130,14 +128,14 @@ fun BudgetProgressCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(budget.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(budget.category, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(budget.category, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(12.dp))
             
             LinearProgressIndicator(
                 progress = progress,
                 modifier = Modifier.fillMaxWidth().height(8.dp),
                 color = progressColor,
-                trackColor = Color.LightGray
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -155,7 +153,7 @@ fun BudgetProgressCard(
             Text(
                 "Remaining: ${currencyFormat.format(remainingAmount)}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (remainingAmount > 0) Color.DarkGray else DangerRed,
+                color = if (remainingAmount > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error,
                 fontWeight = if (remainingAmount <= 0) FontWeight.Bold else FontWeight.Normal
             )
         }

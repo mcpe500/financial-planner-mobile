@@ -36,15 +36,6 @@ import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
 import com.example.financialplannerapp.data.model.FinancialGoal
 import com.example.financialplannerapp.data.model.generateMockGoals
 
-// Bibit-inspired color palette
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-private val MotivationalOrange = Color(0xFFFF9800)
-private val AchievementGold = Color(0xFFFFD700)
-
 data class GoalTransaction(
     val id: String,
     val amount: Double,
@@ -207,13 +198,13 @@ private fun GoalHeaderCard(goal: FinancialGoal) {
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = "Completed",
-                        tint = Color.Green,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Goal Achieved!",
-                        color = Color.Green,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -247,7 +238,7 @@ private fun GoalProgressCard(goal: FinancialGoal) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(12.dp),
-                color = if (goal.isCompleted) Color.Green else MaterialTheme.colorScheme.primary,
+                color = if (goal.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
             
