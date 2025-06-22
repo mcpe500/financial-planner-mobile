@@ -21,4 +21,8 @@ class GoalRepositoryImpl(private val goalDao: GoalDao) : GoalRepository {
     override suspend fun deleteGoal(goalId: Int) {
         goalDao.deleteGoalById(goalId)
     }
+
+    override suspend fun getAllGoalsByUser(userEmail: String): Flow<List<GoalEntity>> {
+        return goalDao.getAllGoalsByUser(userEmail)
+    }
 }

@@ -9,7 +9,6 @@ import com.example.financialplannerapp.data.repository.GoalRepository
 import com.example.financialplannerapp.data.repository.WalletRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.Date
 
 class GoalViewModel(
     private val repository: GoalRepository,
@@ -26,13 +25,66 @@ class GoalViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _selectedPriorityFilter = MutableStateFlow<String?>(null)
+    val selectedPriorityFilter: StateFlow<String?> = _selectedPriorityFilter.asStateFlow()
+
+    private var currentWalletId: String? = null
+
+    val filteredGoals: StateFlow<List<GoalEntity>> = combine(
+        _goals,
+        _selectedPriorityFilter
+    ) { goals, priorityFilter ->
+        when (priorityFilter) {
+            null -> goals
+            else -> goals.filter { it.priority.equals(priorityFilter, ignoreCase = true) }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
     fun loadGoals(walletId: String) {
         viewModelScope.launch {
-            val user_email = tokenManager.getUserEmail() ?: "guest"
-            repository.getGoalsForWallet(walletId, user_email).collect { goalList ->
-                _goals.value = goalList
+            _isLoading.value = true
+            currentWalletId = walletId
+            try {
+                val user_email = tokenManager.getUserEmail() ?: "guest"
+                repository.getGoalsForWallet(walletId, user_email).collect { goalList ->
+                    _goals.value = goalList
+                    _isLoading.value = false
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to load goals: ${e.message}"
+                _isLoading.value = false
             }
         }
+    }
+
+    fun loadAllGoals() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val user_email = tokenManager.getUserEmail() ?: "guest"
+                repository.getAllGoalsByUser(user_email).collect { goalList ->
+                    _goals.value = goalList
+                    _isLoading.value = false
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to load goals: ${e.message}"
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun refreshGoals() {
+        currentWalletId?.let { walletId ->
+            loadGoals(walletId)
+        } ?: loadAllGoals()
+    }
+
+    fun setPriorityFilter(priority: String?) {
+        _selectedPriorityFilter.value = priority
     }
 
     fun addGoal(
@@ -40,7 +92,6 @@ class GoalViewModel(
         name: String,
         targetAmount: Double,
         currentAmount: Double,
-        targetDate: Date,
         priority: String
     ) {
         viewModelScope.launch {
@@ -53,10 +104,11 @@ class GoalViewModel(
                     name = name,
                     targetAmount = targetAmount,
                     currentAmount = currentAmount,
-                    targetDate = targetDate,
                     priority = priority
                 )
                 repository.insertGoal(goal)
+                // Refresh goals after adding
+                refreshGoals()
             } catch (e: Exception) {
                 _error.value = "Failed to add goal: ${e.message}"
             } finally {
@@ -70,6 +122,8 @@ class GoalViewModel(
             _isLoading.value = true
             try {
                 repository.deleteGoal(goalId)
+                // Refresh goals after deleting
+                refreshGoals()
             } catch (e: Exception) {
                 _error.value = "Failed to delete goal: ${e.message}"
             } finally {
@@ -80,38 +134,124 @@ class GoalViewModel(
 
     fun editGoal(goal: GoalEntity, newName: String, newTarget: Double, newPriority: String) {
         viewModelScope.launch {
-            val updatedGoal = goal.copy(name = newName, targetAmount = newTarget, priority = newPriority)
-            repository.updateGoal(updatedGoal)
+            try {
+                val updatedGoal = goal.copy(name = newName, targetAmount = newTarget, priority = newPriority)
+                repository.updateGoal(updatedGoal)
+                // Refresh goals after editing
+                refreshGoals()
+            } catch (e: Exception) {
+                _error.value = "Failed to edit goal: ${e.message}"
+            }
+        }
+    }
+
+    fun editGoalWithWalletAdjustment(goal: GoalEntity, wallet: WalletEntity, newName: String, newTarget: Double, newPriority: String) {
+        viewModelScope.launch {
+            try {
+                // If new target is smaller than current amount, return excess to wallet
+                val excessAmount = if (newTarget < goal.currentAmount) {
+                    goal.currentAmount - newTarget
+                } else {
+                    0.0
+                }
+                
+                val adjustedCurrentAmount = if (excessAmount > 0) {
+                    newTarget
+                } else {
+                    goal.currentAmount
+                }
+                
+                val updatedGoal = goal.copy(
+                    name = newName, 
+                    targetAmount = newTarget, 
+                    currentAmount = adjustedCurrentAmount,
+                    priority = newPriority
+                )
+                
+                val updatedWallet = wallet.copy(balance = wallet.balance + excessAmount)
+                
+                repository.updateGoal(updatedGoal)
+                walletRepository.updateWallet(updatedWallet)
+                
+                // Refresh goals after editing
+                refreshGoals()
+            } catch (e: Exception) {
+                _error.value = "Failed to edit goal: ${e.message}"
+            }
+        }
+    }
+
+    fun addToGoalAmountWithValidation(goal: GoalEntity, wallet: WalletEntity, amount: Double) {
+        viewModelScope.launch {
+            try {
+                if (wallet.balance >= amount) {
+                    val neededAmount = goal.targetAmount - goal.currentAmount
+                    val actualAmount = if (amount > neededAmount) neededAmount else amount
+                    
+                    val updatedGoal = goal.copy(currentAmount = goal.currentAmount + actualAmount)
+                    val updatedWallet = wallet.copy(balance = wallet.balance - actualAmount)
+                    
+                    repository.updateGoal(updatedGoal)
+                    walletRepository.updateWallet(updatedWallet)
+                    
+                    // Refresh goals after updating
+                    refreshGoals()
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to add to goal amount: ${e.message}"
+            }
         }
     }
 
     fun deleteGoalAndReturnToWallet(goal: GoalEntity, wallet: WalletEntity) {
         viewModelScope.launch {
-            val updatedWallet = wallet.copy(balance = wallet.balance + goal.currentAmount)
-            walletRepository.updateWallet(updatedWallet)
-            repository.deleteGoal(goal.id)
+            try {
+                val updatedWallet = wallet.copy(balance = wallet.balance + goal.currentAmount)
+                walletRepository.updateWallet(updatedWallet)
+                repository.deleteGoal(goal.id)
+                // Refresh goals after deleting
+                refreshGoals()
+            } catch (e: Exception) {
+                _error.value = "Failed to delete goal: ${e.message}"
+            }
         }
     }
 
     fun addToGoalAmount(goal: GoalEntity, wallet: WalletEntity, amount: Double) {
         viewModelScope.launch {
-            if (wallet.balance >= amount) {
-                val updatedGoal = goal.copy(currentAmount = goal.currentAmount + amount)
-                val updatedWallet = wallet.copy(balance = wallet.balance - amount)
-                repository.updateGoal(updatedGoal)
-                walletRepository.updateWallet(updatedWallet)
+            try {
+                if (wallet.balance >= amount) {
+                    val updatedGoal = goal.copy(currentAmount = goal.currentAmount + amount)
+                    val updatedWallet = wallet.copy(balance = wallet.balance - amount)
+                    repository.updateGoal(updatedGoal)
+                    walletRepository.updateWallet(updatedWallet)
+                    // Refresh goals after updating
+                    refreshGoals()
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to add to goal amount: ${e.message}"
             }
         }
     }
 
     fun subtractFromGoalAmount(goal: GoalEntity, wallet: WalletEntity, amount: Double) {
         viewModelScope.launch {
-            if (goal.currentAmount >= amount) {
-                val updatedGoal = goal.copy(currentAmount = goal.currentAmount - amount)
-                val updatedWallet = wallet.copy(balance = wallet.balance + amount)
-                repository.updateGoal(updatedGoal)
-                walletRepository.updateWallet(updatedWallet)
+            try {
+                if (goal.currentAmount >= amount) {
+                    val updatedGoal = goal.copy(currentAmount = goal.currentAmount - amount)
+                    val updatedWallet = wallet.copy(balance = wallet.balance + amount)
+                    repository.updateGoal(updatedGoal)
+                    walletRepository.updateWallet(updatedWallet)
+                    // Refresh goals after updating
+                    refreshGoals()
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to subtract from goal amount: ${e.message}"
             }
         }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 }

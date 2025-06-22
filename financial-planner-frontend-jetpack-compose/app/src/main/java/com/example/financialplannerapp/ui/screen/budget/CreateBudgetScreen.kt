@@ -1,5 +1,6 @@
 package com.example.financialplannerapp.ui.screen.budget
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -140,6 +141,7 @@ fun CreateBudgetScreen(navController: NavController) {
                 Switch(checked = isRecurring, onCheckedChange = { isRecurring = it })
             }
 
+            // Replace the save button in CreateBudgetScreen with this:
             Button(
                 onClick = {
                     val budgetAmount = amount.toDoubleOrNull()
@@ -148,7 +150,7 @@ fun CreateBudgetScreen(navController: NavController) {
                             walletId = selectedWallet!!.id,
                             name = budgetName,
                             amount = budgetAmount,
-                            category = category,
+                            category = category.ifBlank { "General" }, // Default category if empty
                             startDate = startDate,
                             endDate = endDate,
                             isRecurring = isRecurring
@@ -160,6 +162,17 @@ fun CreateBudgetScreen(navController: NavController) {
                 enabled = selectedWallet != null && budgetName.isNotBlank() && amount.isNotBlank()
             ) {
                 Text("Save Budget")
+            }
+
+// Also add this LaunchedEffect to handle navigation after successful budget creation:
+            val error by budgetViewModel.error.collectAsState()
+            val isLoading by budgetViewModel.isLoading.collectAsState()
+
+            LaunchedEffect(error) {
+                error?.let {
+                    // Show error message to user
+                    Log.e("CreateBudget", "Error: $it")
+                }
             }
         }
     }
