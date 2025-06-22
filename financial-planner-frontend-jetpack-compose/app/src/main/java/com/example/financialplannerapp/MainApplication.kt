@@ -82,6 +82,7 @@ class AppContainer(private val applicationContext: Context) {
 
     // API Service
     val apiService by lazy { RetrofitClient.getApiService(applicationContext) }
+    val accountService by lazy { RetrofitClient.getAccountService(applicationContext) }
 
     // DAOs from AppDatabase - only use DAOs that actually exist
     private val transactionDao by lazy { appDatabase.transactionDao() }

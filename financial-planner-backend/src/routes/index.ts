@@ -23,7 +23,8 @@ apiRouter.use("/api/auth", authRoutes);
 apiRouter.use("/api/profile", profileRoutes);
 apiRouter.use("/api/transactions", transactionRoutes);
 apiRouter.use("/api/receipts", transactionRoutes);
-// apiRouter.use("/api/account", accountApiRoutes);
+apiRouter.use("/api/account", accountRoutes);
+apiRouter.use("/api/account", accountRoutes);
 
 // Web routes
 apiRouter.use("/account", accountRoutes);
