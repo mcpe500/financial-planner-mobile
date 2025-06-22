@@ -485,12 +485,22 @@ fun GoalDetailsScreen(
                         Button(
                             onClick = {
                                 val amount = addAmount.toDoubleOrNull() ?: 0.0
-                                if (amount > 0 && wallet.balance >= amount) {
-                                    goalViewModel.addToGoalAmount(goal, wallet.toWalletEntity(userId), amount)
-                                    addAmount = ""
-                                    errorMessage = null
-                                } else {
-                                    errorMessage = "Insufficient wallet balance or invalid amount."
+                                val needed = goal.targetAmount - goal.currentAmount
+                                when {
+                                    amount <= 0 -> {
+                                        errorMessage = "Please enter a positive amount to add."
+                                    }
+                                    amount > wallet.balance -> {
+                                        errorMessage = "Insufficient funds in your wallet."
+                                    }
+                                    amount > needed -> {
+                                        errorMessage = "Amount exceeds target. You only need ${formatCurrency(needed)}."
+                                    }
+                                    else -> {
+                                        goalViewModel.addToGoalAmount(goal, wallet.toWalletEntity(userId), amount)
+                                        addAmount = ""
+                                        errorMessage = null
+                                    }
                                 }
                             },
                             enabled = addAmount.isNotBlank(),
@@ -548,15 +558,21 @@ fun GoalDetailsScreen(
                         
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        Button(
+                                                Button(
                             onClick = {
                                 val amount = subtractAmount.toDoubleOrNull() ?: 0.0
-                                if (amount > 0 && goal.currentAmount >= amount) {
-                                    goalViewModel.subtractFromGoalAmount(goal, wallet.toWalletEntity(userId), amount)
-                                    subtractAmount = ""
-                                    errorMessage = null
-                                } else {
-                                    errorMessage = "Insufficient goal amount or invalid amount."
+                                when {
+                                    amount <= 0 -> {
+                                        errorMessage = "Please enter a positive amount to subtract."
+                                    }
+                                    amount > goal.currentAmount -> {
+                                        errorMessage = "Cannot subtract more than the current saved amount."
+                                    }
+                                    else -> {
+                                        goalViewModel.subtractFromGoalAmount(goal, wallet.toWalletEntity(userId), amount)
+                                        subtractAmount = ""
+                                        errorMessage = null
+                                    }
                                 }
                             },
                             enabled = subtractAmount.isNotBlank(),
