@@ -25,8 +25,19 @@ class BudgetViewModel(
 
     fun loadBudgets(walletId: String) {
         viewModelScope.launch {
-            repository.getBudgetsForWallet(walletId).collect { budgetList ->
-                _budgets.value = budgetList
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val userEmail = tokenManager.getUserEmail() ?: "guest"
+                repository.getBudgetsForWallet(walletId).collect { budgetList ->
+                    // Filter budgets by user email
+                    val userBudgets = budgetList.filter { it.user_email == userEmail }
+                    _budgets.value = userBudgets
+                    _isLoading.value = false
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to load budgets: ${e.message}"
+                _isLoading.value = false
             }
         }
     }
@@ -42,17 +53,27 @@ class BudgetViewModel(
     ) {
         viewModelScope.launch {
             _isLoading.value = true
+            _error.value = null
             try {
-                val user_email = tokenManager.getUserEmail() ?: "guest"
-                // Check if a budget for this wallet already exists for this user
-                val existing = repository.getBudgetsForWallet(walletId).firstOrNull()?.find { it.user_email == user_email }
+                val userEmail = tokenManager.getUserEmail() ?: "guest"
+
+                // Optional: Check if a budget with the same name already exists for this user and wallet
+                // Remove this check if you want to allow multiple budgets per wallet
+                /*
+                val existingBudgets = repository.getBudgetsForWallet(walletId).firstOrNull() ?: emptyList()
+                val existing = existingBudgets.find {
+                    it.user_email == userEmail && it.name.equals(name, ignoreCase = true)
+                }
                 if (existing != null) {
-                    _error.value = "A budget for this wallet already exists."
+                    _error.value = "A budget with this name already exists for this wallet."
+                    _isLoading.value = false
                     return@launch
                 }
+                */
+
                 val budget = BudgetEntity(
                     walletId = walletId,
-                    user_email = user_email,
+                    user_email = userEmail,
                     name = name,
                     amount = amount,
                     category = category,
@@ -61,6 +82,10 @@ class BudgetViewModel(
                     isRecurring = isRecurring
                 )
                 repository.insertBudget(budget)
+
+                // Refresh the budgets list after adding
+                loadBudgets(walletId)
+
             } catch (e: Exception) {
                 _error.value = "Failed to add budget: ${e.message}"
             } finally {
@@ -80,6 +105,7 @@ class BudgetViewModel(
     ) {
         viewModelScope.launch {
             _isLoading.value = true
+            _error.value = null
             try {
                 val budget = _budgets.value.find { it.id == budgetId }
                 if (budget != null) {
@@ -92,6 +118,9 @@ class BudgetViewModel(
                         isRecurring = isRecurring
                     )
                     repository.updateBudget(updated)
+
+                    // Refresh the budgets list after editing
+                    loadBudgets(budget.walletId)
                 }
             } catch (e: Exception) {
                 _error.value = "Failed to edit budget: ${e.message}"
@@ -104,8 +133,15 @@ class BudgetViewModel(
     fun deleteBudget(budgetId: Int) {
         viewModelScope.launch {
             _isLoading.value = true
+            _error.value = null
             try {
-                repository.deleteBudget(budgetId)
+                val budget = _budgets.value.find { it.id == budgetId }
+                if (budget != null) {
+                    repository.deleteBudget(budgetId)
+
+                    // Refresh the budgets list after deleting
+                    loadBudgets(budget.walletId)
+                }
             } catch (e: Exception) {
                 _error.value = "Failed to delete budget: ${e.message}"
             } finally {
@@ -113,4 +149,8 @@ class BudgetViewModel(
             }
         }
     }
-} 
+
+    fun clearError() {
+        _error.value = null
+    }
+}

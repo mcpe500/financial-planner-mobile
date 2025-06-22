@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.GoalEntity
@@ -54,9 +55,27 @@ fun FinancialGoalsMainScreen(navController: NavController) {
     var goalToDelete by remember { mutableStateOf<GoalEntity?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    val walletId = wallets.firstOrNull()?.id ?: "wallet1" // TODO: Ganti dengan walletId aktif dari selector jika ada
-    LaunchedEffect(walletId) {
-        goalViewModel.loadGoals(walletId)
+    // Load wallets first
+    LaunchedEffect(Unit) {
+        walletViewModel.loadWallets()
+    }
+
+    // Load goals for all wallets (or specific wallet)
+    LaunchedEffect(wallets) {
+        if (wallets.isNotEmpty()) {
+            // Load goals for the first wallet, or you can modify this to load for all wallets
+            val firstWalletId = wallets.first().id
+            goalViewModel.loadGoals(firstWalletId)
+        }
+    }
+
+    // Refresh goals when returning from other screens
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(currentBackStackEntry) {
+        if (wallets.isNotEmpty()) {
+            val firstWalletId = wallets.first().id
+            goalViewModel.loadGoals(firstWalletId)
+        }
     }
 
     Scaffold(
@@ -69,33 +88,95 @@ fun FinancialGoalsMainScreen(navController: NavController) {
             }
         }
     ) { padding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .fillMaxSize()
         ) {
-            if (goals.isEmpty()) {
-                item {
-                    Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No goals yet. Tap the '+' button to add one!")
-                    }
+            // Debug information (remove in production)
+            if (wallets.isEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Yellow.copy(alpha = 0.2f))
+                ) {
+                    Text(
+                        "No wallets found. Please create a wallet first.",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             } else {
-                items(goals) { goal ->
-                    GoalItemCard(
-                        goal = goal,
-                        onGoalClick = { navController.navigate("goal_details/${goal.id}") },
-                        onEditClick = {
-                            goalToEdit = goal
-                            showEditDialog = true
-                        },
-                        onDeleteClick = {
-                            goalToDelete = goal
-                            showDeleteDialog = true
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Blue.copy(alpha = 0.1f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "Debug Info:",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text("Wallets count: ${wallets.size}")
+                        Text("Goals count: ${goals.size}")
+                        Text("Current wallet: ${wallets.firstOrNull()?.name ?: "None"}")
+                        if (goals.isNotEmpty()) {
+                            Text("Goals:")
+                            goals.forEach { goal ->
+                                Text("- ${goal.name} (Wallet ID: ${goal.walletId})")
+                            }
                         }
-                    )
+                    }
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (goals.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillParentMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Default.Flag,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = Color.Gray
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    "No goals yet. Tap the '+' button to add one!",
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    items(goals) { goal ->
+                        GoalItemCard(
+                            goal = goal,
+                            onGoalClick = { navController.navigate("goal_details/${goal.id}") },
+                            onEditClick = {
+                                goalToEdit = goal
+                                showEditDialog = true
+                            },
+                            onDeleteClick = {
+                                goalToDelete = goal
+                                showDeleteDialog = true
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -111,6 +192,7 @@ fun FinancialGoalsMainScreen(navController: NavController) {
             }
         )
     }
+
     if (showDeleteDialog && goalToDelete != null) {
         val wallet = wallets.find { it.id == goalToDelete!!.walletId }
         if (wallet != null) {
