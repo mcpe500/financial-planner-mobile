@@ -28,6 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.data.local.model.BillEntity
+import com.example.financialplannerapp.data.local.model.WalletEntity
 import com.example.financialplannerapp.data.model.BillFilter
 import com.example.financialplannerapp.data.model.BillStatus
 import com.example.financialplannerapp.data.model.RecurringBill
@@ -39,6 +40,7 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.financialplannerapp.TokenManager
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,16 +48,28 @@ fun RecurringBillsMainScreen(navController: NavController, tokenManager: TokenMa
     val context = LocalContext.current
     val application = context.applicationContext as MainApplication
     val billViewModel: BillViewModel = viewModel(
-        factory = BillViewModelFactory(application.appContainer.billRepository, tokenManager)
+        factory = BillViewModelFactory(
+            application.appContainer.billRepository,
+            application.appContainer.walletRepository,
+            application.appContainer.transactionRepository,
+            tokenManager
+        )
     )
     val isLoading by billViewModel.isLoading.collectAsState()
     val error by billViewModel.error.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(error) {
         error?.let {
             snackbarHostState.showSnackbar(message = it, duration = SnackbarDuration.Short)
             billViewModel.clearError()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        billViewModel.operationSuccess.collect { message ->
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
         }
     }
 
@@ -94,6 +108,7 @@ private fun RecurringBillsMainContent(
     var billToEdit by remember { mutableStateOf<BillEntity?>(null) }
     var billToDelete by remember { mutableStateOf<BillEntity?>(null) }
     var billToView by remember { mutableStateOf<BillEntity?>(null) }
+    var billToPay by remember { mutableStateOf<BillEntity?>(null) }
 
     val billEntities by viewModel.localBills.collectAsState()
 
@@ -102,8 +117,21 @@ private fun RecurringBillsMainContent(
             bill = RecurringBill.fromEntity(billToView!!),
             onDismiss = { billToView = null },
             onPay = {
-                // TODO: Implement payment logic
+                billToPay = billToView
                 billToView = null
+            }
+        )
+    }
+
+    if (billToPay != null) {
+        val wallets by viewModel.wallets.collectAsState()
+        PayBillDialog(
+            bill = billToPay!!,
+            wallets = wallets,
+            onDismiss = { billToPay = null },
+            onConfirm = { wallet ->
+                viewModel.payBill(billToPay!!, wallet)
+                billToPay = null
             }
         )
     }
@@ -526,4 +554,84 @@ fun BillDetailDialog(
             }
         }
     }
+}
+
+@Composable
+fun PayBillDialog(
+    bill: BillEntity,
+    wallets: List<WalletEntity>,
+    onDismiss: () -> Unit,
+    onConfirm: (WalletEntity) -> Unit
+) {
+    var selectedWallet by remember { mutableStateOf<WalletEntity?>(null) }
+    var expanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pay Bill: ${bill.name}") },
+        text = {
+            Column {
+                Text("Amount: ${formatCurrency(bill.estimatedAmount)}")
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Select a wallet to pay from:")
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (wallets.isEmpty()) {
+                    Text("No wallets available. Please create a wallet first.", color = MaterialTheme.colorScheme.error)
+                } else {
+                    Box {
+                        OutlinedTextField(
+                            value = selectedWallet?.name ?: "Select Wallet",
+                            onValueChange = { },
+                            readOnly = true,
+                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Select Wallet") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { expanded = true }
+                        )
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            wallets.forEach { wallet ->
+                                DropdownMenuItem(
+                                    text = { Text("${wallet.name} (${formatCurrency(wallet.balance)})") },
+                                    onClick = {
+                                        selectedWallet = wallet
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    selectedWallet?.let {
+                        if (it.balance < bill.estimatedAmount) {
+                            Text(
+                                "This wallet has insufficient funds.",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    selectedWallet?.let { onConfirm(it) }
+                },
+                enabled = selectedWallet != null && selectedWallet!!.balance >= bill.estimatedAmount && wallets.isNotEmpty()
+            ) {
+                Text("Confirm Payment")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
