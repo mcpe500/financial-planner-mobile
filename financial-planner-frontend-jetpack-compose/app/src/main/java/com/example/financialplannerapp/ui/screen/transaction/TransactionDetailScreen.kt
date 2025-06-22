@@ -1,5 +1,6 @@
 package com.example.financialplannerapp.ui.screen.transaction
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,6 +10,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Note
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,7 +30,9 @@ import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.core.util.formatCurrency
 import com.example.financialplannerapp.data.local.model.ReceiptItem
 import com.example.financialplannerapp.data.local.model.TransactionEntity
+import com.example.financialplannerapp.data.local.model.WalletEntity
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -56,7 +64,7 @@ fun TransactionDetailScreen(navController: NavController, transactionId: Long?) 
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -143,9 +151,9 @@ private fun TransactionHeaderCard(transaction: TransactionEntity) {
         ) {
             Icon(
                 imageVector = if (transaction.type.equals("INCOME", true)) {
-                    Icons.Default.TrendingUp
+                    Icons.Filled.TrendingUp
                 } else {
-                    Icons.Default.TrendingDown
+                    Icons.Filled.TrendingDown
                 },
                 contentDescription = transaction.type,
                 tint = if (transaction.type.equals("INCOME", true)) {
@@ -204,9 +212,9 @@ private fun TransactionTypeCard(transaction: TransactionEntity) {
         ) {
             Icon(
                 imageVector = if (transaction.isFromReceipt) {
-                    Icons.Default.CameraAlt
+                    Icons.Filled.CameraAlt
                 } else {
-                    Icons.Default.Edit
+                    Icons.Filled.Edit
                 },
                 contentDescription = if (transaction.isFromReceipt) "From Receipt" else "Manual Entry",
                 tint = MaterialTheme.colorScheme.primary,
@@ -236,6 +244,23 @@ private fun TransactionTypeCard(transaction: TransactionEntity) {
 
 @Composable
 private fun BasicDetailsCard(transaction: TransactionEntity) {
+    var wallet by remember { mutableStateOf<WalletEntity?>(null) }
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    
+    // Load wallet information
+    LaunchedEffect(transaction.walletId) {
+        try {
+            val walletRepository = application.appContainer.walletRepository
+            val userEmail = application.appContainer.tokenManager.getUserEmail() ?: "local_user@example.com"
+            val walletsFlow = walletRepository.getWalletsByUserEmail(userEmail)
+            val wallets = walletsFlow.first()
+            wallet = wallets.find { it.id == transaction.walletId }
+        } catch (e: Exception) {
+            Log.e("TransactionDetail", "Failed to load wallet: ${e.message}")
+        }
+    }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -250,7 +275,7 @@ private fun BasicDetailsCard(transaction: TransactionEntity) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.Info,
+                    imageVector = Icons.Filled.Info,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
@@ -267,7 +292,13 @@ private fun BasicDetailsCard(transaction: TransactionEntity) {
             
             DetailRow("Type", transaction.type.replaceFirstChar { it.uppercase() })
             DetailRow("Date", SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(transaction.date))
-            DetailRow("Time", SimpleDateFormat("HH:mm", Locale.getDefault()).format(transaction.date))
+            
+            // Wallet information
+            wallet?.let { walletEntity ->
+                DetailRow("Wallet", "${walletEntity.name} (${walletEntity.type})")
+            } ?: run {
+                DetailRow("Wallet", "Unknown Wallet")
+            }
             
             if (transaction.merchantName != null && transaction.merchantName.isNotBlank()) {
                 DetailRow("Merchant", transaction.merchantName)
@@ -296,7 +327,7 @@ private fun ReceiptDetailsCard(transaction: TransactionEntity) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.Receipt,
+                    imageVector = Icons.Filled.Receipt,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
@@ -342,7 +373,7 @@ private fun ReceiptItemsCard(receiptItems: List<ReceiptItem>) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.List,
+                    imageVector = Icons.Filled.List,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
@@ -433,7 +464,7 @@ private fun NoteCard(note: String) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.Note,
+                    imageVector = Icons.Filled.Note,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)

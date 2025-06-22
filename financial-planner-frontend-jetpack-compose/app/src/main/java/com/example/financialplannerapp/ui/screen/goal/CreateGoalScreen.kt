@@ -72,7 +72,7 @@ fun CreateGoalScreen(navController: NavController) {
     val tokenManager = remember { TokenManager(application) }
     val userId = tokenManager.getUserEmail() ?: "guest"
     val goalViewModel: GoalViewModel = viewModel(
-        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager, application.appContainer.walletRepository)
+        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager, application.appContainer.walletRepository, application.appContainer.transactionRepository)
     )
     val walletViewModel: WalletViewModel = viewModel(
         factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)

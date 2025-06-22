@@ -8,6 +8,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,6 +59,8 @@ fun TransactionHistoryScreen(navController: NavController) {
     val state by viewModel.state
     
     var selectedFilter by remember { mutableStateOf(TransactionFilter.ALL) }
+    var selectedMonth by remember { mutableStateOf(Calendar.getInstance()) }
+    var showMonthPicker by remember { mutableStateOf(false) }
 
     val filteredTransactions = remember(state.transactions, selectedFilter) {
         when (selectedFilter) {
@@ -65,11 +70,22 @@ fun TransactionHistoryScreen(navController: NavController) {
         }
     }
 
-    val groupedTransactions = remember(filteredTransactions) {
+    val groupedTransactions = remember(filteredTransactions, selectedMonth) {
         val calendar = Calendar.getInstance()
         val monthFormat = SimpleDateFormat("MMMM", Locale.getDefault())
         
-        filteredTransactions
+        // Filter transactions for selected month and year
+        val selectedYear = selectedMonth.get(Calendar.YEAR)
+        val selectedMonthValue = selectedMonth.get(Calendar.MONTH)
+        
+        val monthFilteredTransactions = filteredTransactions.filter { transaction ->
+            calendar.time = transaction.date
+            val transactionYear = calendar.get(Calendar.YEAR)
+            val transactionMonth = calendar.get(Calendar.MONTH)
+            transactionYear == selectedYear && transactionMonth == selectedMonthValue
+        }
+        
+        monthFilteredTransactions
             .groupBy { transaction ->
                 calendar.time = transaction.date
                 val month = monthFormat.format(transaction.date)
@@ -110,7 +126,7 @@ fun TransactionHistoryScreen(navController: NavController) {
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -126,6 +142,14 @@ fun TransactionHistoryScreen(navController: NavController) {
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
         ) {
+            // Month Selector
+            MonthSelectorCard(
+                selectedMonth = selectedMonth,
+                onMonthChange = { selectedMonth = it },
+                showMonthPicker = showMonthPicker,
+                onShowMonthPickerChange = { showMonthPicker = it }
+            )
+            
             // Filter Section
             FilterSection(
                 selectedFilter = selectedFilter,
@@ -142,7 +166,7 @@ fun TransactionHistoryScreen(navController: NavController) {
                     )
                 }
             } else if (groupedTransactions.isEmpty()) {
-                EmptyTransactionsView(selectedFilter)
+                EmptyTransactionsView(selectedFilter, selectedMonth)
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -159,6 +183,75 @@ fun TransactionHistoryScreen(navController: NavController) {
                     }
                 }
             }
+        }
+    }
+
+    // Month Picker Dialog
+    if (showMonthPicker) {
+        AlertDialog(
+            onDismissRequest = { showMonthPicker = false },
+            title = {
+                Text("Select Month")
+            },
+            text = {
+                Text("Month picker functionality will be implemented here. For now, you can view transactions from the current month.")
+            },
+            confirmButton = {
+                TextButton(onClick = { showMonthPicker = false }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMonthPicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun MonthSelectorCard(
+    selectedMonth: Calendar,
+    onMonthChange: (Calendar) -> Unit,
+    showMonthPicker: Boolean,
+    onShowMonthPickerChange: (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Select Month",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            OutlinedTextField(
+                value = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(selectedMonth.time),
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Month") },
+                trailingIcon = {
+                    IconButton(onClick = { onShowMonthPickerChange(true) }) {
+                        Icon(Icons.Filled.DateRange, contentDescription = "Select Month")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
         }
     }
 }
@@ -207,7 +300,7 @@ private fun FilterSection(
                         leadingIcon = {
                             if (selectedFilter == filter) {
                                 Icon(
-                                    imageVector = Icons.Default.Check,
+                                    imageVector = Icons.Filled.Check,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -222,7 +315,9 @@ private fun FilterSection(
 }
 
 @Composable
-private fun EmptyTransactionsView(selectedFilter: TransactionFilter) {
+private fun EmptyTransactionsView(selectedFilter: TransactionFilter, selectedMonth: Calendar) {
+    val monthYear = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(selectedMonth.time)
+    
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -232,7 +327,7 @@ private fun EmptyTransactionsView(selectedFilter: TransactionFilter) {
             modifier = Modifier.padding(32.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.Receipt,
+                imageVector = Icons.Filled.Receipt,
                 contentDescription = "No transactions",
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -240,9 +335,9 @@ private fun EmptyTransactionsView(selectedFilter: TransactionFilter) {
             Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = when (selectedFilter) {
-                    TransactionFilter.ALL -> "No transactions found"
-                    TransactionFilter.INCOME -> "No income transactions"
-                    TransactionFilter.EXPENSE -> "No expense transactions"
+                    TransactionFilter.ALL -> "No transactions in $monthYear"
+                    TransactionFilter.INCOME -> "No income transactions in $monthYear"
+                    TransactionFilter.EXPENSE -> "No expense transactions in $monthYear"
                 },
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
@@ -252,7 +347,7 @@ private fun EmptyTransactionsView(selectedFilter: TransactionFilter) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = when (selectedFilter) {
-                    TransactionFilter.ALL -> "Your transaction history will appear here"
+                    TransactionFilter.ALL -> "Try selecting a different month or add new transactions"
                     TransactionFilter.INCOME -> "Income transactions will appear here"
                     TransactionFilter.EXPENSE -> "Expense transactions will appear here"
                 },
@@ -359,9 +454,9 @@ private fun TransactionHistoryItem(transaction: TransactionEntity, onClick: () -
             ) {
                 Icon(
                     imageVector = if (transaction.type.equals("INCOME", true)) {
-                        Icons.Default.TrendingUp
+                        Icons.Filled.TrendingUp
                     } else {
-                        Icons.Default.TrendingDown
+                        Icons.Filled.TrendingDown
                     },
                     contentDescription = transaction.type,
                     tint = if (transaction.type.equals("INCOME", true)) {
@@ -431,7 +526,7 @@ private fun TransactionHistoryItem(transaction: TransactionEntity, onClick: () -
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CameraAlt,
+                            imageVector = Icons.Filled.CameraAlt,
                             contentDescription = "From Receipt",
                             modifier = Modifier.size(12.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant

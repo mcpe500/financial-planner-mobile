@@ -44,7 +44,7 @@ fun GoalDetailsScreen(
     val tokenManager = remember { TokenManager(application) }
     val userId = tokenManager.getUserEmail() ?: "guest"
     val goalViewModel: GoalViewModel = viewModel(
-        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager, application.appContainer.walletRepository)
+        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager, application.appContainer.walletRepository, application.appContainer.transactionRepository)
     )
     val walletViewModel: WalletViewModel = viewModel(
         factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
@@ -639,7 +639,10 @@ fun GoalDetailsScreen(
                         }
                         
                         Button(
-                            onClick = { /* TODO: Implement complete logic */ },
+                            onClick = { 
+                                goalViewModel.completeGoal(goal)
+                                navController.popBackStack()
+                            },
                             enabled = isComplete,
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(

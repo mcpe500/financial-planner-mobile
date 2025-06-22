@@ -37,14 +37,19 @@ fun AddRecurringBillScreen(
     val tokenManager = remember { TokenManager(context) }
     val application = context.applicationContext as MainApplication
     val billViewModel: BillViewModel = viewModel(
-        factory = BillViewModelFactory(application.appContainer.billRepository, tokenManager)
+        factory = BillViewModelFactory(
+            billRepository = application.appContainer.billRepository,
+            walletRepository = application.appContainer.walletRepository,
+            transactionRepository = application.appContainer.transactionRepository,
+            tokenManager = tokenManager
+        )
     )
 
     val isLoading by billViewModel.isLoading.collectAsState()
 
     LaunchedEffect(Unit) {
         billViewModel.operationSuccess.collectLatest { success ->
-            if (success) {
+            if (success.isNotEmpty()) {
                 navController.popBackStack()
             }
         }

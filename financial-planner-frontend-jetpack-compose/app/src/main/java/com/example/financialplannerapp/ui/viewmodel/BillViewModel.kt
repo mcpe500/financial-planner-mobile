@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
+import java.util.Calendar
+import java.text.SimpleDateFormat
 
 class BillViewModel(
     private val billRepository: BillRepository,
@@ -60,17 +62,24 @@ class BillViewModel(
                     throw Exception("Insufficient wallet balance.")
                 }
 
-                // 1. Create transaction
+                // 1. Create transaction for bill payment
                 val transaction = TransactionEntity(
                     id = 0, // auto-generates
-                    userId = tokenManager.getUserId() ?: "", // Make sure to handle this properly
+                    userId = tokenManager.getUserId() ?: "local_user",
                     amount = bill.estimatedAmount,
-                    type = "expense",
-                    category = "",
+                    type = "EXPENSE", // Bill payments are always expenses
                     date = Date(),
+                    pocket = "", // Empty as requested
+                    category = "", // Empty as requested
                     note = "Payment for ${bill.name}",
                     walletId = wallet.id,
-                    pocket = ""
+                    isFromReceipt = false,
+                    receiptId = null,
+                    merchantName = bill.name,
+                    location = null,
+                    receiptConfidence = null,
+                    receipt_items = null,
+                    isSynced = false
                 )
                 transactionRepository.insertTransaction(transaction)
 
@@ -78,29 +87,58 @@ class BillViewModel(
                 val updatedWallet = wallet.copy(balance = wallet.balance - bill.estimatedAmount)
                 walletRepository.updateWallet(updatedWallet)
 
-                // 3. Update bill status (assuming isPaid field exists)
-                // Let's assume for a recurring bill, we don't just mark it as "paid",
-                // but we record a payment. The BillEntity has `paymentsJson`.
-                // Let's add a simple payment record.
-                val payment = mapOf("date" to Date().time, "amount" to bill.estimatedAmount)
-                val type = object : com.google.gson.reflect.TypeToken<List<Map<String, Any>>>() {}.type
-                val payments = Gson().fromJson<List<Map<String, Any>>>(bill.paymentsJson, type).toMutableList()
-                payments.add(payment)
-                val updatedBill = bill.copy(paymentsJson = Gson().toJson(payments), lastPaymentDate = Date())
+                // 3. Calculate next due date based on repeat cycle
+                val nextDueDate = calculateNextDueDate(bill.dueDate, bill.repeatCycle)
 
-                // A better approach for recurring bills would be to check if a payment for the current
-                // period has been made. For now, we just add to the payment history.
-                // If there was an isPaid flag, we'd set it here.
-                billRepository.updateBill(updatedBill)
+                // 4. Create new bill with updated due date
+                val newBill = BillEntity(
+                    uuid = UUID.randomUUID().toString(),
+                    name = bill.name,
+                    estimatedAmount = bill.estimatedAmount,
+                    dueDate = nextDueDate,
+                    repeatCycle = bill.repeatCycle,
+                    category = bill.category,
+                    notes = bill.notes,
+                    isActive = bill.isActive,
+                    paymentsJson = Gson().toJson(emptyList<Any>()),
+                    autoPay = bill.autoPay,
+                    notificationEnabled = bill.notificationEnabled,
+                    lastPaymentDate = Date(),
+                    creationDate = Date(),
+                    userEmail = bill.userEmail
+                )
 
+                // 5. Insert new bill and delete old bill
+                billRepository.insertBill(newBill)
+                billRepository.deleteBillByUuid(bill.uuid)
 
-                _operationSuccess.emit("Payment for ${bill.name} successful!")
+                _operationSuccess.emit("Payment for ${bill.name} successful! New bill created for ${SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault()).format(nextDueDate)}")
             } catch (e: Exception) {
                 _error.value = e.message ?: "An unexpected error occurred during payment."
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    /**
+     * Calculate next due date based on repeat cycle
+     */
+    private fun calculateNextDueDate(currentDueDate: Date, repeatCycle: String): Date {
+        val calendar = Calendar.getInstance()
+        calendar.time = currentDueDate
+        
+        when (repeatCycle.uppercase()) {
+            "DAILY" -> calendar.add(Calendar.DAY_OF_MONTH, 1)
+            "WEEKLY" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
+            "MONTHLY" -> calendar.add(Calendar.MONTH, 1)
+            "QUARTERLY" -> calendar.add(Calendar.MONTH, 3)
+            "SEMI_ANNUALLY" -> calendar.add(Calendar.MONTH, 6)
+            "ANNUALLY" -> calendar.add(Calendar.YEAR, 1)
+            else -> calendar.add(Calendar.MONTH, 1) // Default to monthly
+        }
+        
+        return calendar.time
     }
 
     fun addBill(

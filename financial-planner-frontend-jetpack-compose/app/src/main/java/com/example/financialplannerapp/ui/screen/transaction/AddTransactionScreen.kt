@@ -45,7 +45,9 @@ fun AddTransactionScreen(navController: NavController) {
     
     val viewModel: AddTransactionViewModel = viewModel(
         factory = AddTransactionViewModelFactory(
-            transactionRepository = application.appContainer.transactionRepository
+            transactionRepository = application.appContainer.transactionRepository,
+            walletRepository = application.appContainer.walletRepository,
+            tokenManager = application.appContainer.tokenManager
         )
     )
     

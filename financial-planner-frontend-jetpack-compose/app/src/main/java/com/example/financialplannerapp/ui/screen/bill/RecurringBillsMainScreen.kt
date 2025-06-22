@@ -568,27 +568,98 @@ fun PayBillDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Pay Bill: ${bill.name}") },
+        title = { 
+            Text(
+                "Pay Bill: ${bill.name}",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
         text = {
-            Column {
-                Text("Amount: ${formatCurrency(bill.estimatedAmount)}")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Select a wallet to pay from:")
-                Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Bill amount
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Amount to Pay",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            formatCurrency(bill.estimatedAmount),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+                
+                // Wallet selection
+                Text(
+                    "Select a wallet to pay from:",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
 
                 if (wallets.isEmpty()) {
-                    Text("No wallets available. Please create a wallet first.", color = MaterialTheme.colorScheme.error)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "No wallets available. Please create a wallet first.",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
                 } else {
+                    // Wallet selection dropdown
                     Box {
                         OutlinedTextField(
-                            value = selectedWallet?.name ?: "Select Wallet",
+                            value = selectedWallet?.let { "${it.name} (${formatCurrency(it.balance)})" } ?: "Select Wallet",
                             onValueChange = { },
                             readOnly = true,
-                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Select Wallet") },
+                            label = { Text("Wallet") },
+                            trailingIcon = { 
+                                Icon(
+                                    Icons.Default.ArrowDropDown, 
+                                    contentDescription = "Select Wallet",
+                                    modifier = Modifier.clickable { expanded = true }
+                                )
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { expanded = true }
+                                .clickable { expanded = true },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
                         )
+                        
                         DropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false },
@@ -596,23 +667,68 @@ fun PayBillDialog(
                         ) {
                             wallets.forEach { wallet ->
                                 DropdownMenuItem(
-                                    text = { Text("${wallet.name} (${formatCurrency(wallet.balance)})") },
+                                    text = { 
+                                        Column {
+                                            Text(
+                                                wallet.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                "${wallet.type} • ${formatCurrency(wallet.balance)}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    },
                                     onClick = {
                                         selectedWallet = wallet
                                         expanded = false
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            when (wallet.type.lowercase()) {
+                                                "cash" -> Icons.Default.Money
+                                                "bank" -> Icons.Default.AccountBalance
+                                                "credit" -> Icons.Default.CreditCard
+                                                else -> Icons.Default.AccountBalanceWallet
+                                            },
+                                            contentDescription = wallet.type,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
                                     }
                                 )
                             }
                         }
                     }
-                    selectedWallet?.let {
-                        if (it.balance < bill.estimatedAmount) {
-                            Text(
-                                "This wallet has insufficient funds.",
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
+                    
+                    // Insufficient funds warning
+                    selectedWallet?.let { wallet ->
+                        if (wallet.balance < bill.estimatedAmount) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Warning,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "Insufficient funds. Need ${formatCurrency(bill.estimatedAmount - wallet.balance)} more.",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -623,13 +739,21 @@ fun PayBillDialog(
                 onClick = {
                     selectedWallet?.let { onConfirm(it) }
                 },
-                enabled = selectedWallet != null && selectedWallet!!.balance >= bill.estimatedAmount && wallets.isNotEmpty()
+                enabled = selectedWallet != null && 
+                         selectedWallet!!.balance >= bill.estimatedAmount && 
+                         wallets.isNotEmpty()
             ) {
+                Icon(
+                    Icons.Default.Payment,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text("Confirm Payment")
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss) {
                 Text("Cancel")
             }
         }
