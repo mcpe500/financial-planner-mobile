@@ -2,6 +2,7 @@ package com.example.financialplannerapp.data.model
 
 import java.util.Date
 import com.example.financialplannerapp.data.local.model.TransactionEntity
+import com.example.financialplannerapp.data.local.model.ReceiptItem
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
@@ -14,7 +15,9 @@ data class TransactionData(
     @Json(name = "date")
     val date: String, // ISO8601 string for Moshi compatibility
     @Json(name = "description")
-    val description: String
+    val description: String,
+    @Json(name = "receipt_items")
+    val receipt_items: List<ReceiptItem>? = null
 )
 
 data class TransactionPayload(
@@ -66,7 +69,8 @@ fun TransactionEntity.toNetworkModel(): TransactionData = TransactionData(
     id = this.id.toInt(),
     amount = this.amount,
     date = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault()).format(this.date),
-    description = this.note ?: ""
+    description = this.note ?: "",
+    receipt_items = this.receipt_items
 )
 
 fun TransactionData.toEntity(userId: String): TransactionEntity = TransactionEntity(
@@ -78,5 +82,6 @@ fun TransactionData.toEntity(userId: String): TransactionEntity = TransactionEnt
     pocket = "Cash",
     category = "Other",
     note = this.description,
+    receipt_items = this.receipt_items,
     isSynced = true
 )

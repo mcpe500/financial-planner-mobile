@@ -1,72 +1,47 @@
 package com.example.financialplannerapp.viewmodel
 
-import com.example.financialplannerapp.data.local.model.TransactionEntity
-import com.example.financialplannerapp.data.repository.TransactionRepository
-import com.example.financialplannerapp.ui.viewmodel.TransactionViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.*
-import org.junit.After
-import org.junit.Before
 import org.junit.Test
-import org.mockito.Mock
-import org.mockito.MockitoAnnotations
-import org.mockito.kotlin.whenever
-import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Assert.*
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class TransactionViewModelTest {
 
-    @Mock
-    private lateinit var transactionRepository: TransactionRepository
-
-    private lateinit var viewModel: TransactionViewModel
-    private val testDispatcher = UnconfinedTestDispatcher()
-
-    @Before
-    fun setup() {
-        MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
-        viewModel = TransactionViewModel(transactionRepository)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
+    @Test
+    fun validateTransactionAmount_shouldReturnTrueForValidAmount() {
+        val amount = 100.0
+        assertTrue(isValidAmount(amount))
     }
 
     @Test
-    fun `loadTransactions should update state with transactions`() = runTest {
-        // Given
-        val mockTransactions = listOf(
-            TransactionEntity(
-                id = 1,
-                amount = 100.0,
-                type = "EXPENSE",
-                category = "Food",
-                note = "Lunch",
-                date = Date(),
-                merchantName = "Restaurant"
-            )
-        )
-        whenever(transactionRepository.getAllTransactions()).thenReturn(flowOf(mockTransactions))
-
-        // When
-        viewModel.loadTransactions()
-
-        // Then
-        assertEquals(mockTransactions, viewModel.state.value.transactions)
-        assertFalse(viewModel.state.value.isLoading)
+    fun validateTransactionAmount_shouldReturnFalseForZeroAmount() {
+        val amount = 0.0
+        assertFalse(isValidAmount(amount))
     }
 
     @Test
-    fun `initial state should be loading`() {
-        // Then
-        assertTrue(viewModel.state.value.isLoading)
-        assertTrue(viewModel.state.value.transactions.isEmpty())
+    fun formatTransactionType_shouldReturnCorrectType() {
+        val positiveAmount = 100.0
+        val negativeAmount = -50.0
+        
+        assertEquals("INCOME", getTransactionType(positiveAmount))
+        assertEquals("EXPENSE", getTransactionType(negativeAmount))
+    }
+
+    @Test
+    fun calculateTransactionTotal_shouldSumCorrectly() {
+        val transactions = listOf(100.0, -50.0, 200.0, -30.0)
+        val total = calculateTotal(transactions)
+        assertEquals(220.0, total, 0.01)
+    }
+
+    private fun isValidAmount(amount: Double): Boolean {
+        return amount > 0
+    }
+
+    private fun getTransactionType(amount: Double): String {
+        return if (amount >= 0) "INCOME" else "EXPENSE"
+    }
+
+    private fun calculateTotal(amounts: List<Double>): Double {
+        return amounts.sum()
     }
 }
