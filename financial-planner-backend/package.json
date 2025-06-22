@@ -6,7 +6,7 @@
 	"scripts": {
 		"start": "bun dist/index.js",
 		"dev": "bun --watch src/index.ts",
-		"build": "bun build ./src/index.ts --outdir ./dist",
+		"build": "bun build ./src/index.ts --outdir ./dist --target=node",
 		"lint": "biome lint .",
 		"format": "biome format . --write",
 		"check": "biome check ."
