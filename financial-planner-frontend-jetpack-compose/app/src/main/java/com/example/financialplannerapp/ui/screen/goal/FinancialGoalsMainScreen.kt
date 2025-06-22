@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -21,7 +22,6 @@ import androidx.navigation.NavController
 import com.example.financialplannerapp.MainApplication
 import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.GoalEntity
-import com.example.financialplannerapp.ui.theme.Green
 import com.example.financialplannerapp.ui.viewmodel.GoalViewModel
 import com.example.financialplannerapp.ui.viewmodel.GoalViewModelFactory
 import java.text.NumberFormat
@@ -107,14 +107,14 @@ fun GoalCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(goal.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("Priority: ${goal.priority}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text("Priority: ${goal.priority}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(12.dp))
             
             LinearProgressIndicator(
                 progress = progress,
                 modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = Green,
-                trackColor = Color.LightGray
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -132,7 +132,7 @@ fun GoalCard(
             Text(
                 "Remaining: ${currencyFormat.format(remainingAmount)}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.DarkGray,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Normal
             )
         }

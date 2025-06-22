@@ -25,9 +25,16 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.financialplannerapp.data.model.Budget
 import com.example.financialplannerapp.data.model.generateMockBudgets
-import com.example.financialplannerapp.ui.theme.*
 import kotlin.math.cos
 import kotlin.math.sin
+import com.example.financialplannerapp.ui.theme.BibitGreen
+import com.example.financialplannerapp.ui.theme.BibitLightGreen
+import com.example.financialplannerapp.ui.theme.MediumGray
+import com.example.financialplannerapp.ui.theme.DangerRed
+import com.example.financialplannerapp.ui.theme.WarningOrange
+import com.example.financialplannerapp.ui.theme.MotivationalOrange
+import com.example.financialplannerapp.ui.theme.DarkGray
+import com.example.financialplannerapp.ui.theme.SoftGray
 
 data class BudgetInsight(
     val title: String,
@@ -39,6 +46,18 @@ data class BudgetInsight(
 enum class InsightType {
     SUCCESS, WARNING, DANGER, INFO
 }
+
+// Chart colors - defined locally for chart purposes
+private val ChartColors = listOf(
+    Color(0xFF4CAF50), // Green
+    Color(0xFFFF9800), // Orange
+    Color(0xFFF44336), // Red
+    Color(0xFF2196F3), // Blue
+    Color(0xFF9C27B0), // Purple
+    Color(0xFFFF5722), // Deep Orange
+    Color(0xFF795548), // Brown
+    Color(0xFF607D8B)  // Blue Grey
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -185,13 +204,7 @@ private fun BudgetLegendItem(budget: Budget, color: Color) {
 }
 
 private fun getBudgetColor(index: Int): Color {
-    return when (index % 4) {
-        0 -> BibitGreen
-        1 -> WarningOrange
-        2 -> DangerRed
-        3 -> BibitLightGreen
-        else -> MediumGray
-    }
+    return ChartColors[index % ChartColors.size]
 }
 
 private fun DrawScope.drawBudgetPieChart(budgets: List<Budget>) {
