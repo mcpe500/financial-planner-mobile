@@ -29,6 +29,10 @@ import kotlinx.coroutines.withContext // Added
 import java.io.IOException // Added
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.ui.viewmodel.DataSyncViewModel
+import com.example.financialplannerapp.ui.viewmodel.DataSyncViewModelFactory
 
 private const val TAG_DATA_SYNC = "DataSyncSettingsScreen"
 
@@ -46,80 +50,18 @@ fun DataSyncSettingsScreen(navController: NavController) {
     Log.d(TAG_DATA_SYNC, "DataSyncSettingsScreen composing...")
     
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope() // Added
-    
-    var isConnected by remember { mutableStateOf(false) } // Default to false, will be updated
-    var lastSyncTime by remember { 
-        mutableStateOf(SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date()))
-    }
-    var isSyncing by remember { mutableStateOf(false) }
+    val app = context.applicationContext as MainApplication
+    val viewModel: DataSyncViewModel = viewModel(
+        factory = DataSyncViewModelFactory(app)
+    )
+    val isSyncing by viewModel.isSyncing.collectAsState()
+    val lastSyncTime by viewModel.lastSyncTime.collectAsState()
+    val syncResult by viewModel.syncResult.collectAsState()
+    val isConnected by viewModel.isConnected.collectAsState()
 
-    // Function to check connectivity
-    fun performConnectivityCheck(showToast: Boolean = false) {
-        coroutineScope.launch {
-            try {
-                // Use Dispatchers.IO for network operations to avoid NetworkOnMainThreadException
-                withContext(Dispatchers.IO) {
-                    // Simple connectivity check using a basic HTTP request to the base URL
-                    val url = java.net.URL(com.example.financialplannerapp.config.Config.BASE_URL)
-                    val connection = url.openConnection() as java.net.HttpURLConnection
-                    connection.requestMethod = "GET"
-                    connection.connectTimeout = 5000
-                    connection.readTimeout = 5000
-                    
-                    val responseCode = connection.responseCode
-                    connection.disconnect()
-                    
-                    // Switch back to Main thread for UI updates
-                    withContext(Dispatchers.Main) {
-                        isConnected = responseCode in 200..299 || responseCode == 404 // Accept 404 as server is reachable
-                        
-                        if (isConnected) {
-                            Log.d(TAG_DATA_SYNC, "Connectivity check successful. Response code: $responseCode")
-                            if (showToast) Toast.makeText(context, "Koneksi berhasil", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Log.w(TAG_DATA_SYNC, "Connectivity check failed: Server responded with $responseCode")
-                            if (showToast) Toast.makeText(context, "Koneksi gagal: Server tidak merespon dengan benar ($responseCode)", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }
-            } catch (e: java.net.ConnectException) {
-                withContext(Dispatchers.Main) {
-                    isConnected = false
-                    Log.e(TAG_DATA_SYNC, "Connectivity check error (Connection): ${e.message}", e)
-                    if (showToast) Toast.makeText(context, "Koneksi gagal: Tidak dapat terhubung ke server", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: java.net.SocketTimeoutException) {
-                withContext(Dispatchers.Main) {
-                    isConnected = false
-                    Log.e(TAG_DATA_SYNC, "Connectivity check error (Timeout): ${e.message}", e)
-                    if (showToast) Toast.makeText(context, "Koneksi gagal: Timeout", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: java.net.UnknownHostException) {
-                withContext(Dispatchers.Main) {
-                    isConnected = false
-                    Log.e(TAG_DATA_SYNC, "Connectivity check error (Unknown Host): ${e.message}", e)
-                    if (showToast) Toast.makeText(context, "Koneksi gagal: Host tidak dikenal", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: IOException) {
-                withContext(Dispatchers.Main) {
-                    isConnected = false
-                    Log.e(TAG_DATA_SYNC, "Connectivity check error (Network): ${e.message}", e)
-                    if (showToast) Toast.makeText(context, "Koneksi gagal: Periksa jaringan Anda", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    isConnected = false
-                    Log.e(TAG_DATA_SYNC, "Connectivity check error (General): ${e.message}", e)
-                    if (showToast) Toast.makeText(context, "Koneksi gagal: Terjadi kesalahan tidak diketahui", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    // Initial connectivity check on screen load
+    // Check backend connectivity on screen load
     LaunchedEffect(Unit) {
-        performConnectivityCheck()
+        viewModel.checkBackendConnectivity()
     }
     
     Scaffold(
@@ -222,11 +164,11 @@ fun DataSyncSettingsScreen(navController: NavController) {
                         
                         TextButton(
                             onClick = {
-                                performConnectivityCheck(showToast = true) // Call new check function, show toast on manual check
+                                viewModel.checkBackendConnectivity()
                             }
                         ) {
                             Text(
-                                text = "Cek Ulang Koneksi", // Updated button text
+                                text = "Cek Ulang Koneksi",
                                 color = BibitGreen
                             )
                         }
@@ -268,7 +210,7 @@ fun DataSyncSettingsScreen(navController: NavController) {
                     }
                     
                     Text(
-                        text = lastSyncTime,
+                        text = if (lastSyncTime.isNotBlank()) lastSyncTime else "Belum pernah disinkronkan",
                         fontSize = 16.sp,
                         color = MediumGray
                     )
@@ -318,21 +260,7 @@ fun DataSyncSettingsScreen(navController: NavController) {
                     Button(
                         onClick = {
                             if (isConnected) {
-                                isSyncing = true
-                                Log.d(TAG_DATA_SYNC, "Starting sync process...")
-                                
-                                // Simulate sync process
-                                Toast.makeText(context, "Memulai sinkronisasi...", Toast.LENGTH_SHORT).show()
-                                
-                                // Reset after 3 seconds (simulated)
-                                val timer = Timer()
-                                timer.schedule(object : TimerTask() {
-                                    override fun run() {
-                                        isSyncing = false
-                                        lastSyncTime = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date())
-                                        Log.d(TAG_DATA_SYNC, "Sync completed")
-                                    }
-                                }, 3000)
+                                viewModel.syncAll()
                             } else {
                                 Toast.makeText(context, "Tidak dapat sinkronisasi tanpa koneksi internet", Toast.LENGTH_LONG).show()
                             }
@@ -363,6 +291,14 @@ fun DataSyncSettingsScreen(navController: NavController) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Mulai Sinkronisasi")
                         }
+                    }
+                    if (syncResult != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = syncResult ?: "",
+                            color = if (syncResult?.contains("berhasil") == true) BibitGreen else Color.Red,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }

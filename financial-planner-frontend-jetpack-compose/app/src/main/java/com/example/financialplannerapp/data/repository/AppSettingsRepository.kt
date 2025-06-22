@@ -16,4 +16,5 @@ interface AppSettingsRepository {
     suspend fun updateNotifications(enabled: Boolean)
     suspend fun resetSettings()
     suspend fun settingsExist(): Boolean
+    suspend fun checkBackendHealth(): Boolean
 }

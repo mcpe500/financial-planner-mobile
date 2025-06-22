@@ -1,5 +1,6 @@
 package com.example.financialplannerapp.data.remote
 
+import com.example.financialplannerapp.data.model.HealthResponse
 import com.example.financialplannerapp.data.model.LoginRequest
 import com.example.financialplannerapp.data.model.LoginResponse
 import com.example.financialplannerapp.data.model.RegisterRequest
@@ -58,8 +59,11 @@ interface ApiService {
     suspend fun uploadCategories(@Body categories: List<com.example.financialplannerapp.data.model.CategoryData>): Response<Unit>
     
     // Transaction endpoints
-    @GET("api/transactions/{userId}")
-    suspend fun getUserTransactions(@Path("userId") userId: String): Response<List<com.example.financialplannerapp.data.model.TransactionData>>
+    @GET("api/transactions")
+    suspend fun getUserTransactions(): Response<com.example.financialplannerapp.data.responses.ApiResponse<List<com.example.financialplannerapp.data.model.TransactionData>>>
+
+    @GET("api/transactions/{id}")
+    suspend fun getTransactionById(@Path("id") id: String): Response<com.example.financialplannerapp.data.responses.ApiResponse<com.example.financialplannerapp.data.model.TransactionData>>
     
     @POST("api/transactions/upload")
     suspend fun uploadTransactions(@Body transactions: List<com.example.financialplannerapp.data.model.TransactionData>): Response<Unit>
@@ -76,4 +80,8 @@ interface ApiService {
     suspend fun storeTransactionFromOCR(
         @Body request: Map<String, Any?>
     ): Response<StoreTransactionResponse>
+
+    // Health check endpoint
+    @GET("api/health")
+    suspend fun healthCheck(): Response<HealthResponse>
 }

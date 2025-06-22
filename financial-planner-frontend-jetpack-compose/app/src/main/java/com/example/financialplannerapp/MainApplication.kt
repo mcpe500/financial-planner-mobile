@@ -10,8 +10,6 @@ import com.example.financialplannerapp.data.repository.AppSettingsRepository
 import com.example.financialplannerapp.data.repository.AppSettingsRepositoryImpl
 import com.example.financialplannerapp.data.repository.AuthRepository
 import com.example.financialplannerapp.data.repository.AuthRepositoryImpl
-import com.example.financialplannerapp.data.repository.CategoryRepository
-import com.example.financialplannerapp.data.repository.CategoryRepositoryImpl
 import com.example.financialplannerapp.data.repository.ReceiptTransactionRepository
 import com.example.financialplannerapp.data.repository.ReceiptTransactionRepositoryImpl
 import com.example.financialplannerapp.data.repository.SecurityRepository
@@ -83,12 +81,11 @@ class AppContainer(private val applicationContext: Context) {
     }
 
     // API Service
-    private val apiService = RetrofitClient.apiService
+    val apiService by lazy { RetrofitClient.getApiService(applicationContext) }
 
     // DAOs from AppDatabase - only use DAOs that actually exist
     private val transactionDao by lazy { appDatabase.transactionDao() }
     private val receiptTransactionDao by lazy { appDatabase.receiptTransactionDao() }
-    private val categoryDao by lazy { appDatabase.categoryDao() }
     private val appSettingsDao by lazy { appDatabase.appSettingsDao() }
     private val userProfileDao by lazy { appDatabase.userProfileDao() }
     private val securitySettingsDao by lazy { appDatabase.securitySettingsDao() }
@@ -107,7 +104,7 @@ class AppContainer(private val applicationContext: Context) {
     }
     
     val appSettingsDatabaseHelper: AppSettingsDatabaseHelper by lazy {
-        AppSettingsDatabaseHelper.getInstance(applicationContext)
+        AppSettingsDatabaseHelper.getInstance(applicationContext, apiService)
     }
     
     val reactiveSettingsService: ReactiveSettingsService by lazy {
@@ -119,12 +116,8 @@ class AppContainer(private val applicationContext: Context) {
         AuthRepositoryImpl(apiService, com.example.financialplannerapp.core.datastore.DataStoreHelper(applicationContext))
     }
 
-    val categoryRepository: CategoryRepository by lazy {
-        CategoryRepositoryImpl(categoryDao, apiService)
-    }
-
     val transactionRepository: TransactionRepository by lazy {
-        TransactionRepositoryImpl(transactionDao)
+        TransactionRepositoryImpl(transactionDao, apiService)
     }
 
     val receiptTransactionRepository: ReceiptTransactionRepository by lazy {
@@ -145,7 +138,7 @@ class AppContainer(private val applicationContext: Context) {
         SecurityRepositoryImpl(securitySettingsDao)
     }
     val appSettingsRepository: AppSettingsRepository by lazy {
-        AppSettingsRepositoryImpl(appSettingsDao)
+        AppSettingsRepositoryImpl(appSettingsDao, apiService)
     }
     
     // Receipt Service

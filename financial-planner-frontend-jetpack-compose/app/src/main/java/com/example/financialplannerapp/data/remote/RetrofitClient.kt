@@ -8,6 +8,8 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
+import com.example.financialplannerapp.TokenManager
+import android.content.Context
 
 object RetrofitClient {
     
@@ -21,36 +23,47 @@ object RetrofitClient {
         .add(KotlinJsonAdapterFactory())
         .build()
     
-    // OkHttp client with timeouts and logging
-    private val okHttpClient: OkHttpClient by lazy {
+    // TokenManager instance (must be set by the app)
+    private var tokenManager: TokenManager? = null
+
+    fun setTokenManager(manager: TokenManager) {
+        tokenManager = manager
+    }
+    
+    // OkHttp client with timeouts, logging, and auth
+    fun getOkHttpClient(context: Context): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
-        
-        OkHttpClient.Builder()
+        return OkHttpClient.Builder()
             .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val builder = original.newBuilder()
+                val manager = tokenManager ?: TokenManager(context)
+                val token = manager.getToken()
+                if (!token.isNullOrEmpty()) {
+                    builder.addHeader("Authorization", "Bearer $token")
+                }
+                chain.proceed(builder.build())
+            }
             .addInterceptor(loggingInterceptor)
             .build()
     }
     
-    // Retrofit instance
-    val retrofit: Retrofit by lazy {
-        Retrofit.Builder()
+    // Retrofit instance (must be created with context)
+    fun getRetrofit(context: Context): Retrofit {
+        return Retrofit.Builder()
             .baseUrl(Config.BASE_URL + "/")
-            .client(okHttpClient)
+            .client(getOkHttpClient(context))
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
     }
     
-    // API service instance
-    val apiService: ApiService by lazy {
-        retrofit.create(ApiService::class.java)
-    }
-    
-    // Auth service alias for backward compatibility
-    val authService: ApiService by lazy {
-        apiService
+    // API service instance (must be created with context)
+    fun getApiService(context: Context): ApiService {
+        return getRetrofit(context).create(ApiService::class.java)
     }
 }

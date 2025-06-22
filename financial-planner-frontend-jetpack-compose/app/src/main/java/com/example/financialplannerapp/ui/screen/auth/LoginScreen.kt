@@ -395,9 +395,10 @@ private fun handleIntent(
 
             scope.launch {
                 try {
+                    val apiService = RetrofitClient.getApiService(context)
                     val authHeader = tokenManager.getAuthHeader()
                     if (authHeader != null) {
-                        val response = RetrofitClient.authService.getCurrentUser(authHeader)
+                        val response = apiService.getCurrentUser(authHeader)
                         if (response.isSuccessful) {
                             Log.d(TAG_LOGIN_SCREEN, "Backend token verification successful")
                         } else {
@@ -427,11 +428,12 @@ private fun verifyTokenAndNavigate(
     setIsLoading(true)
     scope.launch {
         try {
+            val apiService = RetrofitClient.getApiService(context)
             val authHeader = tokenManager.getAuthHeader()
             if (authHeader != null) {
                 Log.d(TAG_LOGIN_SCREEN, "Verifying token with auth header: $authHeader")
 
-                val response = RetrofitClient.authService.getCurrentUser(authHeader)
+                val response = apiService.getCurrentUser(authHeader)
 
                 if (response.isSuccessful) {
                     response.body()?.let { userResponse ->
