@@ -133,16 +133,16 @@ fun AppSettingsScreen(
                         icon = Icons.Default.Person,
                         onClick = { navController.navigate("personal_profile") }
                     )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        thickness = 0.5.dp
-                    )
-                    SettingsItemCard(
-                        title = "Security",
-                        subtitle = "Password, PIN, and security settings",
-                        icon = Icons.Default.Security,
-                        onClick = { navController.navigate("security") }
-                    )
+//                    HorizontalDivider(
+//                        color = MaterialTheme.colorScheme.outlineVariant,
+//                        thickness = 0.5.dp
+//                    )
+//                    SettingsItemCard(
+//                        title = "Security",
+//                        subtitle = "Password, PIN, and security settings",
+//                        icon = Icons.Default.Security,
+//                        onClick = { navController.navigate("security") }
+//                    )
                 }
             }
 
@@ -157,14 +157,14 @@ fun AppSettingsScreen(
                         onCurrencySelected = { appSettingsViewModel.setCurrency(it.code) },
                         onShowDialog = { showCurrencyDialog = true }
                     )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        thickness = 0.5.dp
-                    )
-                    NotificationSettingCard(
-                        notificationsEnabled = notificationsEnabled,
-                        onToggle = { appSettingsViewModel.setNotificationsEnabled(it) }
-                    )
+//                    HorizontalDivider(
+//                        color = MaterialTheme.colorScheme.outlineVariant,
+//                        thickness = 0.5.dp
+//                    )
+//                    NotificationSettingCard(
+//                        notificationsEnabled = notificationsEnabled,
+//                        onToggle = { appSettingsViewModel.setNotificationsEnabled(it) }
+//                    )
                 }
             }
 
@@ -873,10 +873,10 @@ fun getThemeDisplayName(theme: ThemeSetting): String {
 
 fun getCurrencyDisplayName(currency: Currency): String {
     return when (currency) {
-        Currency.IDR -> "Indonesian Rupiah (IDR)"
-        Currency.USD -> "US Dollar (USD)"
-        Currency.EUR -> "Euro (EUR)"
-        Currency.JPY -> "Japanese Yen (JPY)"
+        Currency.IDR -> "Indonesian Rupiah (Rp)"
+        Currency.USD -> "US Dollar ($)"
+        Currency.EUR -> "Euro (€)"
+        Currency.JPY -> "Japanese Yen (¥)"
         // Add other currencies as needed
     }
 }
