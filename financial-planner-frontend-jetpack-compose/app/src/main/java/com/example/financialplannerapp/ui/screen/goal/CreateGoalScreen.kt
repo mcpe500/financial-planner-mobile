@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.goal
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,6 +23,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.TokenManager
+import com.example.financialplannerapp.ui.model.Wallet
+import com.example.financialplannerapp.ui.viewmodel.GoalViewModel
+import com.example.financialplannerapp.ui.viewmodel.GoalViewModelFactory
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
@@ -46,144 +55,157 @@ data class GoalTemplate(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateGoalScreen(navController: NavController, goalId: String? = null) {
+fun CreateGoalScreen(navController: NavController) {
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    val tokenManager = remember { TokenManager(context) }
+    val userId = tokenManager.getUserId() ?: "guest"
+
+    // ViewModels
+    val walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, userId)
+    )
+    val goalViewModel: GoalViewModel = viewModel(
+        factory = GoalViewModelFactory(application.appContainer.goalRepository, tokenManager)
+    )
+
+    // State
+    val wallets by walletViewModel.wallets.collectAsState()
+    var selectedWallet by remember { mutableStateOf<Wallet?>(null) }
     var goalName by remember { mutableStateOf("") }
     var targetAmount by remember { mutableStateOf("") }
-    var targetDate by remember { mutableStateOf("31 Desember 2024") }
-    var selectedWallet by remember { mutableStateOf("BCA Savings") }
-    var selectedTemplate by remember { mutableStateOf<GoalTemplate?>(null) }
-    var showSuccessDialog by remember { mutableStateOf(false) }
+    var targetDate by remember { mutableStateOf(Calendar.getInstance().time) }
+    var priority by remember { mutableStateOf("Medium") }
 
-    val templates = remember { generateGoalTemplates() }
-    val wallets = listOf("Cash Wallet", "BCA Savings", "GoPay", "Dana", "Emergency Fund")
-    val isEditing = goalId != null
+    var isWalletDropdownExpanded by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = targetDate.time)
+
+    LaunchedEffect(Unit) {
+        walletViewModel.loadWallets()
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        targetDate = Date(it)
+                    }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        if (isEditing) "Edit Tujuan" else "Buat Tujuan Baru",
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
+                title = { Text("Create New Goal") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = DarkGray
-                )
+                }
             )
         }
-    ) { paddingValues ->
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(SoftGray)
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Preview Card
-            GoalPreviewCard(
-                name = goalName.ifEmpty { selectedTemplate?.name ?: "Tujuan Baru" },
-                targetAmount = targetAmount.toDoubleOrNull() ?: selectedTemplate?.suggestedAmount ?: 0.0,
-                targetDate = targetDate,
-                wallet = selectedWallet,
-                icon = selectedTemplate?.icon ?: "🎯"
-            )
-
-            // Goal Templates
-            if (!isEditing) {
-                GoalTemplatesCard(
-                    templates = templates,
-                    selectedTemplate = selectedTemplate,
-                    onTemplateSelect = { template ->
-                        selectedTemplate = template
-                        goalName = template.name
-                        template.suggestedAmount?.let {
-                            targetAmount = it.toInt().toString()
-                        }
-                    }
-                )
-            }
-
-            // Goal Name Input
-            GoalNameCard(
-                name = goalName,
-                onNameChange = { goalName = it },
-                selectedTemplate = selectedTemplate
-            )
-
-            // Target Amount Input
-            TargetAmountCard(
-                amount = targetAmount,
-                onAmountChange = { targetAmount = it },
-                suggestedAmount = selectedTemplate?.suggestedAmount
-            )
-
-            // Target Date Selection
-            TargetDateCard(
-                date = targetDate,
-                onDateChange = { targetDate = it }
-            )
-
-            // Wallet Selection
-            WalletSelectionCard(
-                selectedWallet = selectedWallet,
-                wallets = wallets,
-                onWalletChange = { selectedWallet = it }
-            )
-
-            // Motivation Card
-            MotivationCard(selectedTemplate)
-
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            // Wallet Dropdown
+            ExposedDropdownMenuBox(
+                expanded = isWalletDropdownExpanded,
+                onExpandedChange = { isWalletDropdownExpanded = !isWalletDropdownExpanded }
             ) {
-                OutlinedButton(
-                    onClick = { navController.navigateUp() },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = BibitGreen
-                    )
+                OutlinedTextField(
+                    value = selectedWallet?.name ?: "Select a Wallet",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Wallet") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isWalletDropdownExpanded) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = isWalletDropdownExpanded,
+                    onDismissRequest = { isWalletDropdownExpanded = false }
                 ) {
-                    Text("Batal")
-                }
-
-                Button(
-                    onClick = { showSuccessDialog = true },
-                    modifier = Modifier.weight(1f),
-                    enabled = goalName.isNotEmpty() && targetAmount.isNotEmpty(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = BibitGreen,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(if (isEditing) "Update" else "Buat Tujuan")
+                    wallets.forEach { wallet ->
+                        DropdownMenuItem(
+                            text = { Text(wallet.name) },
+                            onClick = {
+                                selectedWallet = wallet
+                                isWalletDropdownExpanded = false
+                            }
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Goal Name
+            OutlinedTextField(
+                value = goalName,
+                onValueChange = { goalName = it },
+                label = { Text("Goal Name (e.g., New Laptop)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Target Amount
+            OutlinedTextField(
+                value = targetAmount,
+                onValueChange = { targetAmount = it },
+                label = { Text("Target Amount") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Target Date
+            OutlinedTextField(
+                value = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(targetDate),
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Target Date") },
+                trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }
+            )
+            
+            // Priority can be a dropdown too, simplified for now
+            OutlinedTextField(
+                value = priority,
+                onValueChange = { priority = it },
+                label = { Text("Priority (e.g., High, Medium, Low)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Button(
+                onClick = {
+                    val amount = targetAmount.toDoubleOrNull()
+                    if (selectedWallet != null && goalName.isNotBlank() && amount != null) {
+                        goalViewModel.addGoal(
+                            walletId = selectedWallet!!.id,
+                            name = goalName,
+                            targetAmount = amount,
+                            currentAmount = 0.0, // Starts with 0
+                            targetDate = targetDate,
+                            priority = priority
+                        )
+                        navController.popBackStack()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = selectedWallet != null && goalName.isNotBlank() && targetAmount.isNotBlank()
+            ) {
+                Text("Save Goal")
+            }
         }
-    }
-
-    // Success Dialog
-    if (showSuccessDialog) {
-        GoalSuccessDialog(
-            isEditing = isEditing,
-            goalName = goalName,
-            onDismiss = {
-                showSuccessDialog = false
-                navController.navigateUp()
-            }
-        )
     }
 }
 

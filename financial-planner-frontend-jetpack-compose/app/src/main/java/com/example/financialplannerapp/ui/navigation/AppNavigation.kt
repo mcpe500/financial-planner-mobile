@@ -26,6 +26,9 @@ import com.example.financialplannerapp.ui.screen.transaction.TransactionHistoryS
 import com.example.financialplannerapp.ui.screen.bill.AddRecurringBillScreen
 import com.example.financialplannerapp.ui.screen.bill.BillCalendarScreen
 import com.example.financialplannerapp.ui.screen.bill.RecurringBillsMainScreen
+import com.example.financialplannerapp.ui.screen.goal.CreateGoalScreen
+import com.example.financialplannerapp.ui.screen.goal.FinancialGoalsMainScreen
+import com.example.financialplannerapp.ui.screen.goal.GoalDetailsScreen
 import com.example.financialplannerapp.ui.screen.transaction.TransactionMainScreen
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +36,8 @@ import com.example.financialplannerapp.screen.AddWalletScreen
 import com.example.financialplannerapp.screen.EditWalletScreen
 import com.example.financialplannerapp.screen.DebtReceivableMainScreen
 import com.example.financialplannerapp.screen.WalletsMainScreen
+import com.example.financialplannerapp.ui.screen.budget.BudgetMainScreen
+import com.example.financialplannerapp.ui.screen.budget.CreateBudgetScreen
 
 @Composable
 fun AppNavigation(
@@ -168,9 +173,27 @@ fun AppNavigation(
         composable("debt") {
             DebtReceivableMainScreen()
         }
-        
+        composable("budgets") {
+            BudgetMainScreen(navController = navController)
+        }
+        composable("create_budget") {
+            CreateBudgetScreen(navController = navController)
+        }
+        composable("budget_details/{budgetId}") { backStackEntry ->
+            val budgetId = backStackEntry.arguments?.getString("budgetId")
+            // Placeholder for Budget Details Screen
+            PlaceholderScreen(title = "Budget Details for ID: $budgetId")
+        }
         composable("goals") {
-            PlaceholderScreen(title = "Financial Goals Screen")
+            FinancialGoalsMainScreen(navController = navController)
+        }
+        composable("create_goal") {
+            CreateGoalScreen(navController = navController)
+        }
+        composable("goal_details/{goalId}") { backStackEntry ->
+            val goalId = backStackEntry.arguments?.getString("goalId")
+            // Pass goalId to the details screen
+            GoalDetailsScreen(navController = navController, goalId = goalId)
         }
     }
 }

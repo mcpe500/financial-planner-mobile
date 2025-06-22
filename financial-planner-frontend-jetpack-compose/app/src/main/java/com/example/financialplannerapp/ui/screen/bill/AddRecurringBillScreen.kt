@@ -37,7 +37,7 @@ fun AddRecurringBillScreen(
     val tokenManager = remember { TokenManager(context) }
     val application = context.applicationContext as MainApplication
     val billViewModel: BillViewModel = viewModel(
-        factory = BillViewModelFactory(application.appContainer.billRepository)
+        factory = BillViewModelFactory(application.appContainer.billRepository, tokenManager)
     )
 
     val isLoading by billViewModel.isLoading.collectAsState()
@@ -147,28 +147,14 @@ fun AddRecurringBillScreen(
                     val parsedAmount = estimatedAmount.toDoubleOrNull()
                     amountError = parsedAmount == null || parsedAmount <= 0
                     if (!nameError && !amountError) {
-                        val userEmail = if (tokenManager.isNoAccountMode()) {
-                            "guest"
-                        } else {
-                            tokenManager.getUserEmail() ?: "guest"
-                        }
-                        val billEntity = BillEntity(
-                            uuid = UUID.randomUUID().toString(),
+                        billViewModel.addBill(
                             name = billName,
                             estimatedAmount = parsedAmount!!,
                             dueDate = selectedDate.time,
                             repeatCycle = selectedCycle.name,
                             category = "Default",
-                            notes = notes,
-                            isActive = true,
-                            paymentsJson = Gson().toJson(emptyList<Any>()),
-                            autoPay = false,
-                            notificationEnabled = true,
-                            lastPaymentDate = null,
-                            creationDate = Date(),
-                            userEmail = userEmail
+                            notes = notes
                         )
-                        billViewModel.addBill(billEntity)
                     }
                 },
                 enabled = !isLoading,
