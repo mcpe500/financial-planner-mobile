@@ -73,7 +73,7 @@ class DataSyncViewModel(
                 Log.d("DataSync", "Inserted backend transactions to RoomDB")
 
                 _lastSyncTime.value = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date())
-                _syncResult.value = "Sinkronisasi berhasil"
+                _syncResult.value = "Sync Successfully"
                 Log.d("DataSync", "Sync finished successfully")
             } catch (e: Exception) {
                 _syncResult.value = "Gagal sinkronisasi: ${e.message}"
@@ -82,5 +82,9 @@ class DataSyncViewModel(
                 _isSyncing.value = false
             }
         }
+    }
+
+    fun clearSyncResult() {
+        _syncResult.value = null
     }
 } 

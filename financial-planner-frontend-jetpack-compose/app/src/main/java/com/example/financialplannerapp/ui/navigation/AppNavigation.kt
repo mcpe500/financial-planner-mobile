@@ -18,8 +18,7 @@ import com.example.financialplannerapp.ui.screen.settings.AppSettingsScreen
 import com.example.financialplannerapp.ui.screen.settings.SettingsScreen
 import com.example.financialplannerapp.screen.settings.UserProfileSettingsScreen
 import com.example.financialplannerapp.screen.settings.SecuritySettingsScreen
-import com.example.financialplannerapp.screen.settings.DataSyncSettingsScreen
-import com.example.financialplannerapp.screen.settings.BackupRestoreSettingsScreen
+import com.example.financialplannerapp.ui.screen.settings.DataSyncSettingsScreen
 import com.example.financialplannerapp.ui.screen.settings.ContactSupportScreen
 import com.example.financialplannerapp.ui.screen.settings.HelpCenterScreen
 import com.example.financialplannerapp.ui.screen.transaction.AddTransactionScreen
@@ -100,10 +99,6 @@ fun AppNavigation(
 
         composable("data_sync") {
             DataSyncSettingsScreen(navController = navController)
-        }
-
-        composable("backup_restore") {
-            BackupRestoreSettingsScreen(navController = navController)
         }
 
         composable("helpCenterSettings") {
