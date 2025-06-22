@@ -156,51 +156,51 @@ fun DataSyncSettingsScreen(navController: NavController) {
             }
 
             // Backup & Restore Section
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(6.dp, RoundedCornerShape(20.dp)),
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "Manual Backup & Restore",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Manually back up or restore your data. This is an advanced feature; cloud sync is recommended for daily use.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Button(
-                            onClick = { scope.launch { snackbarHostState.showSnackbar("Backup feature coming soon!") } },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.CloudUpload, contentDescription = "Backup")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Backup")
-                        }
-                        Button(
-                            onClick = { scope.launch { snackbarHostState.showSnackbar("Restore feature coming soon!") } },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                        ) {
-                            Icon(Icons.Default.CloudDownload, contentDescription = "Restore")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Restore")
-                        }
-                    }
-                }
-            }
+//            Card(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .shadow(6.dp, RoundedCornerShape(20.dp)),
+//                shape = MaterialTheme.shapes.large,
+//                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+//            ) {
+//                Column(modifier = Modifier.padding(16.dp)) {
+//                    Text(
+//                        "Manual Backup & Restore",
+//                        style = MaterialTheme.typography.titleLarge,
+//                        fontWeight = FontWeight.SemiBold,
+//                        color = MaterialTheme.colorScheme.onSurface
+//                    )
+//                    Spacer(modifier = Modifier.height(8.dp))
+//                    Text(
+//                        "Manually back up or restore your data. This is an advanced feature; cloud sync is recommended for daily use.",
+//                        style = MaterialTheme.typography.bodyMedium,
+//                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+//                    )
+//                    Spacer(modifier = Modifier.height(16.dp))
+//                    Row(
+//                        modifier = Modifier.fillMaxWidth(),
+//                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+//                    ) {
+//                        Button(
+//                            onClick = { scope.launch { snackbarHostState.showSnackbar("Backup feature coming soon!") } },
+//                            modifier = Modifier.weight(1f)
+//                        ) {
+//                            Icon(Icons.Default.CloudUpload, contentDescription = "Backup")
+//                            Spacer(modifier = Modifier.width(8.dp))
+//                            Text("Backup")
+//                        }
+//                        Button(
+//                            onClick = { scope.launch { snackbarHostState.showSnackbar("Restore feature coming soon!") } },
+//                            modifier = Modifier.weight(1f),
+//                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+//                        ) {
+//                            Icon(Icons.Default.CloudDownload, contentDescription = "Restore")
+//                            Spacer(modifier = Modifier.width(8.dp))
+//                            Text("Restore")
+//                        }
+//                    }
+//                }
+//            }
         }
     }
 }

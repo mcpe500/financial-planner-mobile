@@ -204,12 +204,12 @@ fun AppSettingsScreen(
                         color = MaterialTheme.colorScheme.outlineVariant,
                         thickness = 0.5.dp
                     )
-                    SettingsItemCard(
-                        title = "App Information",
-                        subtitle = "Version and app details",
-                        icon = Icons.Default.Info,
-                        onClick = { navController.navigate("app_info") }
-                    )
+//                    SettingsItemCard(
+//                        title = "App Information",
+//                        subtitle = "Version and app details",
+//                        icon = Icons.Default.Info,
+//                        onClick = { navController.navigate("app_info") }
+//                    )
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outlineVariant,
                         thickness = 0.5.dp

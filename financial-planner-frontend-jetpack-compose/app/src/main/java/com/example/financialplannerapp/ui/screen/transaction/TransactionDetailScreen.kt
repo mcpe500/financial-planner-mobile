@@ -2,11 +2,13 @@ package com.example.financialplannerapp.ui.screen.transaction
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,10 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.core.util.formatCurrency
+import com.example.financialplannerapp.data.local.model.ReceiptItem
 import com.example.financialplannerapp.data.local.model.TransactionEntity
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -46,22 +51,17 @@ fun TransactionDetailScreen(navController: NavController, transactionId: Long?) 
                 title = {
                     Text(
                         text = "Transaction Detail",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -76,100 +76,406 @@ fun TransactionDetailScreen(navController: NavController, transactionId: Long?) 
             if (transaction == null) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             } else {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .shadow(4.dp, RoundedCornerShape(16.dp)),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = transaction?.merchantName ?: transaction?.note ?: "Transaction",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Amount: ${transaction?.amount}",
-                            fontSize = 18.sp
-                        )
-                        Text(
-                            text = "Type: ${transaction?.type}",
-                            fontSize = 16.sp
-                        )
-                        Text(
-                            text = "Category: ${transaction?.category}",
-                            fontSize = 16.sp
-                        )
-                        Text(
-                            text = "Pocket: ${transaction?.pocket}",
-                            fontSize = 16.sp
-                        )
-                        Text(
-                            text = "Date: ${transaction?.date?.let { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it) } ?: "-"}",
-                            fontSize = 16.sp
-                        )
-                        if (!transaction?.note.isNullOrBlank()) {
-                            Text(
-                                text = "Note: ${transaction?.note}",
-                                fontSize = 16.sp
-                            )
+                    // Header Card
+                    item {
+                        TransactionHeaderCard(transaction = transaction!!)
+                    }
+
+                    // Transaction Type Indicator
+                    item {
+                        TransactionTypeCard(transaction = transaction!!)
+                    }
+
+                    // Basic Details Card
+                    item {
+                        BasicDetailsCard(transaction = transaction!!)
+                    }
+
+                    // Receipt Details (if from receipt)
+                    if (transaction!!.isFromReceipt) {
+                        item {
+                            ReceiptDetailsCard(transaction = transaction!!)
                         }
-                        // Show receipt items if present
-                        if (!transaction?.receipt_items.isNullOrEmpty()) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "Receipt Items",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(max = 300.dp)
-                                    .verticalScroll(rememberScrollState())
-                            ) {
-                                transaction?.receipt_items?.forEach { item ->
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                        )
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(12.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Column {
-                                                Text(item.name, fontWeight = FontWeight.SemiBold)
-                                                Text("Category: ${item.category}", fontSize = 12.sp)
-                                            }
-                                            Column(horizontalAlignment = Alignment.End) {
-                                                Text("Qty: ${item.quantity}", fontSize = 12.sp)
-                                                Text("Price: ${item.price}", fontSize = 12.sp)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                    }
+
+                    // Receipt Items (if available)
+                    if (!transaction!!.receipt_items.isNullOrEmpty()) {
+                        item {
+                            ReceiptItemsCard(receiptItems = transaction!!.receipt_items!!)
+                        }
+                    }
+
+                    // Note Card (if available)
+                    if (!transaction!!.note.isNullOrBlank()) {
+                        item {
+                            NoteCard(note = transaction!!.note!!)
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TransactionHeaderCard(transaction: TransactionEntity) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp)),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = if (transaction.type.equals("INCOME", true)) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.errorContainer
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = if (transaction.type.equals("INCOME", true)) {
+                    Icons.Default.TrendingUp
+                } else {
+                    Icons.Default.TrendingDown
+                },
+                contentDescription = transaction.type,
+                tint = if (transaction.type.equals("INCOME", true)) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onErrorContainer
+                },
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = if (transaction.type.equals("INCOME", true)) {
+                    "+${formatCurrency(transaction.amount)}"
+                } else {
+                    "-${formatCurrency(transaction.amount)}"
+                },
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (transaction.type.equals("INCOME", true)) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onErrorContainer
+                }
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = transaction.merchantName ?: transaction.note ?: "Transaction",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = if (transaction.type.equals("INCOME", true)) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onErrorContainer
+                },
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun TransactionTypeCard(transaction: TransactionEntity) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (transaction.isFromReceipt) {
+                    Icons.Default.CameraAlt
+                } else {
+                    Icons.Default.Edit
+                },
+                contentDescription = if (transaction.isFromReceipt) "From Receipt" else "Manual Entry",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = if (transaction.isFromReceipt) "Receipt Transaction" else "Manual Transaction",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = if (transaction.isFromReceipt) {
+                        "Scanned from receipt image"
+                    } else {
+                        "Added manually"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BasicDetailsCard(transaction: TransactionEntity) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Transaction Details",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            DetailRow("Type", transaction.type.replaceFirstChar { it.uppercase() })
+            DetailRow("Date", SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(transaction.date))
+            DetailRow("Time", SimpleDateFormat("HH:mm", Locale.getDefault()).format(transaction.date))
+            
+            if (transaction.merchantName != null && transaction.merchantName.isNotBlank()) {
+                DetailRow("Merchant", transaction.merchantName)
+            }
+            
+            if (transaction.location != null && transaction.location.isNotBlank()) {
+                DetailRow("Location", transaction.location)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReceiptDetailsCard(transaction: TransactionEntity) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Receipt,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Receipt Information",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            if (transaction.receiptId != null) {
+                DetailRow("Receipt ID", transaction.receiptId)
+            }
+            
+            if (transaction.receiptConfidence != null) {
+                DetailRow("Confidence", "${(transaction.receiptConfidence * 100).toInt()}%")
+            }
+            
+            if (transaction.receiptImagePath != null) {
+                DetailRow("Image", "Available")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReceiptItemsCard(receiptItems: List<ReceiptItem>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.List,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Receipt Items",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                receiptItems.forEach { item ->
+                    ReceiptItemRow(item = item)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReceiptItemRow(item: ReceiptItem) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Category: ${item.category}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = formatCurrency(item.price),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Qty: ${item.quantity}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoteCard(note: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Note,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Note",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = note,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun DetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 } 

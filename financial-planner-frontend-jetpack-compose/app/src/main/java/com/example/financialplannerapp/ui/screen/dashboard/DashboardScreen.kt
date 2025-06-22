@@ -513,9 +513,9 @@ private fun QuickActionsGrid(navController: NavController) {
                     onClick = { navController.navigate("transactions") }
                 )
                 QuickActionButton(
-                    icon = Icons.Default.TrackChanges,
-                    label = "Budget",
-                    onClick = { navController.navigate("budget") }
+                    icon = Icons.Default.Flag,
+                    label = "Goals",
+                    onClick = { navController.navigate("goals") }
                 )
             }
             
@@ -526,9 +526,9 @@ private fun QuickActionsGrid(navController: NavController) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 QuickActionButton(
-                    icon = Icons.Default.Flag,
-                    label = "Goals",
-                    onClick = { navController.navigate("goals") }
+                    icon = Icons.Default.TrackChanges,
+                    label = "Budget",
+                    onClick = { navController.navigate("budget") }
                 )
                 QuickActionButton(
                     icon = Icons.Default.Receipt,
