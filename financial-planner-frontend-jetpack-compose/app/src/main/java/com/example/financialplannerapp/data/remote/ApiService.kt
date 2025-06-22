@@ -68,6 +68,9 @@ interface ApiService {
     @POST("api/transactions/upload")
     suspend fun uploadTransactions(@Body transactions: List<com.example.financialplannerapp.data.model.TransactionData>): Response<Unit>
     
+    @POST("api/transactions")
+    suspend fun createTransaction(@Body transaction: com.example.financialplannerapp.data.model.TransactionData): Response<com.example.financialplannerapp.data.responses.ApiResponse<com.example.financialplannerapp.data.model.TransactionData>>
+    
     // Receipt OCR endpoints
     @POST("api/receipts/receipt-ocr")
     suspend fun processReceiptOCR(

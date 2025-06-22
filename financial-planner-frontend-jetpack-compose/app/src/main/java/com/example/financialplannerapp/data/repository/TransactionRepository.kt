@@ -18,4 +18,6 @@ interface TransactionRepository {
     suspend fun getUnsyncedTransactions(userId: String): List<TransactionEntity>
     suspend fun markTransactionsAsSynced(ids: List<Long>)
     suspend fun insertTransactions(transactions: List<TransactionEntity>)
+    suspend fun createTransactionRemote(transaction: com.example.financialplannerapp.data.model.TransactionData): com.example.financialplannerapp.data.model.TransactionData?
+    fun getCurrentUserId(): String?
 }

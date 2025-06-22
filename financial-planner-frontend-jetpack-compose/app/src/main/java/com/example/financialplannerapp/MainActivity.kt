@@ -41,12 +41,14 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
         
         setContent {
-            FinancialPlannerAppTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    AppContent()
+            AppProvider {
+                FinancialPlannerAppTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        AppContent()
+                    }
                 }
             }
         }
