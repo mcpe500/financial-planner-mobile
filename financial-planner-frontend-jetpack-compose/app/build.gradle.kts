@@ -130,4 +130,7 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.compose.material:material-icons-extended")
+
+    // Accompanist Permissions
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 }
