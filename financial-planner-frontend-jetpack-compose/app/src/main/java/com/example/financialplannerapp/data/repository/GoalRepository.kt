@@ -9,5 +9,6 @@ interface GoalRepository {
     suspend fun insertGoal(goal: GoalEntity)
     suspend fun updateGoal(goal: GoalEntity)
     suspend fun deleteGoal(goalId: Int)
+    suspend fun getAllGoalsByUser(userEmail: String): Flow<List<GoalEntity>>
 }
 

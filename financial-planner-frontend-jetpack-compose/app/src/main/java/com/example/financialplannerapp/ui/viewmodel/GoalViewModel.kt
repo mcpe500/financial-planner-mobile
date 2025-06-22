@@ -26,13 +26,45 @@ class GoalViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private var currentWalletId: String? = null
+
     fun loadGoals(walletId: String) {
         viewModelScope.launch {
-            val user_email = tokenManager.getUserEmail() ?: "guest"
-            repository.getGoalsForWallet(walletId, user_email).collect { goalList ->
-                _goals.value = goalList
+            _isLoading.value = true
+            currentWalletId = walletId
+            try {
+                val user_email = tokenManager.getUserEmail() ?: "guest"
+                repository.getGoalsForWallet(walletId, user_email).collect { goalList ->
+                    _goals.value = goalList
+                    _isLoading.value = false
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to load goals: ${e.message}"
+                _isLoading.value = false
             }
         }
+    }
+
+    fun loadAllGoals() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val user_email = tokenManager.getUserEmail() ?: "guest"
+                repository.getAllGoalsByUser(user_email).collect { goalList ->
+                    _goals.value = goalList
+                    _isLoading.value = false
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to load goals: ${e.message}"
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun refreshGoals() {
+        currentWalletId?.let { walletId ->
+            loadGoals(walletId)
+        } ?: loadAllGoals()
     }
 
     fun addGoal(
@@ -57,6 +89,8 @@ class GoalViewModel(
                     priority = priority
                 )
                 repository.insertGoal(goal)
+                // Refresh goals after adding
+                refreshGoals()
             } catch (e: Exception) {
                 _error.value = "Failed to add goal: ${e.message}"
             } finally {
@@ -70,6 +104,8 @@ class GoalViewModel(
             _isLoading.value = true
             try {
                 repository.deleteGoal(goalId)
+                // Refresh goals after deleting
+                refreshGoals()
             } catch (e: Exception) {
                 _error.value = "Failed to delete goal: ${e.message}"
             } finally {
@@ -80,38 +116,66 @@ class GoalViewModel(
 
     fun editGoal(goal: GoalEntity, newName: String, newTarget: Double, newPriority: String) {
         viewModelScope.launch {
-            val updatedGoal = goal.copy(name = newName, targetAmount = newTarget, priority = newPriority)
-            repository.updateGoal(updatedGoal)
+            try {
+                val updatedGoal = goal.copy(name = newName, targetAmount = newTarget, priority = newPriority)
+                repository.updateGoal(updatedGoal)
+                // Refresh goals after editing
+                refreshGoals()
+            } catch (e: Exception) {
+                _error.value = "Failed to edit goal: ${e.message}"
+            }
         }
     }
 
     fun deleteGoalAndReturnToWallet(goal: GoalEntity, wallet: WalletEntity) {
         viewModelScope.launch {
-            val updatedWallet = wallet.copy(balance = wallet.balance + goal.currentAmount)
-            walletRepository.updateWallet(updatedWallet)
-            repository.deleteGoal(goal.id)
+            try {
+                val updatedWallet = wallet.copy(balance = wallet.balance + goal.currentAmount)
+                walletRepository.updateWallet(updatedWallet)
+                repository.deleteGoal(goal.id)
+                // Refresh goals after deleting
+                refreshGoals()
+            } catch (e: Exception) {
+                _error.value = "Failed to delete goal: ${e.message}"
+            }
         }
     }
 
     fun addToGoalAmount(goal: GoalEntity, wallet: WalletEntity, amount: Double) {
         viewModelScope.launch {
-            if (wallet.balance >= amount) {
-                val updatedGoal = goal.copy(currentAmount = goal.currentAmount + amount)
-                val updatedWallet = wallet.copy(balance = wallet.balance - amount)
-                repository.updateGoal(updatedGoal)
-                walletRepository.updateWallet(updatedWallet)
+            try {
+                if (wallet.balance >= amount) {
+                    val updatedGoal = goal.copy(currentAmount = goal.currentAmount + amount)
+                    val updatedWallet = wallet.copy(balance = wallet.balance - amount)
+                    repository.updateGoal(updatedGoal)
+                    walletRepository.updateWallet(updatedWallet)
+                    // Refresh goals after updating
+                    refreshGoals()
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to add to goal amount: ${e.message}"
             }
         }
     }
 
     fun subtractFromGoalAmount(goal: GoalEntity, wallet: WalletEntity, amount: Double) {
         viewModelScope.launch {
-            if (goal.currentAmount >= amount) {
-                val updatedGoal = goal.copy(currentAmount = goal.currentAmount - amount)
-                val updatedWallet = wallet.copy(balance = wallet.balance + amount)
-                repository.updateGoal(updatedGoal)
-                walletRepository.updateWallet(updatedWallet)
+            try {
+                if (goal.currentAmount >= amount) {
+                    val updatedGoal = goal.copy(currentAmount = goal.currentAmount - amount)
+                    val updatedWallet = wallet.copy(balance = wallet.balance + amount)
+                    repository.updateGoal(updatedGoal)
+                    walletRepository.updateWallet(updatedWallet)
+                    // Refresh goals after updating
+                    refreshGoals()
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to subtract from goal amount: ${e.message}"
             }
         }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 }

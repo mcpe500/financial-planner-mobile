@@ -26,6 +26,8 @@ import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.BudgetEntity
 import com.example.financialplannerapp.ui.viewmodel.BudgetViewModel
 import com.example.financialplannerapp.ui.viewmodel.BudgetViewModelFactory
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
+import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -37,15 +39,37 @@ fun BudgetMainScreen(navController: NavController) {
     val context = LocalContext.current
     val application = context.applicationContext as MainApplication
     val tokenManager = remember { TokenManager(context) }
-    
+
     val budgetViewModel: BudgetViewModel = viewModel(
         factory = BudgetViewModelFactory(application.appContainer.budgetRepository, tokenManager)
+    )
+    val walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
     )
 
     val budgets by budgetViewModel.budgets.collectAsState()
     val error by budgetViewModel.error.collectAsState()
+    val wallets by walletViewModel.wallets.collectAsState()
+    val isWalletLoading by walletViewModel.isLoading.collectAsState()
+
     var budgetToEdit by remember { mutableStateOf<BudgetEntity?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
+
+    // Load wallets first
+    LaunchedEffect(Unit) {
+        walletViewModel.loadWallets()
+    }
+
+    // Load budgets when wallets are available
+    LaunchedEffect(wallets, isWalletLoading) {
+        if (!isWalletLoading && wallets.isNotEmpty()) {
+            // Load budgets for the first wallet, or you could load for all wallets
+            val walletId = wallets.firstOrNull()?.id
+            if (walletId != null) {
+                budgetViewModel.loadBudgets(walletId)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -71,17 +95,34 @@ fun BudgetMainScreen(navController: NavController) {
             if (error != null) {
                 Text(error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(8.dp))
             }
-            ManageBudgetTab(
-                navController = navController,
-                budgets = budgets,
-                onEdit = { budget ->
-                    budgetToEdit = budget
-                    showEditDialog = true
-                },
-                onDelete = { budget ->
-                    budgetViewModel.deleteBudget(budget.id)
+
+            if (isWalletLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-            )
+            } else if (wallets.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No wallets found. Please create a wallet first.")
+                }
+            } else {
+                ManageBudgetTab(
+                    navController = navController,
+                    budgets = budgets,
+                    onEdit = { budget ->
+                        budgetToEdit = budget
+                        showEditDialog = true
+                    },
+                    onDelete = { budget ->
+                        budgetViewModel.deleteBudget(budget.id)
+                    }
+                )
+            }
         }
     }
 
