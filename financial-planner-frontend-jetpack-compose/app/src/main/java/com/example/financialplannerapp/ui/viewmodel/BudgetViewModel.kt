@@ -44,6 +44,12 @@ class BudgetViewModel(
             _isLoading.value = true
             try {
                 val userEmail = tokenManager.getUserEmail() ?: "guest"
+                // Check if a budget for this wallet already exists for this user
+                val existing = repository.getBudgetsForWallet(walletId).firstOrNull()?.find { it.userEmail == userEmail }
+                if (existing != null) {
+                    _error.value = "A budget for this wallet already exists."
+                    return@launch
+                }
                 val budget = BudgetEntity(
                     walletId = walletId,
                     userEmail = userEmail,
@@ -57,6 +63,38 @@ class BudgetViewModel(
                 repository.insertBudget(budget)
             } catch (e: Exception) {
                 _error.value = "Failed to add budget: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun editBudget(
+        budgetId: Int,
+        name: String,
+        amount: Double,
+        category: String,
+        startDate: Date,
+        endDate: Date,
+        isRecurring: Boolean
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val budget = _budgets.value.find { it.id == budgetId }
+                if (budget != null) {
+                    val updated = budget.copy(
+                        name = name,
+                        amount = amount,
+                        category = category,
+                        startDate = startDate,
+                        endDate = endDate,
+                        isRecurring = isRecurring
+                    )
+                    repository.updateBudget(updated)
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to edit budget: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
