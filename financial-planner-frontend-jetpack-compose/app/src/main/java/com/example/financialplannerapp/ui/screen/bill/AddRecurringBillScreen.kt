@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.BillEntity
 import com.example.financialplannerapp.data.model.RepeatCycle
 import com.example.financialplannerapp.ui.viewmodel.BillViewModel
@@ -33,6 +34,7 @@ fun AddRecurringBillScreen(
     navController: NavHostController
 ) {
     val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
     val application = context.applicationContext as MainApplication
     val billViewModel: BillViewModel = viewModel(
         factory = BillViewModelFactory(application.appContainer.billRepository)
@@ -145,6 +147,11 @@ fun AddRecurringBillScreen(
                     val parsedAmount = estimatedAmount.toDoubleOrNull()
                     amountError = parsedAmount == null || parsedAmount <= 0
                     if (!nameError && !amountError) {
+                        val userEmail = if (tokenManager.isNoAccountMode()) {
+                            "guest"
+                        } else {
+                            tokenManager.getUserEmail() ?: "guest"
+                        }
                         val billEntity = BillEntity(
                             uuid = UUID.randomUUID().toString(),
                             name = billName,
@@ -158,7 +165,8 @@ fun AddRecurringBillScreen(
                             autoPay = false,
                             notificationEnabled = true,
                             lastPaymentDate = null,
-                            creationDate = Date()
+                            creationDate = Date(),
+                            userEmail = userEmail
                         )
                         billViewModel.addBill(billEntity)
                     }

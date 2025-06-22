@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.financialplannerapp.data.local.dao.UserProfileDao
 import com.example.financialplannerapp.data.local.dao.AppSettingsDao
 import com.example.financialplannerapp.data.local.dao.CategoryDao
@@ -33,7 +35,7 @@ import com.example.financialplannerapp.data.local.model.WalletEntity
         BillEntity::class,
         WalletEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -51,6 +53,12 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE bills ADD COLUMN user_email TEXT NOT NULL DEFAULT 'guest'")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -58,7 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "financial_planner_db"
                 )
-                .fallbackToDestructiveMigration() // Consider a proper migration strategy for production
+                .addMigrations(MIGRATION_6_7)
                 .build()
                 INSTANCE = instance
                 instance

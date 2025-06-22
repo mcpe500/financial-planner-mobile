@@ -91,8 +91,20 @@ private fun RecurringBillsMainContent(
     var selectedFilter by remember { mutableStateOf(BillFilter.ALL) }
     var billToEdit by remember { mutableStateOf<BillEntity?>(null) }
     var billToDelete by remember { mutableStateOf<BillEntity?>(null) }
+    var billToView by remember { mutableStateOf<BillEntity?>(null) }
 
     val billEntities by viewModel.localBills.collectAsState()
+
+    if (billToView != null) {
+        BillDetailDialog(
+            bill = RecurringBill.fromEntity(billToView!!),
+            onDismiss = { billToView = null },
+            onPay = {
+                // TODO: Implement payment logic
+                billToView = null
+            }
+        )
+    }
 
     if (billToEdit != null) {
         EditBillDialog(
@@ -153,7 +165,7 @@ private fun RecurringBillsMainContent(
             items(filteredEntities, key = { it.uuid }) { entity ->
                 BillCard(
                     bill = RecurringBill.fromEntity(entity),
-                    onCardClick = { /* TODO: Navigate to bill details */ },
+                    onCardClick = { billToView = entity },
                     onEditClick = { billToEdit = entity },
                     onDeleteClick = { billToDelete = entity }
                 )
@@ -445,4 +457,64 @@ fun BillCard(bill: RecurringBill, onCardClick: () -> Unit, onEditClick: () -> Un
 
 private fun formatCurrency(amount: Double): String {
     return NumberFormat.getCurrencyInstance(Locale("in", "ID")).format(amount)
+}
+
+@Composable
+fun BillDetailDialog(
+    bill: RecurringBill,
+    onDismiss: () -> Unit,
+    onPay: () -> Unit
+) {
+    val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
+    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale("id", "ID")) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = bill.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Divider()
+                Row {
+                    Text("Amount: ", fontWeight = FontWeight.Bold)
+                    Text(currencyFormat.format(bill.estimatedAmount))
+                }
+                Row {
+                    Text("Due Date: ", fontWeight = FontWeight.Bold)
+                    Text(dateFormat.format(bill.dueDate))
+                }
+                Row {
+                    Text("Status: ", fontWeight = FontWeight.Bold)
+                    Text(bill.status.name, color = bill.status.color)
+                }
+                Row {
+                    Text("Cycle: ", fontWeight = FontWeight.Bold)
+                    Text(bill.repeatCycle.name)
+                }
+                if (bill.notes.isNotBlank()) {
+                    Row {
+                        Text("Notes: ", fontWeight = FontWeight.Bold)
+                        Text(bill.notes)
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onPay,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Pay")
+                }
+            }
+        }
+    }
 }

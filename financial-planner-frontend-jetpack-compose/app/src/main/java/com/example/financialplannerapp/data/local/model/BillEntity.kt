@@ -1,5 +1,6 @@
 package com.example.financialplannerapp.data.local.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.Date
@@ -20,5 +21,7 @@ data class BillEntity(
     val autoPay: Boolean,
     val notificationEnabled: Boolean,
     val lastPaymentDate: Date?,
-    val creationDate: Date
+    val creationDate: Date,
+    @ColumnInfo(name = "user_email")
+    val userEmail: String
 ) 
