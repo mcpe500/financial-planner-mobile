@@ -49,6 +49,7 @@ import com.example.financialplannerapp.service.LocalReactiveSettingsService
 import com.example.financialplannerapp.ui.viewmodel.AppSettingsViewModel
 import com.example.financialplannerapp.ui.viewmodel.SettingsViewModelFactory
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,10 +89,8 @@ fun AppSettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "App Settings",
-                        fontSize = 20.sp,
+                        text = "Settings",
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
@@ -175,20 +174,10 @@ fun AppSettingsScreen(
             item {
                 SettingsSectionCard {
                     SettingsItemCard(
-                        title = "Data Sync",
-                        subtitle = "Sync data across devices",
+                        title = "Data Sync & Backup",
+                        subtitle = "Sync, backup, and restore your data",
                         icon = Icons.Default.Sync,
                         onClick = { navController.navigate("data_sync") }
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        thickness = 0.5.dp
-                    )
-                    SettingsItemCard(
-                        title = "Backup & Restore",
-                        subtitle = "Backup and restore your data",
-                        icon = Icons.Default.CloudUpload,
-                        onClick = { navController.navigate("backup_restore") }
                     )
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outlineVariant,
@@ -325,8 +314,9 @@ fun SettingsSectionCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        modifier = modifier
-            .fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
