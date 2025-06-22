@@ -5,6 +5,10 @@ import com.example.financialplannerapp.data.local.model.WalletEntity
 import kotlinx.coroutines.flow.Flow
 
 class WalletRepositoryImpl(private val walletDao: WalletDao) : WalletRepository {
+    override fun getWalletsByUserEmail(userEmail: String): Flow<List<WalletEntity>> {
+        return walletDao.getWalletsByUserEmail(userEmail)
+    }
+
     override fun getAllWallets(): Flow<List<WalletEntity>> {
         return walletDao.getAllWallets()
     }

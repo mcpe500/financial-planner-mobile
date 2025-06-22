@@ -1,4 +1,4 @@
-package com.example.financialplannerapp.screen
+package com.example.financialplannerapp.ui.screen.goal
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -26,10 +26,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.cos
 import kotlin.math.sin
+import com.example.financialplannerapp.core.util.formatCurrency
+import com.example.financialplannerapp.core.util.getCurrentCurrencySymbol
+import com.example.financialplannerapp.data.model.FinancialGoal
+import com.example.financialplannerapp.data.model.generateMockGoals
 
 // Bibit-inspired color palette
 private val BibitGreen = Color(0xFF4CAF50)
@@ -55,330 +60,247 @@ enum class GoalTransactionType {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GoalDetailsScreen(navController: NavController, goalId: String) {
-    var showAddFundsSheet by remember { mutableStateOf(false) }
-    var showWithdrawDialog by remember { mutableStateOf(false) }
-
-    // Mock data - in real app, fetch by goalId
-    val goal = remember {
-        generateMockGoals().find { it.id == goalId } ?: generateMockGoals().first()
+fun GoalDetailsScreen(navController: NavController, goalId: String?) {
+    val goals = remember { generateMockGoals() }
+    val goal = remember(goalId) {
+        goals.find { it.id.toString() == goalId } ?: goals.firstOrNull()
     }
-    val transactions = remember { generateMockTransactions() }
+    
+    var showAddFundsDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (goal == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Goal not found")
+        }
+        return
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        goal.name,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
+                title = { Text(goal.name) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { navController.navigate("edit_goal/${goal.id}") }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit Goal")
+                    IconButton(onClick = { showEditDialog = true }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit")
                     }
-                    IconButton(onClick = { /* Show more options */ }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More")
+                    IconButton(onClick = { showDeleteDialog = true }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = DarkGray
-                )
-            )
-        },
-        floatingActionButton = {
-            if (!goal.isCompleted) {
-                FloatingActionButton(
-                    onClick = { showAddFundsSheet = true },
-                    containerColor = BibitGreen,
-                    contentColor = Color.White
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Funds")
                 }
-            }
+            )
         }
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(SoftGray)
                 .padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Goal Progress Card
             item {
-                GoalProgressCard(goal)
+                GoalHeaderCard(goal = goal)
             }
-
-            // Goal Statistics
+            
             item {
-                GoalStatisticsCard(goal, transactions)
+                GoalProgressCard(goal = goal)
             }
-
-            // Quick Actions
-            if (!goal.isCompleted) {
-                item {
-                    QuickActionsCard(
-                        onAddFunds = { showAddFundsSheet = true },
-                        onWithdraw = { showWithdrawDialog = true },
-                        onEditGoal = { navController.navigate("edit_goal/${goal.id}") }
-                    )
-                }
-            }
-
-            // Transaction History
+            
             item {
-                Text(
-                    text = "Riwayat Transaksi",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = DarkGray
+                GoalDetailsCard(goal = goal)
+            }
+            
+            item {
+                GoalActionsCard(
+                    onAddFunds = { showAddFundsDialog = true },
+                    onEdit = { showEditDialog = true },
+                    onDelete = { showDeleteDialog = true }
                 )
-            }
-
-            items(transactions) { transaction ->
-                TransactionHistoryItem(transaction)
-            }
-
-            // Bottom spacing for FAB
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
             }
         }
     }
 
-    // Add Funds Bottom Sheet
-    if (showAddFundsSheet) {
+    // Dialogs
+    if (showAddFundsDialog) {
         AddFundsBottomSheet(
             goal = goal,
-            onDismiss = { showAddFundsSheet = false },
-            onAddFunds = { amount, sourceWallet ->
-                // Handle add funds logic
-                showAddFundsSheet = false
+            onDismiss = { showAddFundsDialog = false },
+            onAddFunds = { amount ->
+                // TODO: Implement add funds logic
+                showAddFundsDialog = false
             }
         )
     }
 
-    // Withdraw Dialog
-    if (showWithdrawDialog) {
-        WithdrawDialog(
-            goal = goal,
-            onDismiss = { showWithdrawDialog = false },
-            onWithdraw = { amount, note ->
-                // Handle withdraw logic
-                showWithdrawDialog = false
+    if (showEditDialog) {
+        // TODO: Implement edit dialog
+        showEditDialog = false
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Goal") },
+            text = { Text("Are you sure you want to delete '${goal.name}'?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        // TODO: Implement delete logic
+                        showDeleteDialog = false
+                        navController.popBackStack()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
             }
         )
+    }
+}
+
+@Composable
+private fun GoalHeaderCard(goal: FinancialGoal) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = goal.icon,
+                contentDescription = goal.name,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(48.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = goal.name,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            
+            if (goal.isCompleted) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = "Completed",
+                        tint = Color.Green,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Goal Achieved!",
+                        color = Color.Green,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
 private fun GoalProgressCard(goal: FinancialGoal) {
+    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale("id", "ID")) }
+    
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (goal.isCompleted) AchievementGold else BibitGreen
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Goal Icon and Status
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = goal.icon,
-                    fontSize = 32.sp,
-                    modifier = Modifier.padding(end = 12.dp)
-                )
-                if (goal.isCompleted) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = "Completed",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Progress Circle
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(120.dp)
-            ) {
-                Canvas(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    drawGoalProgressCircle(goal.progressPercentage)
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "${(goal.progressPercentage * 100).toInt()}%",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = if (goal.isCompleted) "Tercapai!" else "Progress",
-                        fontSize = 12.sp,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Amount Info
-            Text(
-                text = "Rp ${String.format("%,.0f", goal.currentAmount)}",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
-                text = "dari Rp ${String.format("%,.0f", goal.targetAmount)}",
-                fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.8f)
-            )
-
-            if (!goal.isCompleted) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Sisa: Rp ${String.format("%,.0f", goal.remainingAmount)}",
-                    fontSize = 14.sp,
-                    color = Color.White.copy(alpha = 0.8f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Date Info
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Target",
-                        fontSize = 12.sp,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
-                    Text(
-                        text = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(goal.targetDate),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White
-                    )
-                }
-
-                if (!goal.isCompleted) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Sisa Waktu",
-                            fontSize = 12.sp,
-                            color = Color.White.copy(alpha = 0.8f)
-                        )
-                        Text(
-                            text = "${goal.daysRemaining} hari",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.White
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun GoalStatisticsCard(goal: FinancialGoal, transactions: List<GoalTransaction>) {
-    val totalDeposits = transactions.filter { it.type == GoalTransactionType.DEPOSIT }.sumOf { it.amount }
-    val totalWithdrawals = transactions.filter { it.type == GoalTransactionType.WITHDRAWAL }.sumOf { it.amount }
-    val averageMonthly = if (transactions.isNotEmpty()) {
-        val monthsActive = ((Date().time - goal.createdDate.time) / (1000 * 60 * 60 * 24 * 30)).coerceAtLeast(1)
-        totalDeposits / monthsActive
-    } else 0.0
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
             Text(
-                text = "Statistik Tujuan",
+                text = "Progress",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
-                modifier = Modifier.padding(bottom = 16.dp)
+                color = MaterialTheme.colorScheme.onSurface
             )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                StatisticItem(
-                    title = "Total Setoran",
-                    value = "Rp ${String.format("%,.0f", totalDeposits)}",
-                    icon = Icons.Default.TrendingUp,
-                    color = BibitGreen
-                )
-                StatisticItem(
-                    title = "Rata-rata/Bulan",
-                    value = "Rp ${String.format("%,.0f", averageMonthly)}",
-                    icon = Icons.Default.CalendarMonth,
-                    color = MotivationalOrange
-                )
-            }
-
+            
             Spacer(modifier = Modifier.height(16.dp))
-
+            
+            LinearProgressIndicator(
+                progress = goal.progressPercentage,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp),
+                color = if (goal.isCompleted) Color.Green else MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "${(goal.progressPercentage * 100).toInt()}% Complete",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                StatisticItem(
-                    title = "Transaksi",
-                    value = "${transactions.size}x",
-                    icon = Icons.Default.Receipt,
-                    color = Color(0xFF2196F3)
-                )
-
-                goal.estimatedCompletionDate?.let { estimatedDate ->
-                    StatisticItem(
-                        title = "Estimasi Selesai",
-                        value = SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(estimatedDate),
-                        icon = Icons.Default.Schedule,
-                        color = Color(0xFF9C27B0)
+                Column {
+                    Text(
+                        text = "Current Amount",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } ?: StatisticItem(
-                    title = "Wallet",
-                    value = goal.linkedWallet,
-                    icon = Icons.Default.AccountBalanceWallet,
-                    color = MediumGray
+                    Text(
+                        text = currencyFormat.format(goal.currentAmount),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Target Amount",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = currencyFormat.format(goal.targetAmount),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            
+            if (!goal.isCompleted) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Remaining: ${currencyFormat.format(goal.remainingAmount)}",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -386,364 +308,246 @@ private fun GoalStatisticsCard(goal: FinancialGoal, transactions: List<GoalTrans
 }
 
 @Composable
-private fun StatisticItem(
-    title: String,
-    value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+private fun GoalDetailsCard(goal: FinancialGoal) {
+    val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Icon(
-            icon,
-            contentDescription = title,
-            tint = color,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = title,
-            fontSize = 12.sp,
-            color = MediumGray
-        )
-        Text(
-            text = value,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = DarkGray
-        )
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Text(
+                text = "Goal Details",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            DetailRow(
+                label = "Category",
+                value = goal.category.displayName,
+                icon = goal.category.icon
+            )
+            
+            DetailRow(
+                label = "Priority",
+                value = goal.priority,
+                icon = Icons.Default.PriorityHigh
+            )
+            
+            DetailRow(
+                label = "Target Date",
+                value = dateFormat.format(goal.targetDate),
+                icon = Icons.Default.DateRange
+            )
+            
+            if (!goal.isCompleted) {
+                DetailRow(
+                    label = "Days Remaining",
+                    value = "${goal.daysRemaining} days",
+                    icon = Icons.Default.Schedule
+                )
+            }
+            
+            if (goal.description.isNotBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Description",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = goal.description,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun QuickActionsCard(
-    onAddFunds: () -> Unit,
-    onWithdraw: () -> Unit,
-    onEditGoal: () -> Unit
+private fun DetailRow(
+    label: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+        )
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun GoalActionsCard(
+    onAddFunds: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Text(
-                text = "Aksi Cepat",
-                fontSize = 16.sp,
+                text = "Actions",
+                fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray,
-                modifier = Modifier.padding(bottom = 12.dp)
+                color = MaterialTheme.colorScheme.onSurface
             )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Button(
+                onClick = onAddFunds,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Add Funds")
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedButton(
+                onClick = onEdit,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Edit Goal")
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedButton(
+                onClick = onDelete,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.Red
+                )
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Delete Goal")
+            }
+        }
+    }
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddFundsBottomSheet(
+    goal: FinancialGoal,
+    onDismiss: () -> Unit,
+    onAddFunds: (Double) -> Unit
+) {
+    var amount by remember { mutableStateOf("") }
+    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale("id", "ID")) }
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Text(
+                text = "Add Funds to ${goal.name}",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            OutlinedTextField(
+                value = amount,
+                onValueChange = { amount = it },
+                label = { Text("Amount") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                )
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                QuickActionButton(
-                    text = "Tambah Dana",
-                    icon = Icons.Default.Add,
-                    color = BibitGreen,
-                    onClick = onAddFunds,
-                    modifier = Modifier.weight(1f)
-                )
-                QuickActionButton(
-                    text = "Tarik Dana",
-                    icon = Icons.Default.Remove,
-                    color = MotivationalOrange,
-                    onClick = onWithdraw,
-                    modifier = Modifier.weight(1f)
-                )
-                QuickActionButton(
-                    text = "Edit Tujuan",
-                    icon = Icons.Default.Edit,
-                    color = Color(0xFF2196F3),
-                    onClick = onEditGoal,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun QuickActionButton(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier,
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = color
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, color),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(vertical = 4.dp)
-        ) {
-            Icon(
-                icon,
-                contentDescription = text,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-}
-
-@Composable
-private fun TransactionHistoryItem(transaction: GoalTransaction) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(1.dp, RoundedCornerShape(8.dp)),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Transaction Type Icon
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        if (transaction.type == GoalTransactionType.DEPOSIT)
-                            BibitGreen.copy(alpha = 0.2f)
-                        else
-                            MotivationalOrange.copy(alpha = 0.2f),
-                        CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    if (transaction.type == GoalTransactionType.DEPOSIT) Icons.Default.Add else Icons.Default.Remove,
-                    contentDescription = transaction.type.name,
-                    tint = if (transaction.type == GoalTransactionType.DEPOSIT) BibitGreen else MotivationalOrange,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Transaction Details
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (transaction.type == GoalTransactionType.DEPOSIT) "Setoran" else "Penarikan",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = DarkGray
-                )
-                Text(
-                    text = transaction.sourceWallet,
-                    fontSize = 12.sp,
-                    color = MediumGray
-                )
-                if (transaction.note.isNotEmpty()) {
-                    Text(
-                        text = transaction.note,
-                        fontSize = 12.sp,
-                        color = MediumGray
-                    )
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Text("Cancel")
                 }
-                Text(
-                    text = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(transaction.date),
-                    fontSize = 10.sp,
-                    color = MediumGray
-                )
+                
+                Button(
+                    onClick = {
+                        val amountValue = amount.toDoubleOrNull()
+                        if (amountValue != null && amountValue > 0) {
+                            onAddFunds(amountValue)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = amount.toDoubleOrNull() != null && amount.toDoubleOrNull()!! > 0
+                ) {
+                    Text("Add Funds")
+                }
             }
-
-            // Amount
-            Text(
-                text = "${if (transaction.type == GoalTransactionType.DEPOSIT) "+" else "-"}Rp ${String.format("%,.0f", transaction.amount)}",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (transaction.type == GoalTransactionType.DEPOSIT) BibitGreen else MotivationalOrange
-            )
+            
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
-}
-
-@Composable
-private fun WithdrawDialog(
-    goal: FinancialGoal,
-    onDismiss: () -> Unit,
-    onWithdraw: (Double, String) -> Unit
-) {
-    var amount by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Tarik Dana",
-                fontWeight = FontWeight.SemiBold
-            )
-        },
-        text = {
-            Column {
-                Text(
-                    text = "Tarik dana dari tujuan \"${goal.name}\"",
-                    fontSize = 14.sp,
-                    color = MediumGray,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                OutlinedTextField(
-                    value = amount,
-                    onValueChange = { amount = it },
-                    label = { Text("Jumlah") },
-                    placeholder = { Text("0") },
-                    leadingIcon = {
-                        Text(
-                            "Rp",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MotivationalOrange
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MotivationalOrange,
-                        focusedLabelColor = MotivationalOrange
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text("Catatan (opsional)") },
-                    placeholder = { Text("Alasan penarikan") },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MotivationalOrange,
-                        focusedLabelColor = MotivationalOrange
-                    )
-                )
-
-                Text(
-                    text = "Saldo tersedia: Rp ${String.format("%,.0f", goal.currentAmount)}",
-                    fontSize = 12.sp,
-                    color = MediumGray,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    amount.toDoubleOrNull()?.let { amountValue ->
-                        onWithdraw(amountValue, note)
-                    }
-                },
-                enabled = amount.isNotEmpty() &&
-                        amount.toDoubleOrNull() != null &&
-                        (amount.toDoubleOrNull() ?: 0.0) <= goal.currentAmount,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MotivationalOrange,
-                    contentColor = Color.White
-                )
-            ) {
-                Text("Tarik Dana")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Batal")
-            }
-        }
-    )
-}
-
-private fun DrawScope.drawGoalProgressCircle(progress: Float) {
-    val strokeWidth = 12.dp.toPx()
-    val radius = (size.minDimension - strokeWidth) / 2
-    val center = Offset(size.width / 2, size.height / 2)
-
-    // Background circle
-    drawCircle(
-        color = Color.White.copy(alpha = 0.3f),
-        radius = radius,
-        center = center,
-        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-    )
-
-    // Progress arc
-    val sweepAngle = 360 * progress.coerceAtMost(1f)
-    drawArc(
-        color = Color.White,
-        startAngle = -90f,
-        sweepAngle = sweepAngle,
-        useCenter = false,
-        topLeft = Offset(center.x - radius, center.y - radius),
-        size = Size(radius * 2, radius * 2),
-        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-    )
-}
-
-private fun generateMockTransactions(): List<GoalTransaction> {
-    val calendar = Calendar.getInstance()
-    return listOf(
-        GoalTransaction(
-            id = "1",
-            amount = 2000000.0,
-            date = calendar.apply { add(Calendar.DAY_OF_MONTH, -1) }.time,
-            type = GoalTransactionType.DEPOSIT,
-            note = "Setoran bulanan",
-            sourceWallet = "BCA Savings"
-        ),
-        GoalTransaction(
-            id = "2",
-            amount = 1500000.0,
-            date = calendar.apply { add(Calendar.DAY_OF_MONTH, -15) }.time,
-            type = GoalTransactionType.DEPOSIT,
-            note = "Bonus kerja",
-            sourceWallet = "Cash Wallet"
-        ),
-        GoalTransaction(
-            id = "3",
-            amount = 500000.0,
-            date = calendar.apply { add(Calendar.DAY_OF_MONTH, -20) }.time,
-            type = GoalTransactionType.WITHDRAWAL,
-            note = "Kebutuhan mendadak",
-            sourceWallet = "BCA Savings"
-        ),
-        GoalTransaction(
-            id = "4",
-            amount = 3000000.0,
-            date = calendar.apply { add(Calendar.DAY_OF_MONTH, -30) }.time,
-            type = GoalTransactionType.DEPOSIT,
-            note = "Setoran awal",
-            sourceWallet = "BCA Savings"
-        ),
-        GoalTransaction(
-            id = "5",
-            amount = 2500000.0,
-            date = calendar.apply { add(Calendar.DAY_OF_MONTH, -45) }.time,
-            type = GoalTransactionType.DEPOSIT,
-            note = "Transfer dari tabungan lama",
-            sourceWallet = "Emergency Fund"
-        )
-    )
 }
 
 @Preview(showBackground = true)

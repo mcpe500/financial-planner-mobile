@@ -13,7 +13,7 @@ import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.ui.screen.auth.LoginScreen
 import com.example.financialplannerapp.ui.screen.dashboard.DashboardScreen
 import com.example.financialplannerapp.ui.screen.settings.AppSettingsScreen
-import com.example.financialplannerapp.ui.screen.settings.SettingsScreen // Assuming this is your individual settings screen composable
+import com.example.financialplannerapp.ui.screen.settings.SettingsScreen
 import com.example.financialplannerapp.screen.settings.UserProfileSettingsScreen
 import com.example.financialplannerapp.screen.settings.SecuritySettingsScreen
 import com.example.financialplannerapp.screen.settings.DataSyncSettingsScreen
@@ -23,16 +23,21 @@ import com.example.financialplannerapp.screen.settings.HelpCenterScreen
 import com.example.financialplannerapp.ui.screen.transaction.AddTransactionScreen
 import com.example.financialplannerapp.ui.screen.transaction.ScanReceiptScreen
 import com.example.financialplannerapp.ui.screen.transaction.TransactionHistoryScreen
-import com.example.financialplannerapp.screen.VoiceInputScreen
 import com.example.financialplannerapp.ui.screen.bill.AddRecurringBillScreen
 import com.example.financialplannerapp.ui.screen.bill.BillCalendarScreen
 import com.example.financialplannerapp.ui.screen.bill.RecurringBillsMainScreen
+import com.example.financialplannerapp.ui.screen.goal.CreateGoalScreen
+import com.example.financialplannerapp.ui.screen.goal.FinancialGoalsMainScreen
+import com.example.financialplannerapp.ui.screen.goal.GoalDetailsScreen
 import com.example.financialplannerapp.ui.screen.transaction.TransactionMainScreen
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.example.financialplannerapp.screen.AddWalletScreen
+import com.example.financialplannerapp.screen.EditWalletScreen
 import com.example.financialplannerapp.screen.DebtReceivableMainScreen
 import com.example.financialplannerapp.screen.WalletsMainScreen
+import com.example.financialplannerapp.ui.screen.budget.BudgetMainScreen
+import com.example.financialplannerapp.ui.screen.budget.CreateBudgetScreen
 
 @Composable
 fun AppNavigation(
@@ -124,14 +129,14 @@ fun AppNavigation(
         }
 
         composable("bills") {
-            RecurringBillsMainScreen(navController = navController)
+            RecurringBillsMainScreen(navController = navController, tokenManager = tokenManager)
         }
 
         composable("add_bill") {
             AddRecurringBillScreen(navController = navController)
         }
         composable("bill_calendar") {
-            BillCalendarScreen(navController = navController)
+            BillCalendarScreen(navController = navController, tokenManager = tokenManager)
         }
         composable("bill_details/{billId}") { backStackEntry ->
             val billId = backStackEntry.arguments?.getString("billId")
@@ -150,11 +155,7 @@ fun AppNavigation(
             ScanReceiptScreen(navController = navController)
         }
 
-        composable("voice_input") {
-            VoiceInputScreen(navController = navController)
-        }
-
-        // --- New Quick Action Routes ---
+        // Wallet Screens
         composable("wallet") {
             WalletsMainScreen(navController = navController)
         }
@@ -162,13 +163,38 @@ fun AppNavigation(
         composable("add_wallet") {
             AddWalletScreen(navController = navController)
         }
+
+        composable("edit_wallet/{walletId}") { backStackEntry ->
+            val walletId = backStackEntry.arguments?.getString("walletId") ?: ""
+            EditWalletScreen(navController = navController, walletId = walletId)
+        }
+
+        // Other Screens
         composable("debt") {
             DebtReceivableMainScreen()
         }
-        composable("goals") {
-            PlaceholderScreen(title = "Financial Goals Screen")
+        composable("budgets") {
+            BudgetMainScreen(navController = navController)
         }
-        // --- End New Quick Action Routes ---
+        composable("create_budget") {
+            CreateBudgetScreen(navController = navController)
+        }
+        composable("budget_details/{budgetId}") { backStackEntry ->
+            val budgetId = backStackEntry.arguments?.getString("budgetId")
+            // Placeholder for Budget Details Screen
+            PlaceholderScreen(title = "Budget Details for ID: $budgetId")
+        }
+        composable("goals") {
+            FinancialGoalsMainScreen(navController = navController)
+        }
+        composable("create_goal") {
+            CreateGoalScreen(navController = navController)
+        }
+        composable("goal_details/{goalId}") { backStackEntry ->
+            val goalId = backStackEntry.arguments?.getString("goalId")
+            // Pass goalId to the details screen
+            GoalDetailsScreen(navController = navController, goalId = goalId)
+        }
     }
 }
 

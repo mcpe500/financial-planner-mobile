@@ -4,78 +4,105 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel // For ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-
-// --- IMPORTANT IMPORTS FROM YOUR CENTRALIZED UI MODEL FILE ---
-import com.example.financialplannerapp.ui.model.Wallet // Import the Wallet UI data class
-import com.example.financialplannerapp.ui.model.WalletType // Import the WalletType enum
-import com.example.financialplannerapp.ui.model.icon // Import the WalletType.icon extension property
-// --- END IMPORTANT IMPORTS ---
-
-import com.example.financialplannerapp.data.local.AppDatabase // Import your database
-import com.example.financialplannerapp.data.repository.WalletRepositoryImpl // Import your repository implementation
+import com.example.financialplannerapp.TokenManager
+import com.example.financialplannerapp.core.util.formatCurrency
+import com.example.financialplannerapp.data.local.AppDatabase
+import com.example.financialplannerapp.data.repository.WalletRepositoryImpl
+import com.example.financialplannerapp.ui.model.Wallet
+import com.example.financialplannerapp.ui.model.WalletType
+import com.example.financialplannerapp.ui.model.icon
 import com.example.financialplannerapp.ui.viewmodel.WalletViewModel
 import com.example.financialplannerapp.ui.viewmodel.WalletViewModelFactory
-
-// Bibit-inspired color palette
-private val BibitGreen = Color(0xFF4CAF50)
-private val BibitLightGreen = Color(0xFF81C784)
-private val SoftGray = Color(0xFFF5F5F5)
-private val MediumGray = Color(0xFF9E9E9E)
-private val DarkGray = Color(0xFF424242)
-
-// --- REMOVED DUPLICATE: Wallet data class, WalletType enum, and WalletType.icon extension property ---
-// These are now defined ONLY in 'com.example.financialplannerapp.ui.model.WalletUiModels.kt'
+import com.example.financialplannerapp.MainApplication
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletsMainScreen(
-    navController: NavController,
-    // IMPORTANT: userId should be passed from the navigation arguments or a session manager.
-    // For Preview and initial setup, a default is provided.
-    userId: String = "user123", // Replace with actual user ID from authentication or navigation
-    // Inject ViewModel using viewModel() Hilt or manual factory
-    walletViewModel: WalletViewModel = viewModel(
-        factory = WalletViewModelFactory(
-            walletRepository = WalletRepositoryImpl(AppDatabase.getDatabase(LocalContext.current).walletDao()),
-            userId = userId // Pass the userId to the ViewModel
-        )
-    )
+    navController: NavController
 ) {
-    var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("All Wallets", "Shared", "Invitations")
+    val context = LocalContext.current
+    val application = context.applicationContext as MainApplication
+    val tokenManager = remember { TokenManager(context) }
+    
+    val userEmail = remember {
+        if (tokenManager.isNoAccountMode()) {
+            "guest"
+        } else {
+            tokenManager.getUserEmail() ?: "guest"
+        }
+    }
 
-    // Observe wallets from ViewModel
+    val walletViewModel: WalletViewModel = viewModel(
+        factory = WalletViewModelFactory(application.appContainer.walletRepository, tokenManager)
+    )
+
     val allWallets by walletViewModel.wallets.collectAsState()
     val isLoading by walletViewModel.isLoading.collectAsState()
     val error by walletViewModel.error.collectAsState()
+    val successMessage by walletViewModel.successMessage.collectAsState()
 
-    // Filter for shared wallets from the fetched data
-    val sharedWallets = allWallets.filter { it.isShared }
+    var selectedFilter by remember { mutableStateOf(WalletTypeFilter.ALL) }
 
-    // Mock data for invitations (these aren't handled by Room DB in this setup)
-    val pendingInvitations = remember { generateMockInvitations() }
+    val filteredWallets = remember(allWallets, selectedFilter) {
+        when (selectedFilter) {
+            WalletTypeFilter.ALL -> allWallets
+            WalletTypeFilter.CASH -> allWallets.filter { it.type == WalletType.CASH }
+            WalletTypeFilter.BANK -> allWallets.filter { it.type == WalletType.BANK }
+            WalletTypeFilter.E_WALLET -> allWallets.filter { it.type == WalletType.E_WALLET }
+            WalletTypeFilter.INVESTMENT -> allWallets.filter { it.type == WalletType.INVESTMENT }
+        }
+    }
+
+    val statistics = remember(allWallets) {
+        calculateWalletStatistics(allWallets)
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                duration = SnackbarDuration.Short
+            )
+            walletViewModel.clearMessages()
+        }
+    }
+    
+    LaunchedEffect(successMessage) {
+        successMessage?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                duration = SnackbarDuration.Short
+            )
+            walletViewModel.clearMessages()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -91,162 +118,147 @@ fun WalletsMainScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                actions = {
-                    IconButton(onClick = { /* TODO: Handle transfer */ }) {
-                        Icon(Icons.Default.SwapHoriz, contentDescription = "Transfer")
-                    }
-                    IconButton(onClick = { /* TODO: Handle reconcile */ }) {
-                        Icon(Icons.Default.Balance, contentDescription = "Reconcile")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = DarkGray
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    // Navigate to AddWalletScreen, passing current userId as argument
-                    navController.navigate("add_wallet")
-                },
-                containerColor = BibitGreen,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Wallet")
-            }
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(SoftGray)
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(paddingValues)
         ) {
-            // Tab Row
-            TabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = Color.White,
-                contentColor = BibitGreen,
-                indicator = { tabPositions ->
-                    TabRowDefaults.PrimaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = BibitGreen
-                    )
-                }
-            ) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = {
-                            Text(
-                                title,
-                                fontWeight = if (selectedTabIndex == index) FontWeight.SemiBold else FontWeight.Normal
-                            )
-                        }
-                    )
-                }
-            }
-
-            // Display loading, error, or content
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (error != null) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Error: $error", color = Color.Red)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
-                // Tab Content
-                when (selectedTabIndex) {
-                    0 -> AllWalletsTab(
-                        wallets = allWallets, // Use data from ViewModel
-                        onWalletClick = { wallet ->
-                            // Handle wallet click, e.g., navigate to details
-                            navController.navigate("wallet_details/${wallet.id}")
-                        },
-                        onEditClick = { wallet ->
-                            // Handle edit wallet (assuming you have an EditWalletScreen)
-                            navController.navigate("edit_wallet/${wallet.id}/$userId") // Pass userId for edit
-                        },
-                        onDeleteClick = { wallet ->
-                            walletViewModel.deleteWallet(wallet.id) // Call ViewModel to delete
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
+                        TotalBalanceCard(
+                            totalBalance = statistics.totalBalance,
+                            walletCount = allWallets.size
+                        )
+                    }
+
+                    if (allWallets.isNotEmpty()) {
+                        item {
+                            QuickActionsSection(navController = navController, isEnabled = true)
                         }
-                    )
-                    1 -> SharedWalletsTab(
-                        sharedWallets = sharedWallets, // Use filtered data from ViewModel
-                        onWalletClick = { wallet ->
-                            // Handle shared wallet click
-                            navController.navigate("shared_wallet_details/${wallet.id}")
+                    } else {
+                        item {
+                            QuickActionsSection(navController = navController, isEnabled = false)
                         }
-                    )
-                    2 -> InvitationsTab(
-                        invitations = pendingInvitations,
-                        onAcceptInvitation = { invitation ->
-                            // Handle accept
-                            // TODO: Implement logic to update DB and remove invitation
-                        },
-                        onDeclineInvitation = { invitation ->
-                            // Handle decline
-                            // TODO: Implement logic to remove invitation
+                    }
+
+                    if (allWallets.isNotEmpty()) {
+                        item {
+                            FinancialInsightsCard(statistics = statistics)
                         }
-                    )
+                    }
+
+                    if (allWallets.isNotEmpty()) {
+                        item {
+                            WalletDistributionChart(wallets = allWallets)
+                        }
+                    }
+
+                    item {
+                        WalletTypeFilterChips(
+                            selectedFilter = selectedFilter,
+                            onFilterChange = { selectedFilter = it }
+                        )
+                    }
+
+                    items(filteredWallets) { wallet ->
+                        WalletCard(
+                            wallet = wallet,
+                            onClick = { 
+                                navController.navigate("wallet_details/${wallet.id}")
+                            },
+                            onEditClick = { 
+                                navController.navigate("edit_wallet/${wallet.id}")
+                            },
+                            onDeleteClick = { 
+                                walletViewModel.deleteWallet(wallet.id)
+                            }
+                        )
+                    }
+
+                    if (filteredWallets.isEmpty()) {
+                        item {
+                            EmptyStateCard(
+                                hasWallets = allWallets.isNotEmpty(),
+                                selectedFilter = selectedFilter
+                            )
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp))
+                    }
                 }
             }
         }
     }
 }
 
-// --- Reusable Composable Functions (No Changes Needed Here as they use Wallet UI model) ---
-// WalletCard, SharedWalletCard, InvitationCard, EmptyStateCard all remain the same.
-// The `Wallet` type here refers to `com.example.financialplannerapp.ui.model.Wallet`
-// and `WalletType` refers to `com.example.financialplannerapp.ui.model.WalletType`
+enum class WalletTypeFilter(val label: String, val icon: ImageVector) {
+    ALL("All", Icons.Default.AllInclusive),
+    CASH("Cash", Icons.Default.Money),
+    BANK("Bank", Icons.Default.AccountBalance),
+    E_WALLET("E-Wallet", Icons.Default.Smartphone),
+    INVESTMENT("Investment", Icons.Default.TrendingUp)
+}
 
-@Composable
-private fun AllWalletsTab(
-    wallets: List<Wallet>,
-    onWalletClick: (Wallet) -> Unit,
-    onEditClick: (Wallet) -> Unit,
-    onDeleteClick: (Wallet) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Total Balance Card
-        item {
-            TotalBalanceCard(totalBalance = wallets.sumOf { it.balance })
-        }
+data class WalletStatistics(
+    val totalBalance: Double,
+    val totalAssets: Double,
+    val totalDebt: Double,
+    val netWorth: Double,
+    val walletCount: Int,
+    val assetWalletCount: Int,
+    val debtWalletCount: Int,
+    val typeDistribution: Map<WalletType, Double>
+)
 
-        // Wallet Cards
-        items(wallets) { wallet ->
-            WalletCard(
-                wallet = wallet,
-                onClick = { onWalletClick(wallet) },
-                onEditClick = { onEditClick(wallet) },
-                onDeleteClick = { onDeleteClick(wallet) }
-            )
-        }
-
-        // Bottom spacing for FAB
-        item {
-            Spacer(modifier = Modifier.height(80.dp))
-        }
-    }
+fun calculateWalletStatistics(wallets: List<Wallet>): WalletStatistics {
+    val totalBalance = wallets.sumOf { it.balance }
+    val totalAssets = wallets.sumOf { it.balance }
+    val totalDebt = 0.0
+    val netWorth = totalAssets
+    
+    val typeDistribution = wallets.groupBy { it.type }
+        .mapValues { (_, walletList) -> walletList.sumOf { it.balance } }
+    
+    return WalletStatistics(
+        totalBalance = totalBalance,
+        totalAssets = totalAssets,
+        totalDebt = totalDebt,
+        netWorth = netWorth,
+        walletCount = wallets.size,
+        assetWalletCount = wallets.size,
+        debtWalletCount = 0,
+        typeDistribution = typeDistribution
+    )
 }
 
 @Composable
-private fun TotalBalanceCard(totalBalance: Double) {
+private fun TotalBalanceCard(totalBalance: Double, walletCount: Int) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = BibitGreen)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -254,20 +266,309 @@ private fun TotalBalanceCard(totalBalance: Double) {
             Text(
                 text = "Total Balance",
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
             Text(
-                text = "$${String.format("%.2f", totalBalance)}",
+                text = formatCurrency(totalBalance),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.padding(top = 8.dp)
             )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Wallets",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                    )
+                    Text(
+                        text = "$walletCount",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickActionsSection(navController: NavController, isEnabled: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
             Text(
-                text = "Across 0 wallets", // Correctly access allWallets count
+                text = "Quick Actions",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                QuickActionButton(
+                    icon = Icons.Default.Add,
+                    label = "Add Wallet",
+                    onClick = { navController.navigate("add_wallet") },
+                    enabled = true
+                )
+                
+                QuickActionButton(
+                    icon = Icons.Default.Receipt,
+                    label = "Scan Receipt",
+                    onClick = { navController.navigate("scan_receipt") },
+                    enabled = isEnabled
+                )
+                
+                QuickActionButton(
+                    icon = Icons.Default.Assessment,
+                    label = "Reports",
+                    onClick = { navController.navigate("financial_reports") },
+                    enabled = isEnabled
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RowScope.QuickActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean
+) {
+    val contentColor = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    val cardModifier = if (enabled) {
+        Modifier
+            .weight(1f)
+            .clickable { onClick() }
+    } else {
+        Modifier.weight(1f)
+    }
+
+    Card(
+        modifier = cardModifier,
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = contentColor,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.8f),
-                modifier = Modifier.padding(top = 4.dp)
+                fontWeight = FontWeight.Medium,
+                color = contentColor,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun FinancialInsightsCard(statistics: WalletStatistics) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Financial Insights",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            val assetTypes = statistics.typeDistribution.keys.size
+            InsightRow(
+                icon = Icons.Default.Diversity3,
+                title = "Asset Diversity",
+                value = "$assetTypes types",
+                description = if (assetTypes >= 3) "Well diversified" else "Consider diversifying",
+                isWarning = assetTypes < 3
+            )
+        }
+    }
+}
+
+@Composable
+private fun InsightRow(
+    icon: ImageVector,
+    title: String,
+    value: String,
+    description: String,
+    isWarning: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = title,
+            tint = if (isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+        )
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        
+        Text(
+            text = value,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun WalletDistributionChart(wallets: List<Wallet>) {
+    if (wallets.isEmpty()) return
+    
+    val statistics = calculateWalletStatistics(wallets)
+    val totalBalance = statistics.totalBalance
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Balance Distribution",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            WalletType.values().forEach { walletType ->
+                val typeBalance = statistics.typeDistribution[walletType] ?: 0.0
+                if (typeBalance > 0) {
+                    val percentage = (typeBalance / totalBalance * 100).toFloat()
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = walletType.icon,
+                            contentDescription = walletType.name,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        Text(
+                            text = walletType.name.lowercase().replaceFirstChar { it.uppercase() },
+                            fontSize = 12.sp,
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        
+                        Text(
+                            text = "${String.format("%.1f", percentage)}%",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    
+                    LinearProgressIndicator(
+                        progress = percentage / 100f,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WalletTypeFilterChips(
+    selectedFilter: WalletTypeFilter,
+    onFilterChange: (WalletTypeFilter) -> Unit
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(WalletTypeFilter.values()) { filter ->
+            FilterChip(
+                onClick = { onFilterChange(filter) },
+                label = { Text(filter.label) },
+                selected = selectedFilter == filter,
+                leadingIcon = {
+                    Icon(
+                        imageVector = filter.icon,
+                        contentDescription = filter.label,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         }
     }
@@ -280,13 +581,15 @@ private fun WalletCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(12.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -294,7 +597,6 @@ private fun WalletCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Wallet Icon
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -302,7 +604,7 @@ private fun WalletCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    wallet.icon,
+                    imageVector = wallet.icon,
                     contentDescription = wallet.name,
                     tint = wallet.color,
                     modifier = Modifier.size(24.dp)
@@ -311,376 +613,127 @@ private fun WalletCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Wallet Info
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = wallet.name,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = DarkGray,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (wallet.isShared) {
-                        Icon(
-                            Icons.Default.Group,
-                            contentDescription = "Shared",
-                            modifier = Modifier
-                                .size(16.dp)
-                                .padding(start = 4.dp),
-                            tint = BibitGreen
-                        )
-                    }
-                }
-
-                Text(
-                    text = wallet.type.name.lowercase().replaceFirstChar { it.uppercase() },
-                    fontSize = 12.sp,
-                    color = MediumGray
-                )
-
-                Text(
-                    text = "$${String.format("%.2f", wallet.balance)}",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (wallet.type == WalletType.DEBT) Color.Red else BibitGreen,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            // Action Buttons
-            Row {
-                IconButton(onClick = onEditClick) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Edit",
-                        tint = BibitGreen,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = Color.Red,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SharedWalletsTab(
-    sharedWallets: List<Wallet>,
-    onWalletClick: (Wallet) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(sharedWallets) { wallet ->
-            SharedWalletCard(
-                wallet = wallet,
-                onClick = { onWalletClick(wallet) }
-            )
-        }
-
-        if (sharedWallets.isEmpty()) {
-            item {
-                EmptyStateCard(
-                    icon = Icons.Default.Group,
-                    title = "No Shared Wallets",
-                    description = "You don't have any shared wallets yet. Create a wallet and invite family or friends to manage finances together."
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SharedWalletCard(
-    wallet: Wallet,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(12.dp))
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Wallet Icon
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(wallet.color.copy(alpha = 0.2f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    wallet.icon,
-                    contentDescription = wallet.name,
-                    tint = wallet.color,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Wallet Info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = wallet.name,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = DarkGray
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Text(
-                    text = "${wallet.memberCount} members",
+                    text = wallet.type.name.lowercase().replaceFirstChar { it.uppercase() },
                     fontSize = 12.sp,
-                    color = MediumGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Text(
-                    text = "$${String.format("%.2f", wallet.balance)}",
+                    text = formatCurrency(wallet.balance),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = BibitGreen,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
 
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = "View Details",
-                tint = MediumGray
-            )
-        }
-    }
-}
-
-// Mock data classes for invitations (these are not part of your Room DB yet)
-data class WalletInvitation(
-    val id: String,
-    val walletName: String,
-    val inviterName: String,
-    val inviterEmail: String,
-    val type: InvitationType,
-    val permission: String
-)
-
-enum class InvitationType {
-    SENT, RECEIVED
-}
-
-@Composable
-private fun InvitationsTab(
-    invitations: List<WalletInvitation>,
-    onAcceptInvitation: (WalletInvitation) -> Unit,
-    onDeclineInvitation: (WalletInvitation) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(invitations) { invitation ->
-            InvitationCard(
-                invitation = invitation,
-                onAccept = { onAcceptInvitation(invitation) },
-                onDecline = { onDeclineInvitation(invitation) }
-            )
-        }
-
-        if (invitations.isEmpty()) {
-            item {
-                EmptyStateCard(
-                    icon = Icons.Default.MailOutline,
-                    title = "No Pending Invitations",
-                    description = "You don't have any pending wallet invitations."
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun InvitationCard(
-    invitation: WalletInvitation,
-    onAccept: () -> Unit,
-    onDecline: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = invitation.walletName,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = DarkGray
-                    )
-
-                    Text(
-                        text = if (invitation.type == InvitationType.RECEIVED)
-                            "Invited by ${invitation.inviterName}"
-                        else
-                            "Sent to ${invitation.inviterEmail}",
-                        fontSize = 12.sp,
-                        color = MediumGray,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-
-                    Text(
-                        text = "Permission: ${invitation.permission}",
-                        fontSize = 12.sp,
-                        color = BibitGreen,
-                        modifier = Modifier.padding(top = 2.dp)
+            Row {
+                IconButton(onClick = onEditClick) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
-
-                Text(
-                    text = invitation.type.name,
-                    fontSize = 10.sp,
-                    color = Color.White,
-                    modifier = Modifier
-                        .background(
-                            if (invitation.type == InvitationType.RECEIVED) BibitGreen else MediumGray,
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
+                IconButton(onClick = { showDeleteDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
-
-            if (invitation.type == InvitationType.RECEIVED) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+        }
+    }
+    
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Wallet") },
+            text = { Text("Are you sure you want to delete '${wallet.name}'? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteClick()
+                        showDeleteDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    OutlinedButton(
-                        onClick = onDecline,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color.Red
-                        )
-                    ) {
-                        Text("Decline")
-                    }
-
-                    Button(
-                        onClick = onAccept,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = BibitGreen,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("Accept")
-                    }
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
                 }
             }
-        }
+        )
     }
 }
 
 @Composable
-private fun EmptyStateCard(
-    icon: ImageVector,
-    title: String,
-    description: String
-) {
+private fun EmptyStateCard(hasWallets: Boolean, selectedFilter: WalletTypeFilter) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
-            modifier = Modifier.padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                icon,
-                contentDescription = title,
+                imageVector = if (hasWallets) Icons.Default.FilterList else Icons.Default.AccountBalance,
+                contentDescription = "No Wallets",
                 modifier = Modifier.size(48.dp),
-                tint = MediumGray
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = title,
+                text = if (hasWallets) "No ${selectedFilter.label} Wallets" else "No Wallets Yet",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkGray
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = description,
+                text = if (hasWallets) 
+                    "You don't have any ${selectedFilter.label.lowercase()} wallets yet" 
+                else 
+                    "Create your first wallet to start managing your finances",
                 fontSize = 14.sp,
-                color = MediumGray,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
         }
     }
 }
 
-// --- REMOVED MOCK WALLETS GENERATION ---
-// You no longer need `generateMockWallets()` as the data comes from the ViewModel/database.
-
-private fun generateMockInvitations(): List<WalletInvitation> {
-    return listOf(
-        WalletInvitation(
-            id = "1",
-            walletName = "Family Vacation Fund",
-            inviterName = "John Doe",
-            inviterEmail = "john@example.com",
-            type = InvitationType.RECEIVED,
-            permission = "Edit"
-        ),
-        WalletInvitation(
-            id = "2",
-            walletName = "Shared Expenses",
-            inviterName = "",
-            inviterEmail = "sarah@example.com",
-            type = InvitationType.SENT,
-            permission = "View Only"
-        )
-    )
-}
-
 @Preview(showBackground = true)
 @Composable
 fun WalletsMainScreenPreview() {
-    WalletsMainScreen(rememberNavController(), userId = "preview_user_id_123")
+    WalletsMainScreen(rememberNavController())
 }

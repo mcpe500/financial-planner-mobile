@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.TokenManager
 import com.example.financialplannerapp.data.local.model.BillEntity
 import com.example.financialplannerapp.data.model.RepeatCycle
 import com.example.financialplannerapp.ui.viewmodel.BillViewModel
@@ -33,14 +34,14 @@ fun AddRecurringBillScreen(
     navController: NavHostController
 ) {
     val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
     val application = context.applicationContext as MainApplication
     val billViewModel: BillViewModel = viewModel(
-        factory = BillViewModelFactory(application.appContainer.billRepository)
+        factory = BillViewModelFactory(application.appContainer.billRepository, tokenManager)
     )
 
     val isLoading by billViewModel.isLoading.collectAsState()
 
-    // Listen for success signal to navigate back
     LaunchedEffect(Unit) {
         billViewModel.operationSuccess.collectLatest { success ->
             if (success) {
@@ -58,8 +59,8 @@ fun AddRecurringBillScreen(
     var nameError by remember { mutableStateOf(false) }
     var amountError by remember { mutableStateOf(false) }
 
-    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.timeInMillis)
     var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.timeInMillis)
 
     if (showDatePicker) {
         DatePickerDialog(
@@ -68,20 +69,15 @@ fun AddRecurringBillScreen(
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let {
                         val newDate = Calendar.getInstance().apply { timeInMillis = it }
-                        // Ensure the selected date is not in the past for the due date
                         if (!newDate.before(Calendar.getInstance())) {
                             selectedDate = newDate
                         }
                     }
                     showDatePicker = false
-                }) {
-                    Text("OK")
-                }
+                }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -108,32 +104,20 @@ fun AddRecurringBillScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Enter the details for your recurring bill.", style = MaterialTheme.typography.bodyLarge)
-
             OutlinedTextField(
                 value = billName,
                 onValueChange = { billName = it; nameError = false },
                 label = { Text("Bill Name (e.g., Netflix)") },
                 isError = nameError,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Receipt, contentDescription = null) },
-                singleLine = true
+                modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = estimatedAmount,
-                onValueChange = { newValue ->
-                    // Allow only numbers and a single decimal point
-                    if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
-                        estimatedAmount = newValue
-                    }
-                    amountError = false
-                },
+                onValueChange = { estimatedAmount = it; amountError = false },
                 label = { Text("Estimated Amount") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 isError = amountError,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null) },
-                singleLine = true
+                modifier = Modifier.fillMaxWidth()
             )
 
             val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
@@ -142,21 +126,17 @@ fun AddRecurringBillScreen(
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("First Due Date") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDatePicker = true },
+                modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
                 trailingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = "Select Date") }
             )
 
-            AddBillCycleDropDown(selectedCycle = selectedCycle, onCycleSelected = { selectedCycle = it })
+            CycleDropDown(selectedCycle = selectedCycle, onCycleSelected = { selectedCycle = it })
 
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text("Notes (Optional)") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null) },
-                maxLines = 4
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -167,76 +147,24 @@ fun AddRecurringBillScreen(
                     val parsedAmount = estimatedAmount.toDoubleOrNull()
                     amountError = parsedAmount == null || parsedAmount <= 0
                     if (!nameError && !amountError) {
-                        val billEntity = BillEntity(
-                            uuid = UUID.randomUUID().toString(),
+                        billViewModel.addBill(
                             name = billName,
                             estimatedAmount = parsedAmount!!,
                             dueDate = selectedDate.time,
                             repeatCycle = selectedCycle.name,
-                            category = "Default", // You can enhance this later
-                            notes = notes,
-                            isActive = true,
-                            paymentsJson = Gson().toJson(emptyList<Any>()),
-                            autoPay = false,
-                            notificationEnabled = true,
-                            lastPaymentDate = null,
-                            creationDate = Date()
+                            category = "Default",
+                            notes = notes
                         )
-                        billViewModel.addBill(billEntity)
                     }
                 },
                 enabled = !isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
+                modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                 } else {
                     Text("Save Bill")
                 }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AddBillCycleDropDown(
-    selectedCycle: RepeatCycle,
-    onCycleSelected: (RepeatCycle) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box {
-        OutlinedTextField(
-            value = selectedCycle.name.lowercase().replaceFirstChar { it.titlecase() },
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Repeat Cycle") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true },
-            trailingIcon = {
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                    contentDescription = "Toggle Dropdown"
-                )
-            }
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            RepeatCycle.values().forEach { cycle ->
-                DropdownMenuItem(
-                    text = { Text(cycle.name.lowercase().replaceFirstChar { it.titlecase() }) },
-                    onClick = {
-                        onCycleSelected(cycle)
-                        expanded = false
-                    }
-                )
             }
         }
     }
