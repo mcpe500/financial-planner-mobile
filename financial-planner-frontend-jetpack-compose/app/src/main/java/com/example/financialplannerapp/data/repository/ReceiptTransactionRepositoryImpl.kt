@@ -188,15 +188,15 @@ class ReceiptTransactionRepositoryImpl constructor(
                 amount = receiptTransaction.totalAmount,
                 type = if (receiptTransaction.totalAmount >= 0) "INCOME" else "EXPENSE",
                 date = receiptTransaction.date,
-                pocket = "Cash", // Default or infer if you have logic
+                pocket = "Cash",
                 category = receiptTransaction.category ?: "Other",
                 note = receiptTransaction.notes ?: "${receiptTransaction.merchantName} - Receipt Transaction",
-                tags = null, // Could parse from items/category if needed
+                tags = null,
                 isFromReceipt = true,
                 receiptId = receiptTransaction.receiptId,
                 merchantName = receiptTransaction.merchantName,
                 location = receiptTransaction.location,
-                receiptImagePath = null, // Could store image path if needed
+                receiptImagePath = null,
                 receiptConfidence = receiptTransaction.confidence,
                 receipt_items = items?.map { item ->
                     com.example.financialplannerapp.data.local.model.ReceiptItem(
@@ -209,7 +209,8 @@ class ReceiptTransactionRepositoryImpl constructor(
                 isSynced = receiptTransaction.isSynced,
                 backendTransactionId = receiptTransaction.backendTransactionId,
                 createdAt = receiptTransaction.createdAt,
-                updatedAt = receiptTransaction.updatedAt
+                updatedAt = receiptTransaction.updatedAt,
+                walletId = "default_wallet_id" // Default wallet ID
             )
 
             val transactionId = transactionDao.insertTransaction(transaction)

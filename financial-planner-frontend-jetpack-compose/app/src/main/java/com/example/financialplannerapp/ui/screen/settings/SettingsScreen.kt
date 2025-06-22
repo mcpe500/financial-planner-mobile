@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ContactSupport
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -89,13 +88,6 @@ fun SettingsScreen(navController: NavController) {
             subtitle = "Get help from our support team",
             icon = Icons.Filled.ContactSupport,
             route = "contactSupportSettings",
-            isOnlineRequired = true
-        ),
-        SettingItem(
-            title = "Delete Account",
-            subtitle = "Permanently delete your account and data",
-            icon = Icons.Filled.Delete,
-            route = "deleteAccount",
             isOnlineRequired = true
         ),
         SettingItem(

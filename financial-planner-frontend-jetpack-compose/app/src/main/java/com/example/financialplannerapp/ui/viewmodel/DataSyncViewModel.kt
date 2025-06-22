@@ -2,82 +2,69 @@ package com.example.financialplannerapp.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.financialplannerapp.MainApplication
+import com.example.financialplannerapp.TokenManager
+import com.example.financialplannerapp.data.model.toEntity
+import com.example.financialplannerapp.data.model.toWalletData
+import com.example.financialplannerapp.data.repository.AppSettingsRepository
 import com.example.financialplannerapp.data.repository.ReceiptTransactionRepository
 import com.example.financialplannerapp.data.repository.TransactionRepository
-import com.example.financialplannerapp.TokenManager
-import com.example.financialplannerapp.data.repository.AppSettingsRepository
+import com.example.financialplannerapp.data.repository.WalletRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
-import com.example.financialplannerapp.data.model.toNetworkModel
-import com.example.financialplannerapp.data.model.toEntity
-import android.util.Log
 
 class DataSyncViewModel(
     private val transactionRepository: TransactionRepository,
     private val receiptTransactionRepository: ReceiptTransactionRepository,
+    private val walletRepository: WalletRepository,
     private val tokenManager: TokenManager,
     private val appSettingsRepository: AppSettingsRepository
 ) : ViewModel() {
+
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
-    private val _lastSyncTime = MutableStateFlow("")
-    val lastSyncTime: StateFlow<String> = _lastSyncTime.asStateFlow()
-
     private val _syncResult = MutableStateFlow<String?>(null)
     val syncResult: StateFlow<String?> = _syncResult.asStateFlow()
 
     fun checkBackendConnectivity() {
         viewModelScope.launch {
-            _isConnected.value = appSettingsRepository.checkBackendHealth()
+            try {
+                // Simple connectivity check
+                val wallets = walletRepository.getWalletsFromBackend()
+                _isConnected.value = true
+            } catch (e: Exception) {
+                _isConnected.value = false
+            }
         }
     }
 
     fun syncAll() {
         viewModelScope.launch {
-            Log.d("DataSync", "Starting syncAll()...")
             _isSyncing.value = true
             _syncResult.value = null
             try {
-                val token = tokenManager.getToken() ?: throw Exception("No token")
-                val userId = tokenManager.getUserId() ?: "local_user"
+                val userEmail = tokenManager.getUserEmail() ?: "guest"
 
-                // 1. Upload unsynced local transactions
-                val unsynced = transactionRepository.getUnsyncedTransactions(userId)
-                Log.d("DataSync", "Unsynced local transactions: ${unsynced.size}")
-                if (unsynced.isNotEmpty()) {
-                    val uploadSuccess = transactionRepository.uploadTransactionsToBackend(
-                        unsynced.map { it.toNetworkModel() }
+                // 1. Sync wallets
+                val localWallets = walletRepository.getWalletsByUserEmail(userEmail).first()
+                if (localWallets.isNotEmpty()) {
+                    walletRepository.uploadWalletsToBackend(
+                        localWallets.map { it.toWalletData() }
                     )
-                    Log.d("DataSync", "Upload to backend success: $uploadSuccess")
-                    if (uploadSuccess) {
-                        transactionRepository.markTransactionsAsSynced(unsynced.map { it.id })
-                        Log.d("DataSync", "Marked transactions as synced: ${unsynced.map { it.id }}")
-                    }
                 }
 
-                // 2. Download latest transactions from backend
-                val backendTransactions = transactionRepository.getTransactionsFromBackend()
-                Log.d("DataSync", "Downloaded ${backendTransactions.size} transactions from backend")
-                val entities = backendTransactions.map { it.toEntity(userId) }
-                Log.d("DataSync", "Mapped backend transactions to entities: ${entities.size}")
-                transactionRepository.insertTransactions(entities)
-                Log.d("DataSync", "Inserted backend transactions to RoomDB")
+                val backendWallets = walletRepository.getWalletsFromBackend()
+                walletRepository.insertWallets(backendWallets.map { it.toEntity() })
 
-                _lastSyncTime.value = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date())
-                _syncResult.value = "Sync Successfully"
-                Log.d("DataSync", "Sync finished successfully")
+                _syncResult.value = "Sync successful"
             } catch (e: Exception) {
-                _syncResult.value = "Gagal sinkronisasi: ${e.message}"
-                Log.e("DataSync", "Sync failed: ${e.message}", e)
+                _syncResult.value = "Sync failed: ${e.message}"
             } finally {
                 _isSyncing.value = false
             }
@@ -87,4 +74,4 @@ class DataSyncViewModel(
     fun clearSyncResult() {
         _syncResult.value = null
     }
-} 
+}

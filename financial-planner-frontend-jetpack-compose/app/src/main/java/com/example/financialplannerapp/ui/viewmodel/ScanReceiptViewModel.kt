@@ -240,6 +240,7 @@ class ScanReceiptViewModel(
                 pocket = "Cash",
                 category = "General",
                 note = "${ocrData.merchantName} - Receipt Transaction",
+                walletId = "default_wallet_id",
                 isFromReceipt = true,
                 receiptId = ocrData.receiptId ?: "receipt_${System.currentTimeMillis()}",
                 merchantName = ocrData.merchantName,

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -132,16 +133,16 @@ fun AppSettingsScreen(
                         icon = Icons.Default.Person,
                         onClick = { navController.navigate("personal_profile") }
                     )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        thickness = 0.5.dp
-                    )
-                    SettingsItemCard(
-                        title = "Security",
-                        subtitle = "Password, PIN, and security settings",
-                        icon = Icons.Default.Security,
-                        onClick = { navController.navigate("security") }
-                    )
+//                    HorizontalDivider(
+//                        color = MaterialTheme.colorScheme.outlineVariant,
+//                        thickness = 0.5.dp
+//                    )
+//                    SettingsItemCard(
+//                        title = "Security",
+//                        subtitle = "Password, PIN, and security settings",
+//                        icon = Icons.Default.Security,
+//                        onClick = { navController.navigate("security") }
+//                    )
                 }
             }
 
@@ -156,14 +157,14 @@ fun AppSettingsScreen(
                         onCurrencySelected = { appSettingsViewModel.setCurrency(it.code) },
                         onShowDialog = { showCurrencyDialog = true }
                     )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        thickness = 0.5.dp
-                    )
-                    NotificationSettingCard(
-                        notificationsEnabled = notificationsEnabled,
-                        onToggle = { appSettingsViewModel.setNotificationsEnabled(it) }
-                    )
+//                    HorizontalDivider(
+//                        color = MaterialTheme.colorScheme.outlineVariant,
+//                        thickness = 0.5.dp
+//                    )
+//                    NotificationSettingCard(
+//                        notificationsEnabled = notificationsEnabled,
+//                        onToggle = { appSettingsViewModel.setNotificationsEnabled(it) }
+//                    )
                 }
             }
 
@@ -208,6 +209,16 @@ fun AppSettingsScreen(
                         subtitle = "Version and app details",
                         icon = Icons.Default.Info,
                         onClick = { navController.navigate("app_info") }
+                    )
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
+                    )
+                    SettingsItemCard(
+                        title = "Delete Account",
+                        subtitle = "Permanently delete your account and data",
+                        icon = Icons.Default.Delete,
+                        onClick = { navController.navigate("deleteAccount") }
                     )
                 }
             }
@@ -862,10 +873,10 @@ fun getThemeDisplayName(theme: ThemeSetting): String {
 
 fun getCurrencyDisplayName(currency: Currency): String {
     return when (currency) {
-        Currency.IDR -> "Indonesian Rupiah (IDR)"
-        Currency.USD -> "US Dollar (USD)"
-        Currency.EUR -> "Euro (EUR)"
-        Currency.JPY -> "Japanese Yen (JPY)"
+        Currency.IDR -> "Indonesian Rupiah (Rp)"
+        Currency.USD -> "US Dollar ($)"
+        Currency.EUR -> "Euro (€)"
+        Currency.JPY -> "Japanese Yen (¥)"
         // Add other currencies as needed
     }
 }
