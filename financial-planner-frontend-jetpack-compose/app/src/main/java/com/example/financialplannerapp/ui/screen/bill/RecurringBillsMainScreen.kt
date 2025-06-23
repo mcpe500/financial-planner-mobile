@@ -361,7 +361,9 @@ fun EditBillDialog(
 @Composable
 private fun BillHeaderSection(onBackClick: () -> Unit, onCalendarClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -380,6 +382,7 @@ fun BillSummaryCards(bills: List<RecurringBill>) {
     val totalBills = bills.size
     val upcomingBills = bills.count { it.status == BillStatus.DUE_SOON || it.status == BillStatus.UPCOMING }
     val overdueBills = bills.count { it.status == BillStatus.OVERDUE }
+    val paidBills = bills.count { it.isActive == false }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -388,7 +391,9 @@ fun BillSummaryCards(bills: List<RecurringBill>) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
             SummaryItem("Total", totalBills.toString(), MaterialTheme.colorScheme.onSurface)
@@ -442,7 +447,9 @@ fun BillCard(bill: RecurringBill, onCardClick: () -> Unit, onEditClick: () -> Un
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onCardClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onCardClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -495,11 +502,21 @@ fun BillCard(bill: RecurringBill, onCardClick: () -> Unit, onEditClick: () -> Un
                     fontWeight = FontWeight.SemiBold
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IconButton(onClick = onEditClick, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Edit, "Edit Bill", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = onDeleteClick, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Delete, "Delete Bill", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if(bill.isActive) {
+                        IconButton(onClick = onEditClick, modifier = Modifier.size(24.dp)) {
+                            Icon(
+                                Icons.Default.Edit,
+                                "Edit Bill",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(onClick = onDeleteClick, modifier = Modifier.size(24.dp)) {
+                            Icon(
+                                Icons.Default.Delete,
+                                "Delete Bill",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -555,11 +572,13 @@ fun BillDetailDialog(
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = onPay,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Pay")
+                if(bill.isActive == false) {
+                    Button(
+                        onClick = onPay,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Pay")
+                    }
                 }
             }
         }

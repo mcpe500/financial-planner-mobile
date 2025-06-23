@@ -32,6 +32,7 @@ data class RecurringBill(
         isPaidInCurrentCycle() -> BillStatus.PAID
         isOverdue -> BillStatus.OVERDUE
         daysToDue <= 7 -> BillStatus.DUE_SOON
+        !isActive -> BillStatus.PAID
         else -> BillStatus.UPCOMING
     }
 

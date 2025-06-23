@@ -110,7 +110,24 @@ class BillViewModel(
 
                 // 5. Insert new bill and delete old bill
                 billRepository.insertBill(newBill)
-                billRepository.deleteBillByUuid(bill.uuid)
+
+                val updatedBill = BillEntity(
+                    uuid = UUID.randomUUID().toString(),
+                    name = bill.name,
+                    estimatedAmount = bill.estimatedAmount,
+                    dueDate = bill.dueDate,
+                    repeatCycle = bill.repeatCycle,
+                    category = bill.category,
+                    notes = bill.notes,
+                    isActive = false,
+                    paymentsJson = Gson().toJson(emptyList<Any>()),
+                    autoPay = bill.autoPay,
+                    notificationEnabled = bill.notificationEnabled,
+                    lastPaymentDate = Date(),
+                    creationDate = Date(),
+                    userEmail = bill.userEmail
+                )
+                billRepository.updateBill(updatedBill)
 
                 _operationSuccess.emit("Payment for ${bill.name} successful! New bill created for ${SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault()).format(nextDueDate)}")
             } catch (e: Exception) {
