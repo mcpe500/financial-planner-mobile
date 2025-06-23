@@ -390,18 +390,38 @@ private fun TransactionGroupCard(
                 Column(
                     horizontalAlignment = Alignment.End
                 ) {
-                    Text(
-                        text = "Income: ${formatCurrency(group.totalIncome)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "Expense: ${formatCurrency(group.totalExpense)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    when (selectedFilter) {
+                        TransactionFilter.ALL -> {
+                            Text(
+                                text = "Income: ${formatCurrency(group.totalIncome)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Expense: ${formatCurrency(group.totalExpense)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        TransactionFilter.INCOME -> {
+                            Text(
+                                text = "Income: ${formatCurrency(group.totalIncome)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        TransactionFilter.EXPENSE -> {
+                            Text(
+                                text = "Expense: ${formatCurrency(group.totalExpense)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
             }
             
@@ -499,7 +519,8 @@ private fun TransactionHistoryItem(transaction: TransactionEntity, onClick: () -
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+        }
+        Row {
             // Amount
             Column(
                 horizontalAlignment = Alignment.End
