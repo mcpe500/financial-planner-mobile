@@ -382,7 +382,7 @@ fun BillSummaryCards(bills: List<RecurringBill>) {
     val totalBills = bills.size
     val upcomingBills = bills.count { it.status == BillStatus.DUE_SOON || it.status == BillStatus.UPCOMING }
     val overdueBills = bills.count { it.status == BillStatus.OVERDUE }
-    val paidBills = bills.count { it.isActive == false }
+    val paidBills = bills.count { it.status == BillStatus.PAID }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -399,6 +399,7 @@ fun BillSummaryCards(bills: List<RecurringBill>) {
             SummaryItem("Total", totalBills.toString(), MaterialTheme.colorScheme.onSurface)
             SummaryItem("Upcoming", upcomingBills.toString(), MaterialTheme.colorScheme.tertiary)
             SummaryItem("Overdue", overdueBills.toString(), MaterialTheme.colorScheme.error)
+            SummaryItem("Paid", paidBills.toString(), MaterialTheme.colorScheme.secondary)
         }
     }
 }
