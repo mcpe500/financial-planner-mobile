@@ -573,7 +573,7 @@ fun BillDetailDialog(
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                if(bill.isActive == false) {
+                if(bill.isActive == true) {
                     Button(
                         onClick = onPay,
                         modifier = Modifier.fillMaxWidth()

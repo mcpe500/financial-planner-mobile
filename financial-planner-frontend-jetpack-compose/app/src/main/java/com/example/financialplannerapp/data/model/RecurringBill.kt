@@ -29,10 +29,10 @@ data class RecurringBill(
     val isOverdue: Boolean get() = Date().after(nextDueDate) && !isPaidInCurrentCycle()
     val daysToDue: Int get() = ((nextDueDate.time - Date().time) / (1000 * 60 * 60 * 24)).toInt()
     val status: BillStatus get() = when {
+        !isActive -> BillStatus.PAID
         isPaidInCurrentCycle() -> BillStatus.PAID
         isOverdue -> BillStatus.OVERDUE
         daysToDue <= 7 -> BillStatus.DUE_SOON
-        !isActive -> BillStatus.PAID
         else -> BillStatus.UPCOMING
     }
 

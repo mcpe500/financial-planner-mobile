@@ -112,7 +112,7 @@ class BillViewModel(
                 billRepository.insertBill(newBill)
 
                 val updatedBill = BillEntity(
-                    uuid = UUID.randomUUID().toString(),
+                    uuid = bill.uuid,
                     name = bill.name,
                     estimatedAmount = bill.estimatedAmount,
                     dueDate = bill.dueDate,
