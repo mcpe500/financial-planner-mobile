@@ -70,15 +70,36 @@ class TransactionRepositoryImpl(
     }
 
     override fun getCurrentUserId(): String? {
-        // Use TokenManager from AppContainer or as passed to the repository
-        // This assumes TokenManager is available in AppContainer
+        // TODO: Implement this method to securely fetch the current user's ID.
+        // This ID is crucial for associating transactions with the correct user,
+        // especially for local database operations initiated within the repository
+        // or by services that don't explicitly pass the userId.
+        //
+        // Option 1: Inject TokenManager into this repository.
+        //   - Ensure TokenManager is provided via DI (e.g., Hilt, Koin).
+        //   - Call a method on TokenManager that returns the user ID.
+        //   - Example:
+        //     // constructor(..., private val tokenManager: TokenManager)
+        //     // return tokenManager.getUserId() // Or whatever method provides the ID
+        //
+        // Option 2: Access TokenManager via a singleton or service locator if DI is not used here.
+        //   - Example:
+        //     // return AppTokenManager.getInstance().getUserId()
+        //
+        // Option 3: If user ID is available synchronously from a DataStore flow used by TokenManager.
+        //   - This would likely need to be a suspend function or change to return Flow<String?>
+        //     to be collected appropriately.
+        //     // kotlinx.coroutines.runBlocking { tokenManager.getUserIdFlow().firstOrNull() } (Use with caution)
+
+        // Placeholder implementation:
+        Log.w("TransactionRepositoryImpl", "getCurrentUserId() is not fully implemented. Returning null.")
         return try {
-            // If you have access to TokenManager, use it
-            // If not, return null
-            // Example:
+            // Replace this with actual TokenManager usage.
+            // For example, if TokenManager was a constructor parameter:
             // return tokenManager.getUserId()
-            null // TODO: Replace with actual TokenManager usage
+            null
         } catch (e: Exception) {
+            Log.e("TransactionRepositoryImpl", "Error in getCurrentUserId placeholder", e)
             null
         }
     }

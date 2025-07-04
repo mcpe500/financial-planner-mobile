@@ -46,7 +46,21 @@ class AuthRepositoryImpl constructor(
 
     override suspend fun logout(): Result<Unit> {
         return try {
-            clearAuthToken()
+            val token = getAuthToken().first()
+            if (!token.isNullOrBlank()) {
+                try {
+                    // Attempt to call backend logout, but don't let it block local token clearing
+                    // The ApiService.logout() expects a full "Bearer <token>" string.
+                    // The interceptor in RetrofitClient should ideally handle adding this header.
+                    // If ApiService.logout() is called directly like this, ensure the Authorization header is correctly formatted.
+                    // The current ApiService.logout definition takes the full header string.
+                    apiService.logout("Bearer $token")
+                } catch (e: Exception) {
+                    // Log error or handle if necessary, but proceed with local logout
+                    println("AuthRepository: Backend logout call failed: ${e.message}")
+                }
+            }
+            clearAuthToken() // Always clear local token
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

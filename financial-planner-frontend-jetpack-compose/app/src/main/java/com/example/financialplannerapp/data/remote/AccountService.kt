@@ -19,12 +19,12 @@ data class DeleteAccountResponse(
 )
 
 interface AccountService {
-    @POST("api/account/api/delete/request")
+    @POST("api/v1/account/delete/request")
     suspend fun requestAccountDeletion(): Response<DeleteAccountResponse>
     
-    @POST("api/account/api/delete/verify")
+    @POST("api/v1/account/delete/verify")
     suspend fun verifyOtp(@Body request: DeleteAccountRequest): Response<DeleteAccountResponse>
     
-    @POST("api/account/api/delete/confirm")
+    @POST("api/v1/account/delete/confirm")
     suspend fun confirmDeletion(@Body request: DeleteAccountRequest): Response<DeleteAccountResponse>
 }

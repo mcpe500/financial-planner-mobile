@@ -16,15 +16,15 @@ class AddTransactionViewModel(
     val state: State<AddTransactionState> = _state
 
     fun createTransaction(
-        userId: String = "current_user_id",
+        userId: String, // Removed default value
         amount: Double,
         type: String,
         date: Date,
-        pocket: String,
+        pocket: String, // Consider if 'pocket' is still relevant or if walletId covers this
         category: String,
         note: String?,
         tags: List<String>?,
-        walletId: String = "default_wallet_id",
+        walletId: String, // Removed default value
         isFromReceipt: Boolean = false,
         receiptId: String? = null,
         merchantName: String? = null,

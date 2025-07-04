@@ -20,25 +20,25 @@ class Database {
 
 	// User methods
 	async findUserByEmail(email: string): Promise<UserType | null> {
-		const { data, error } = await this.supabase.from('users').select('*').eq('email', email).single();
+		const { data, error } = await this.supabase.from('app_schema.users').select('*').eq('email', email).single();
 		if (error && error.code !== 'PGRST116') throw error;
 		return data;
 	}
 
 	async findUserByGoogleId(googleId: string): Promise<UserType | null> {
-		const { data, error } = await this.supabase.from('users').select('*').eq('google_id', googleId).single();
+		const { data, error } = await this.supabase.from('app_schema.users').select('*').eq('google_id', googleId).single();
 		if (error && error.code !== 'PGRST116') throw error;
 		return data;
 	}
 
 	async createUser(userData: { email: string; name: string; google_id: string; avatar_url: string; role?: "user" | "admin"; }): Promise<UserType> {
-		const { data, error } = await this.supabase.from('users').insert([userData]).select().single();
+		const { data, error } = await this.supabase.from('app_schema.users').insert([userData]).select().single();
 		if (error) throw error;
 		return data;
 	}
 
 	async getUserById(id: string): Promise<UserType | null> {
-		const { data, error } = await this.supabase.from('users').select('*').eq('id', id).single();
+		const { data, error } = await this.supabase.from('app_schema.users').select('*').eq('id', id).single();
 		if (error && error.code !== 'PGRST116') throw error;
 		return data;
 	}
@@ -48,7 +48,7 @@ class Database {
 		if (!user) {
 			throw new Error("User not found");
 		}
-		const { error } = await this.supabase.from('users').delete().eq('id', user.id);
+		const { error } = await this.supabase.from('app_schema.users').delete().eq('id', user.id);
 		if (error) throw error;
 	}
 
@@ -59,7 +59,7 @@ class Database {
 				updated_at: new Date().toISOString()
 			};
 
-			const { data, error } = await this.supabase.from('users').update(updateData).eq('id', userId).select().single();
+			const { data, error } = await this.supabase.from('app_schema.users').update(updateData).eq('id', userId).select().single();
 			if (error) throw error;
 			return data;
 		} catch (error) {
@@ -79,7 +79,7 @@ class Database {
 		}
 
 		const { data, error } = await this.supabase
-			.from('transactions')
+			.from('app_schema.transactions')
 			.insert([{ ...payload, user_id: userId }])
 			.select()
 			.single();
@@ -89,7 +89,7 @@ class Database {
 
 	async getUserTransactions(userId: string): Promise<TransactionType[]> {
 		const { data, error } = await this.supabase
-			.from('transactions')
+			.from('app_schema.transactions')
 			.select('*')
 			.eq('user_id', userId)
 			.order('date', { ascending: false });
@@ -99,7 +99,7 @@ class Database {
 
 	async getTransactionByUserId(id: string): Promise<TransactionType | null> {
 		const { data, error } = await this.supabase
-			.from('transactions')
+			.from('app_schema.transactions')
 			.select('*')
 			.eq('user_id', id)
 			.single();
@@ -108,7 +108,7 @@ class Database {
 	}
 	async getTransactionById(id: string): Promise<TransactionType | null> {
 		const { data, error } = await this.supabase
-			.from('transactions')
+			.from('app_schema.transactions')
 			.select('*')
 			.eq('id', id)
 			.single();
@@ -118,7 +118,7 @@ class Database {
 	
 	async updateTransaction(transactionId: string, updateData: Partial<TransactionPayload>): Promise<TransactionType | null> {
 		const { data, error } = await this.supabase
-			.from('transactions')
+			.from('app_schema.transactions')
 			.update(updateData)
 			.eq('id', transactionId)
 			.select()
@@ -129,7 +129,7 @@ class Database {
 	
 	async deleteTransaction(transactionId: string): Promise<void> {
 		const { error } = await this.supabase
-			.from('transactions')
+			.from('app_schema.transactions')
 			.delete()
 			.eq('id', transactionId);
 		if (error) throw error;
@@ -138,19 +138,19 @@ class Database {
 	// Tag methods for transaction controller
 	async assignTagsToTransaction(transactionId: string, tagIds: string[]): Promise<void> {
 		const assignments = tagIds.map(tagId => ({ transaction_id: transactionId, tag_id: tagId }));
-		const { error } = await this.supabase.from('transaction_tags').insert(assignments);
+		const { error } = await this.supabase.from('app_schema.transaction_tags').insert(assignments);
 		if (error) throw error;
 	}
 
 	async removeAllTagsFromTransaction(transactionId: string): Promise<void> {
-		const { error } = await this.supabase.from('transaction_tags').delete().eq('transaction_id', transactionId);
+		const { error } = await this.supabase.from('app_schema.transaction_tags').delete().eq('transaction_id', transactionId);
 		if (error) throw error;
 	}
 
 	// CATEGORY METHODS
 	async createCategory(payload: any): Promise<any> {
 		const { data, error } = await this.supabase
-			.from('categories')
+			.from('app_schema.categories')
 			.insert([payload])
 			.select()
 			.single();
@@ -160,7 +160,7 @@ class Database {
 
 	async updateCategory(id: string, payload: any): Promise<any> {
 		const { data, error } = await this.supabase
-			.from('categories')
+			.from('app_schema.categories')
 			.update(payload)
 			.eq('id', id)
 			.select()
@@ -171,7 +171,7 @@ class Database {
 
 	async deleteCategory(id: string): Promise<void> {
 		const { error } = await this.supabase
-			.from('categories')
+			.from('app_schema.categories')
 			.delete()
 			.eq('id', id);
 		if (error) throw error;
@@ -179,7 +179,7 @@ class Database {
 
 	async getCategoryTree(userId: string): Promise<any[]> {
 		const { data, error } = await this.supabase
-			.from('categories')
+			.from('app_schema.categories')
 			.select('*')
 			.eq('user_id', userId)
 			.order('name', { ascending: true });
@@ -190,7 +190,7 @@ class Database {
 	// Wallet methods
 	async getWallets(userId: string): Promise<any[]> {
 		const { data, error } = await this.supabase
-			.from('wallets')
+			.from('app_schema.wallets')
 			.select('*')
 			.eq('user_id', userId);
 		if (error) throw error;
@@ -214,7 +214,7 @@ class Database {
 		}));
 
 		const { data, error } = await this.supabase
-			.from('wallets')
+			.from('app_schema.wallets')
 			.upsert(walletsToSync, { onConflict: 'walletId' })
 			.select();
 		if (error) throw error;
@@ -239,7 +239,7 @@ class Database {
 		};
 
 		const { data, error } = await this.supabase
-			.from('wallets')
+			.from('app_schema.wallets')
 			.insert(walletData)
 			.select()
 			.single();
@@ -262,7 +262,7 @@ class Database {
 		};
 
 		const { data, error } = await this.supabase
-			.from('wallets')
+			.from('app_schema.wallets')
 			.update(updateData)
 			.eq('walletId', walletId) // Use walletId for lookup
 			.eq('user_id', userId)
@@ -278,7 +278,7 @@ class Database {
 
 	async getWalletByWalletId(walletId: string): Promise<any> {
 		const { data, error } = await this.supabase
-			.from('wallets')
+			.from('app_schema.wallets')
 			.select('*')
 			.eq('walletId', walletId)
 			.single();
@@ -295,7 +295,7 @@ class Database {
 	async validateWalletId(walletId: string, userId: string): Promise<boolean> {
 		try {
 			const { data, error } = await this.supabase
-				.from('wallets')
+				.from('app_schema.wallets')
 				.select('id')
 				.eq('walletId', walletId)
 				.eq('user_id', userId)
@@ -308,7 +308,7 @@ class Database {
 
 	async findUserById(id: string) {
 		const { data, error } = await this.supabase
-			.from('users')
+			.from('app_schema.users')
 			.select('*')
 			.eq('id', id)
 			.single();
@@ -321,7 +321,7 @@ class Database {
 
 	async updateUser(id: string, updates: Record<string, any>) {
 		const { data, error } = await this.supabase
-			.from('users')
+			.from('app_schema.users')
 			.update(updates)
 			.eq('id', id);
 		if (error) {
@@ -332,7 +332,7 @@ class Database {
 
 	async deleteUserById(id: string) {
 		const { error } = await this.supabase
-			.from('users')
+			.from('app_schema.users')
 			.delete()
 			.eq('id', id);
 		if (error) {
