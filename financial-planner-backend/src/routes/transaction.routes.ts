@@ -12,6 +12,7 @@ import {
 	processQRCode
 } from "../controllers/transaction.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
+import { validateTransactionCreation, validateTransactionUpdate } from "../middleware/validation.middleware";
 
 const router = Router();
 
@@ -24,14 +25,13 @@ router.post("/qr-code", processQRCode);
 
 router.route("/")
 	.get(getUserTransactions)
-	.post(createTransaction);
+	.post(validateTransactionCreation, createTransaction);
 
 router.route("/:id")
 	.get(getTransactionById)
-	.put(updateTransaction)
+	.put(validateTransactionUpdate, updateTransaction)
 	.delete(deleteTransaction);
 
 router.post("/:id/tags", assignTagsToTransaction);
-
 
 export default router;
